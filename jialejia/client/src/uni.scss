@@ -1,0 +1,85 @@
+/* 佳乐家全局样式 */
+$u-primary: #1677FF;
+$u-warning: #FAAD14;
+$u-success: #52C41A;
+$u-error: #FF4D4F;
+$u-info: #1677FF;
+
+/* 主题色 */
+$primary-color: #1677FF;
+$success-color: #52C41A;
+$warning-color: #FAAD14;
+$error-color: #FF4D4F;
+$bg-color: #F5F5F5;
+$text-color: #333333;
+$text-secondary: #666666;
+$text-light: #999999;
+$border-color: #E8E8E8;
+
+/* 通用样式 */
+page {
+  background-color: $bg-color;
+  font-size: 28rpx;
+  color: $text-color;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* 卡片样式 */
+.card {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin: 20rpx 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 按钮 */
+.btn-primary {
+  background: $primary-color;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+.btn-disabled {
+  background: #D9D9D9;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 44rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+}
+
+/* 标签 */
+.tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.tag-pending { background: #FFF7E6; color: $warning-color; }
+.tag-assigned { background: #E6F7FF; color: $primary-color; }
+.tag-processing { background: #E6F7FF; color: $primary-color; }
+.tag-completed { background: #F6FFED; color: $success-color; }
+.tag-cancelled { background: #FFF2F0; color: $error-color; }
+.tag-timeout { background: #FFF2F0; color: $error-color; }
+
+/* 状态颜色 */
+.status-pending { color: $warning-color; }
+.status-assigned { color: $primary-color; }
+.status-processing { color: $primary-color; }
+.status-completed { color: $success-color; }
+.status-cancelled { color: $error-color; }
+.status-timeout { color: $error-color; }

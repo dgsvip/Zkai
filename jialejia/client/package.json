@@ -1,0 +1,29 @@
+{
+  "name": "jialejia-client",
+  "version": "1.0.0",
+  "description": "佳乐家 - uni-app 前端项目",
+  "scripts": {
+    "dev:h5": "uni -p h5",
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "dev:app": "uni -p app",
+    "build:h5": "uni build -p h5",
+    "build:mp-weixin": "uni build -p mp-weixin"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "pinia": "^2.1.6",
+    "uview-plus": "^3.1.0",
+    "@dcloudio/uni-app": "^3.0.0",
+    "@dcloudio/uni-app-plus": "^3.0.0",
+    "@dcloudio/uni-h5": "^3.0.0",
+    "@dcloudio/uni-mp-weixin": "^3.0.0"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.0.0",
+    "@dcloudio/uni-cli-shared": "^3.0.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2"
+  }
+}

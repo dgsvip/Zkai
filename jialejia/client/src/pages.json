@@ -1,0 +1,144 @@
+{
+  "pages": [
+    {
+      "path": "pages/user/booking",
+      "style": {
+        "navigationBarTitleText": "预约服务",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/user/orderList",
+      "style": {
+        "navigationBarTitleText": "我的订单",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/user/orderDetail",
+      "style": {
+        "navigationBarTitleText": "订单详情",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/user/profile",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/user/address",
+      "style": {
+        "navigationBarTitleText": "地址管理",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/user/announcement",
+      "style": {
+        "navigationBarTitleText": "公告列表",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/user/agreement",
+      "style": {
+        "navigationBarTitleText": "服务协议",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/technician/login",
+      "style": {
+        "navigationBarTitleText": "师傅登录",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/technician/workOrders",
+      "style": {
+        "navigationBarTitleText": "工单",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/technician/processing",
+      "style": {
+        "navigationBarTitleText": "进行中",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/technician/profile",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/merchant/login",
+      "style": {
+        "navigationBarTitleText": "商家登录",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/merchant/promote",
+      "style": {
+        "navigationBarTitleText": "推广",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/merchant/report",
+      "style": {
+        "navigationBarTitleText": "代报单",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/merchant/profile",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "enablePullDownRefresh": false
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "佳乐家",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F5",
+    "app-plus": {
+      "background": "#F5F5F5"
+    }
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#1677FF",
+    "borderStyle": "black",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/user/booking",
+        "iconPath": "static/tabbar/booking.png",
+        "selectedIconPath": "static/tabbar/booking_active.png",
+        "text": "预约"
+      },
+      {
+        "pagePath": "pages/user/orderList",
+        "iconPath": "static/tabbar/orders.png",
+        "selectedIconPath": "static/tabbar/orders_active.png",
+        "text": "查单"
+      },
+      {
+        "pagePath": "pages/user/profile",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile_active.png",
+        "text": "我的"
+      }
+    ]
+  }
+}
