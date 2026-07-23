@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>推广 - 佳乐家商家端</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    /* ===== 登录界面 ===== */
+    .login-wrap { padding: 60px 32px 40px; }
+    .login-logo { width: 72px; height: 72px; background: var(--primary); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #fff; font-size: 32px; font-weight: 700; }
+    .login-title { text-align: center; font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .login-sub { text-align: center; color: var(--text-light); font-size: 13px; margin-bottom: 32px; }
+    .login-btn { margin-top: 8px; }
+
+    /* ===== 商家信息卡 ===== */
+    .merchant-card { background: linear-gradient(135deg, var(--primary), #4096FF); border-radius: var(--radius-lg); padding: 20px; color: #fff; margin-bottom: 12px; }
+    .merchant-card .name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .merchant-card .info { font-size: 13px; opacity: 0.9; margin-top: 2px; }
+    .merchant-card .tag-white { display: inline-block; background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-top: 8px; }
+
+    /* ===== 奖励规则 ===== */
+    .reward-steps { display: flex; gap: 8px; margin-top: 12px; }
+    .reward-step { flex: 1; text-align: center; background: var(--primary-light); border-radius: 8px; padding: 12px 8px; }
+    .reward-step .num { font-size: 22px; font-weight: 700; color: var(--primary); }
+    .reward-step .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ===== 二维码区域 ===== */
+    .qrcode-area { text-align: center; padding: 20px; }
+    .qrcode-box { width: 200px; height: 200px; margin: 0 auto 12px; background: #fff; border: 2px dashed var(--border); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; flex-direction: column; }
+    .qrcode-box img { width: 180px; height: 180px; }
+    .qrcode-placeholder { color: var(--text-light); font-size: 13px; }
+    .qrcode-placeholder i { font-size: 40px; display: block; margin-bottom: 8px; }
+
+    /* ===== 专属链接 ===== */
+    .link-row { display: flex; gap: 8px; }
+    .link-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text-secondary); }
+    .link-row .btn { flex-shrink: 0; }
+
+    /* ===== 数据统计 ===== */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .stat-item { text-align: center; padding: 12px 4px; background: var(--bg); border-radius: 8px; }
+    .stat-item .num { font-size: 18px; font-weight: 700; color: var(--text); }
+    .stat-item .label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+    /* ===== 排行榜 ===== */
+    .rank-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 10px; flex-shrink: 0; }
+    .rank-1 { background: #FFF1CC; color: #D48806; }
+    .rank-2 { background: #F0F0F0; color: #666; }
+    .rank-3 { background: #FFE0D0; color: #D46B08; }
+    .rank-other { color: var(--text-light); }
+    .rank-info { flex: 1; }
+    .rank-name { font-size: 14px; font-weight: 500; }
+    .rank-score { font-size: 12px; color: var(--text-light); }
+    .rank-value { font-weight: 600; color: var(--primary); }
+
+    /* ===== 介绍费明细 ===== */
+    .fee-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .fee-item:last-child { border-bottom: none; }
+    .fee-info { flex: 1; }
+    .fee-order { font-size: 12px; color: var(--text-light); }
+    .fee-service { font-size: 14px; margin-top: 2px; }
+    .fee-right { text-align: right; }
+    .fee-amount { font-weight: 600; color: var(--success); }
+    .fee-status { font-size: 12px; margin-top: 2px; }
+
+    /* ===== 内容区 ===== */
+    .section { padding: 0 16px; }
+    .section-gap { height: 12px; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <!-- ====== 未登录：登录界面 ====== -->
+    <div id="loginView" class="hidden">
+      <div class="login-wrap">
+        <div class="login-logo">JLJ</div>
+        <div class="login-title">商家端登录</div>
+        <div class="login-sub">佳乐家服务 · 推广赚钱</div>
+        <div class="form-group">
+          <label class="form-label">手机号</label>
+          <input class="form-input" id="loginPhone" type="tel" placeholder="请输入手机号" maxlength="11">
+        </div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" id="loginPassword" type="password" placeholder="请输入密码">
+        </div>
+        <button class="btn btn-primary btn-lg login-btn" onclick="handleLogin()">登 录</button>
+      </div>
+    </div>
+
+    <!-- ====== 登录后：推广主界面 ====== -->
+    <div id="mainView" class="hidden">
+      <!-- 商家信息卡片 -->
+      <div class="section" style="padding-top:16px;">
+        <div class="merchant-card">
+          <div class="name" id="merchantName">--</div>
+          <div class="info" id="merchantContact">联系人：-- | 电话：--</div>
+          <div class="tag-white">🏪 认证商家</div>
+        </div>
+      </div>
+
+      <!-- 奖励规则 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">💰 奖励规则</span>
+          </div>
+          <div class="card-body">
+            <p>每成功推荐一笔订单，可获得订单金额 <strong style="color:var(--primary);">5%</strong> 的介绍费</p>
+            <div class="reward-steps">
+              <div class="reward-step">
+                <div class="num">5%</div>
+                <div class="label">阶梯一</div>
+              </div>
+              <div class="reward-step">
+                <div class="num">8%</div>
+                <div class="label">阶梯二</div>
+              </div>
+              <div class="reward-step">
+                <div class="num">12%</div>
+                <div class="label">阶梯三</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:8px;">
+              月推广≥10单升级阶梯二，≥30单升级阶梯三
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推广二维码 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📱 推广二维码</span>
+          </div>
+          <div class="qrcode-area">
+            <div class="qrcode-box" id="qrcodeBox">
+              <div class="qrcode-placeholder">
+                <i>⊞</i>
+                <span>二维码加载中...</span>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-light);">扫码即可进入下单页面，自动绑定推广关系</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 专属链接 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔗 专属推广链接</span>
+          </div>
+          <div class="link-row">
+            <input type="text" id="promoteLink" readonly value="加载中...">
+            <button class="btn btn-primary" onclick="copyLink()">复制</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推广数据 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 推广数据</span>
+          </div>
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-item"><div class="num" id="statTotalScan">0</div><div class="label">总扫码</div></div>
+            <div class="stat-item"><div class="num" id="statTodayScan">0</div><div class="label">今日扫码</div></div>
+            <div class="stat-item"><div class="num" id="statOrderCount">0</div><div class="label">带来下单</div></div>
+            <div class="stat-item"><div class="num" id="statTotalAmount">¥0</div><div class="label">成交总额</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推广排行榜 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🏆 本月推广排行</span>
+          </div>
+          <div class="card-body" id="rankList">
+            <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 介绍费明细 -->
+      <div class="section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 介绍费明细</span>
+          </div>
+          <div class="card-body" id="feeList">
+            <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap"></div>
+    </div>
+
+    <!-- ====== 底部导航栏 ====== -->
+    <div class="tabbar">
+      <div class="tabbar-item active" onclick="Utils.go('/merchant/promote.html')">
+        <i>📢</i><span>推广</span>
+      </div>
+      <div class="tabbar-item" onclick="Utils.go('/merchant/proxy.html')">
+        <i>📝</i><span>代报</span>
+      </div>
+      <div class="tabbar-item" onclick="Utils.go('/merchant/profile.html')">
+        <i>👤</i><span>我的</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    // ===== 页面状态 =====
+    let merchantInfo = null;
+
+    // ===== 初始化 =====
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = Utils.get('token');
+      if (token) {
+        API.token = token;
+        showMainView();
+      } else {
+        showLoginView();
+      }
+    });
+
+    // ===== 视图切换 =====
+    function showLoginView() {
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('mainView').classList.add('hidden');
+    }
+
+    function showMainView() {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('mainView').classList.remove('hidden');
+      loadMerchantData();
+    }
+
+    // ===== 登录 =====
+    async function handleLogin() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      if (!phone) return Utils.error('请输入手机号');
+      if (!/^1\d{10}$/.test(phone)) return Utils.error('手机号格式不正确');
+      if (!password) return Utils.error('请输入密码');
+
+      Utils.loading(true);
+      try {
+        const res = await API.merLogin(phone, password);
+        if (res.code === 0 && res.data) {
+          Utils.set('token', res.data.token || res.data.access_token);
+          if (res.data.merchant_info || res.data.user_info) {
+            Utils.set('userInfo', res.data.merchant_info || res.data.user_info);
+          }
+          API.token = Utils.get('token');
+          Utils.success('登录成功');
+          showMainView();
+        } else {
+          Utils.error(res.message || '登录失败');
+        }
+      } catch (e) {
+        Utils.error('网络异常');
+      } finally {
+        Utils.loading(false);
+      }
+    }
+
+    // ===== 加载商家数据 =====
+    async function loadMerchantData() {
+      // 加载商家信息
+      try {
+        const profileRes = await API.merGetStatistics();
+        if (profileRes.code === 0 && profileRes.data) {
+          const d = profileRes.data;
+          merchantInfo = d;
+          document.getElementById('merchantName').textContent = d.merchant_name || d.name || '--';
+          document.getElementById('merchantContact').textContent = '联系人：' + (d.contact_name || '--') + ' | 电话：' + (d.contact_phone || d.phone || '--');
+        } else {
+          // 尝试从本地获取
+          const local = Utils.get('userInfo');
+          if (local) {
+            document.getElementById('merchantName').textContent = local.merchant_name || local.name || '--';
+            document.getElementById('merchantContact').textContent = '联系人：' + (local.contact_name || '--') + ' | 电话：' + (local.contact_phone || local.phone || '--');
+          }
+        }
+      } catch (e) {
+        const local = Utils.get('userInfo');
+        if (local) {
+          document.getElementById('merchantName').textContent = local.merchant_name || local.name || '--';
+          document.getElementById('merchantContact').textContent = '联系人：' + (local.contact_name || '--') + ' | 电话：' + (local.contact_phone || local.phone || '--');
+        }
+      }
+
+      // 加载推广数据
+      loadStats();
+
+      // 加载排行榜
+      loadRanking();
+
+      // 加载介绍费明细
+      loadFees();
+
+      // 加载二维码/链接
+      loadPromoteCode();
+    }
+
+    // ===== 推广数据 =====
+    async function loadStats() {
+      try {
+        const res = await API.merGetStatistics();
+        if (res.code === 0 && res.data) {
+          const d = res.data;
+          document.getElementById('statTotalScan').textContent = d.total_scan || 0;
+          document.getElementById('statTodayScan').textContent = d.today_scan || 0;
+          document.getElementById('statOrderCount').textContent = d.order_count || 0;
+          document.getElementById('statTotalAmount').textContent = Utils.formatPrice(d.total_amount || 0);
+        }
+      } catch (e) {
+        // 静默处理
+      }
+    }
+
+    // ===== 排行榜 =====
+    async function loadRanking() {
+      const container = document.getElementById('rankList');
+      try {
+        const res = await API.merGetStatistics();
+        const ranking = (res && res.data && res.data.ranking) ? res.data.ranking : [];
+        if (ranking.length === 0) {
+          container.innerHTML = '<div class="empty"><p>暂无排行数据</p></div>';
+          return;
+        }
+        let html = '';
+        ranking.forEach((item, i) => {
+          const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+          html += '<div class="rank-item">' +
+            '<div class="rank-num ' + rankClass + '">' + (i + 1) + '</div>' +
+            '<div class="rank-info"><div class="rank-name">' + Utils.sanitize(item.name) + '</div>' +
+            '<div class="rank-score">' + (item.order_count || 0) + '单</div></div>' +
+            '<div class="rank-value">' + Utils.formatPrice(item.amount || 0) + '</div>' +
+          '</div>';
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+      }
+    }
+
+    // ===== 介绍费明细 =====
+    async function loadFees() {
+      const container = document.getElementById('feeList');
+      try {
+        const res = await API.merGetIncome();
+        const list = (res.code === 0 && res.data && res.data.list) ? res.data.list : [];
+        if (list.length === 0) {
+          container.innerHTML = '<div class="empty"><p>暂无介绍费记录</p></div>';
+          return;
+        }
+        let html = '';
+        list.forEach(item => {
+          const statusMap = { pending: '待结算', settled: '已结算', cancelled: '已取消' };
+          const status = statusMap[item.status] || item.status || '--';
+          html += '<div class="fee-item">' +
+            '<div class="fee-info"><div class="fee-order">订单：' + Utils.sanitize(item.order_no || '--') + '</div>' +
+            '<div class="fee-service">' + Utils.sanitize(item.service_name || '--') + '</div></div>' +
+            '<div class="fee-right"><div class="fee-amount">' + Utils.formatPrice(item.amount || 0) + '</div>' +
+            '<div class="fee-status text-sm ' + (item.status === 'settled' ? 'text-success' : item.status === 'cancelled' ? 'text-danger' : 'text-warning') + '">' + status + '</div></div>' +
+          '</div>';
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+      }
+    }
+
+    // ===== 推广二维码/链接 =====
+    function loadPromoteCode() {
+      const token = Utils.get('token');
+      const merchantId = merchantInfo ? (merchantInfo.id || '') : '';
+      // 构建专属链接
+      const baseUrl = window.location.origin;
+      const link = baseUrl + '/user/orders.html?ref=' + (merchantId || 'merchant');
+      document.getElementById('promoteLink').value = link;
+
+      // 二维码占位 - 显示为二维码图片区域
+      const qrBox = document.getElementById('qrcodeBox');
+      qrBox.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(link) + '" alt="推广二维码" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="qrcode-placeholder" style="display:none;"><i>⊞</i><span>二维码加载失败</span></div>';
+    }
+
+    // ===== 复制链接 =====
+    function copyLink() {
+      const input = document.getElementById('promoteLink');
+      input.select();
+      try {
+        document.execCommand('copy');
+        Utils.success('链接已复制');
+      } catch (e) {
+        // 使用 Clipboard API 备选
+        navigator.clipboard.writeText(input.value).then(function() {
+          Utils.success('链接已复制');
+        }).catch(function() {
+          Utils.error('复制失败，请手动复制');
+        });
+      }
+    }
+  </script>
+</body>
+</html>

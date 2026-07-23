@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 仪表盘</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #f0f2f5; display: flex; min-height: 100vh; }
+    /* ===== 侧边栏 ===== */
+    .sidebar { width: 220px; background: #001529; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px 16px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo span { color: #fff; }
+    .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-menu .menu-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: all 0.2s; font-size: 14px; gap: 10px; }
+    .sidebar-menu .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .sidebar-menu .menu-item.active { color: #fff; background: var(--primary); }
+    .sidebar-menu .menu-item .menu-icon { font-size: 18px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer .menu-item { display: flex; align-items: center; gap: 10px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 14px; padding: 8px 0; }
+    .sidebar-footer .menu-item:hover { color: #fff; }
+    /* ===== 主内容 ===== */
+    .main { margin-left: 220px; flex: 1; min-height: 100vh; }
+    .main-header { background: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
+    .main-header h2 { font-size: 18px; font-weight: 600; }
+    .main-header .user-info { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary); }
+    .main-content { padding: 24px; }
+    /* ===== 统计卡片 ===== */
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .stat-card .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+    .stat-card .stat-sub { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    .stat-card .stat-icon { float: right; font-size: 32px; opacity: 0.15; }
+    .stat-card.primary .stat-value { color: var(--primary); }
+    .stat-card.success .stat-value { color: var(--success); }
+    .stat-card.warning .stat-value { color: var(--warning); }
+    .stat-card.danger .stat-value { color: var(--danger); }
+    /* ===== 快捷操作 ===== */
+    .quick-actions { display: flex; gap: 12px; margin-bottom: 24px; }
+    .quick-actions .action-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: #fff; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; color: var(--text-secondary); }
+    .quick-actions .action-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 2px 8px rgba(22,119,255,0.1); }
+    /* ===== 图表 ===== */
+    .chart-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .chart-card .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding-top: 10px; }
+    .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+    .bar { width: 70%; background: linear-gradient(to top, var(--primary), #4096FF); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.6s ease; position: relative; }
+    .bar:hover { opacity: 0.8; }
+    .bar-label { font-size: 11px; color: var(--text-light); margin-top: 6px; white-space: nowrap; }
+    .bar-value { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
+    /* ===== 表格 ===== */
+    .table-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 24px; }
+    .table-card .table-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .table-card table { width: 100%; border-collapse: collapse; }
+    .table-card th { text-align: left; padding: 12px 10px; font-size: 13px; color: var(--text-light); font-weight: 500; border-bottom: 1px solid var(--border); }
+    .table-card td { padding: 12px 10px; font-size: 14px; border-bottom: 1px solid var(--border); }
+    .table-card tr:last-child td { border-bottom: none; }
+    .table-card tr:hover td { background: #fafafa; }
+    .loading-state { text-align: center; padding: 40px; color: var(--text-light); }
+    @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .chart-section { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar-logo span, .sidebar-menu .menu-item span, .sidebar-footer .menu-item span { display: none; } .main { margin-left: 60px; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><span style="font-size:24px;">🏠</span> <span>佳乐家管理</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" data-page="dashboard"><span class="menu-icon">📊</span> <span>仪表盘</span></div>
+      <div class="menu-item" data-page="orders"><span class="menu-icon">📋</span> <span>订单管理</span></div>
+      <div class="menu-item" data-page="technicians"><span class="menu-icon">🔧</span> <span>师傅管理</span></div>
+      <div class="menu-item" data-page="merchants"><span class="menu-icon">🏪</span> <span>商家管理</span></div>
+      <div class="menu-item" data-page="services"><span class="menu-icon">🛠️</span> <span>服务管理</span></div>
+      <div class="menu-item" data-page="announcements"><span class="menu-icon">📢</span> <span>公告管理</span></div>
+      <div class="menu-item" data-page="dataview"><span class="menu-icon">📈</span> <span>数据大屏</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="menu-item" data-page="settings"><span class="menu-icon">⚙️</span> <span>系统设置</span></div>
+      <div class="menu-item" id="logoutBtn"><span class="menu-icon">🚪</span> <span>退出</span></div>
+    </div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="main">
+    <div class="main-header">
+      <h2>仪表盘</h2>
+      <div class="user-info">
+        <span id="currentTime"></span>
+        <span id="userDisplay">管理员</span>
+      </div>
+    </div>
+    <div class="main-content">
+      <!-- 统计卡片 -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card primary"><div class="stat-icon">📦</div><div class="stat-label">总订单</div><div class="stat-value" id="statTotalOrders">-</div><div class="stat-sub">累计</div></div>
+        <div class="stat-card primary"><div class="stat-icon">📝</div><div class="stat-label">今日订单</div><div class="stat-value" id="statTodayOrders">-</div><div class="stat-sub">今日新增</div></div>
+        <div class="stat-card success"><div class="stat-icon">💰</div><div class="stat-label">今日抽成</div><div class="stat-value" id="statTodayFee">-</div><div class="stat-sub">平台收入</div></div>
+        <div class="stat-card success"><div class="stat-icon">👨‍🔧</div><div class="stat-label">在线师傅</div><div class="stat-value" id="statOnlineTechs">-</div><div class="stat-sub">当前在线</div></div>
+        <div class="stat-card danger"><div class="stat-icon">⚠️</div><div class="stat-label">超期预警</div><div class="stat-value" id="statOverdue">-</div><div class="stat-sub">待处理</div></div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="quick-actions">
+        <div class="action-btn" onclick="Utils.go('announcements.html')">📢 发布公告</div>
+        <div class="action-btn" onclick="Utils.go('technicians.html')">👤 添加师傅</div>
+        <div class="action-btn" onclick="exportReport()">📄 导出报表</div>
+        <div class="action-btn" onclick="refreshData()">🔄 刷新数据</div>
+      </div>
+
+      <!-- 图表 -->
+      <div class="chart-section">
+        <div class="chart-card">
+          <div class="chart-title">近7天订单趋势</div>
+          <div class="bar-chart" id="trendChart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">服务类型占比</div>
+          <div class="bar-chart" id="pieChart" style="justify-content:center;align-items:center;height:200px;padding:0;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <!-- 最新订单 -->
+      <div class="table-card">
+        <div class="table-title">
+          <span>最新订单</span>
+          <a href="orders.html" style="font-size:13px;color:var(--primary);">查看全部 →</a>
+        </div>
+        <table>
+          <thead><tr><th>订单号</th><th>服务</th><th>用户</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+          <tbody id="recentOrdersBody"></tbody>
+        </table>
+        <div class="loading-state" id="ordersLoading">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+
+      // 侧边栏导航
+      document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+        item.addEventListener('click', function() {
+          const page = this.dataset.page;
+          if (page === 'dashboard') return;
+          Utils.go(page + '.html');
+        });
+      });
+
+      // 退出
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定退出登录？')) {
+          Utils.logout();
+          window.location.href = 'login.html';
+        }
+      });
+
+      // 用户信息
+      const userInfo = Utils.get('userInfo');
+      if (userInfo) {
+        document.getElementById('userDisplay').textContent = userInfo.username || userInfo.nickname || '管理员';
+      }
+
+      // 时间
+      function updateTime() {
+        const now = new Date();
+        document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN');
+      }
+      updateTime();
+      setInterval(updateTime, 1000);
+
+      // 加载数据
+      loadDashboard();
+
+      async function loadDashboard() {
+        const res = await API.adminGetDashboard();
+        if (res.code !== 200) return;
+        const d = res.data;
+        document.getElementById('statTotalOrders').textContent = d.totalOrders || 0;
+        document.getElementById('statTodayOrders').textContent = d.todayOrders || 0;
+        document.getElementById('statTodayFee').textContent = Utils.formatPrice(d.todayFee || 0);
+        document.getElementById('statOnlineTechs').textContent = d.onlineTechs || 0;
+        document.getElementById('statOverdue').textContent = d.overdue || 0;
+
+        // 近7天趋势
+        renderTrendChart(d.recentOrders || []);
+        // 服务占比
+        renderPieChart([]);
+        // 最新订单
+        renderRecentOrders(d.recentOrders || []);
+        document.getElementById('ordersLoading').style.display = 'none';
+      }
+
+      function renderTrendChart(orders) {
+        const container = document.getElementById('trendChart');
+        // 生成近7天日期
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          days.push({ date: Utils.formatDate(d), label: (d.getMonth()+1)+'/'+d.getDate(), count: 0 });
+        }
+        // 统计
+        orders.forEach(o => {
+          const day = Utils.formatDate(o.created_at);
+          const found = days.find(d => d.date === day);
+          if (found) found.count++;
+        });
+        const max = Math.max(...days.map(d => d.count), 1);
+        container.innerHTML = '';
+        days.forEach(d => {
+          const g = document.createElement('div');
+          g.className = 'bar-group';
+          const h = Math.max(4, (d.count / max) * 160);
+          g.innerHTML = `<div class="bar-value">${d.count}</div><div class="bar" style="height:${h}px;"></div><div class="bar-label">${d.label}</div>`;
+          container.appendChild(g);
+        });
+      }
+
+      function renderPieChart(data) {
+        const container = document.getElementById('pieChart');
+        container.innerHTML = '<div style="color:var(--text-light);font-size:13px;">加载中...</div>';
+        // 从订单数据中统计服务占比
+        const orders = [];
+        // 使用API获取的recentOrders来统计
+        // 但dashboard接口没有返回servicePie，所以我们从recentOrders统计
+        // 实际上会在loadDashboard之后调用
+        setTimeout(async () => {
+          try {
+            const realtimeRes = await API.adminGetRealtime();
+            if (realtimeRes.code === 200 && realtimeRes.data.servicePie) {
+              renderPieData(realtimeRes.data.servicePie);
+            } else {
+              container.innerHTML = '<div style="color:var(--text-light);font-size:13px;">暂无数据</div>';
+            }
+          } catch(e) {
+            container.innerHTML = '<div style="color:var(--text-light);font-size:13px;">暂无数据</div>';
+          }
+        }, 300);
+      }
+
+      function renderPieData(data) {
+        const container = document.getElementById('pieChart');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-light);font-size:13px;">暂无数据</div>';
+          return;
+        }
+        const total = data.reduce((s, d) => s + d.cnt, 0);
+        let colors = ['#1677FF','#52C41A','#FAAD14','#FF4D4F','#13C2C2','#722ED1','#EB2F96'];
+        container.innerHTML = '';
+        data.forEach((d, i) => {
+          const pct = total > 0 ? (d.cnt / total * 100).toFixed(1) : 0;
+          const item = document.createElement('div');
+          item.style.cssText = 'display:flex;align-items:center;gap:8px;margin:4px 8px;font-size:13px;';
+          item.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${colors[i%colors.length]};"></span><span>${d.name||d.service_name||'未知'}</span><span style="color:var(--text-light);">${pct}%</span>`;
+          container.appendChild(item);
+        });
+        // 添加简易饼图条
+        const barRow = document.createElement('div');
+        barRow.style.cssText = 'display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;margin-top:8px;';
+        data.forEach((d, i) => {
+          const pct = total > 0 ? (d.cnt / total * 100) : 0;
+          const seg = document.createElement('div');
+          seg.style.cssText = `width:${pct}%;background:${colors[i%colors.length]};`;
+          barRow.appendChild(seg);
+        });
+        container.appendChild(barRow);
+      }
+
+      function renderRecentOrders(orders) {
+        const tbody = document.getElementById('recentOrdersBody');
+        if (!orders || orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px;">暂无订单</td></tr>';
+          return;
+        }
+        tbody.innerHTML = orders.slice(0, 10).map(o => `
+          <tr>
+            <td style="color:var(--primary);font-family:monospace;font-size:13px;">${Utils.sanitize(o.order_no)}</td>
+            <td>${Utils.sanitize(o.service_name)}</td>
+            <td>${Utils.sanitize(o.user_name)}</td>
+            <td>${Utils.formatPrice(o.price)}</td>
+            <td><span class="tag ${Utils.statusClass(o.status)}">${Utils.statusText(o.status)}</span></td>
+            <td style="font-size:12px;color:var(--text-light);">${Utils.formatTime(o.created_at)}</td>
+          </tr>
+        `).join('');
+      }
+
+      window.exportReport = function() {
+        Utils.success('报表导出功能开发中');
+      };
+
+      window.refreshData = function() {
+        document.getElementById('ordersLoading').style.display = 'block';
+        document.getElementById('ordersLoading').textContent = '刷新中...';
+        loadDashboard();
+      };
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 系统设置</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #f0f2f5; display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #001529; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px 16px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-menu .menu-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: all 0.2s; font-size: 14px; gap: 10px; }
+    .sidebar-menu .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .sidebar-menu .menu-item.active { color: #fff; background: var(--primary); }
+    .sidebar-menu .menu-item .menu-icon { font-size: 18px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer .menu-item { display: flex; align-items: center; gap: 10px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 14px; padding: 8px 0; }
+    .sidebar-footer .menu-item:hover { color: #fff; }
+    .main { margin-left: 220px; flex: 1; min-height: 100vh; }
+    .main-header { background: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
+    .main-header h2 { font-size: 18px; font-weight: 600; }
+    .main-content { padding: 24px; max-width: 900px; }
+    .section-card { background: #fff; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+    .section-card .section-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .section-card .section-header h3 { font-size: 15px; font-weight: 600; }
+    .section-card .section-body { padding: 20px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; transition: border-color 0.2s; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--primary); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .region-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .region-tag { padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .region-tag .del-region { color: var(--text-light); cursor: pointer; font-size: 14px; }
+    .region-tag .del-region:hover { color: var(--danger); }
+    .region-add { display: flex; gap: 8px; margin-top: 12px; }
+    .region-add input { flex: 1; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; }
+    .region-add input:focus { border-color: var(--primary); }
+    .region-add button { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .save-bar { position: sticky; bottom: 0; background: #fff; padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); }
+    .save-bar .save-btn { padding: 10px 32px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .save-bar .save-btn:hover { background: var(--primary-dark); }
+    .save-bar .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar-logo span, .sidebar-menu .menu-item span, .sidebar-footer .menu-item span { display: none; } .main { margin-left: 60px; } .form-row, .form-row-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo"><span style="font-size:24px;">🏠</span> <span>佳乐家管理</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item" data-page="dashboard"><span class="menu-icon">📊</span> <span>仪表盘</span></div>
+      <div class="menu-item" data-page="orders"><span class="menu-icon">📋</span> <span>订单管理</span></div>
+      <div class="menu-item" data-page="technicians"><span class="menu-icon">🔧</span> <span>师傅管理</span></div>
+      <div class="menu-item" data-page="merchants"><span class="menu-icon">🏪</span> <span>商家管理</span></div>
+      <div class="menu-item" data-page="services"><span class="menu-icon">🛠️</span> <span>服务管理</span></div>
+      <div class="menu-item" data-page="announcements"><span class="menu-icon">📢</span> <span>公告管理</span></div>
+      <div class="menu-item" data-page="dataview"><span class="menu-icon">📈</span> <span>数据大屏</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="menu-item active" data-page="settings"><span class="menu-icon">⚙️</span> <span>系统设置</span></div>
+      <div class="menu-item" id="logoutBtn"><span class="menu-icon">🚪</span> <span>退出</span></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="main-header"><h2>系统设置</h2><div class="user-info"><span id="userDisplay">管理员</span></div></div>
+    <div class="main-content" id="settingsContent">
+      <div class="loading-state">加载中...</div>
+    </div>
+    <div class="save-bar">
+      <button class="save-btn" id="saveBtn" onclick="saveSettings()">💾 保存设置</button>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+      let settingsData = {};
+      let regionsData = [];
+
+      document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+        item.addEventListener('click', function() { Utils.go(this.dataset.page + '.html'); });
+      });
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定退出登录？')) { Utils.logout(); window.location.href = 'login.html'; }
+      });
+      const userInfo = Utils.get('userInfo');
+      if (userInfo) document.getElementById('userDisplay').textContent = userInfo.username || '管理员';
+
+      loadData();
+
+      async function loadData() {
+        const [settingsRes, regionsRes] = await Promise.all([
+          API.adminGetSettings(),
+          API.adminGetRegions()
+        ]);
+        if (settingsRes.code === 200) settingsData = settingsRes.data || {};
+        if (regionsRes.code === 200) regionsData = regionsRes.data || [];
+        renderSettings();
+      }
+
+      function renderSettings() {
+        const s = settingsData;
+        const container = document.getElementById('settingsContent');
+        let html = '';
+
+        // 1. 网站基础配置
+        html += `<div class="section-card">
+          <div class="section-header"><h3>🌐 网站基础配置</h3></div>
+          <div class="section-body">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">网站名称</label><input class="form-input" id="cfg_site_name" value="${Utils.sanitize(s.site_name || '佳乐家')}"></div>
+              <div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="cfg_contact_phone" value="${Utils.sanitize(s.contact_phone || '')}"></div>
+            </div>
+          </div>
+        </div>`;
+
+        // 2. 协议管理
+        html += `<div class="section-card">
+          <div class="section-header"><h3>📄 协议管理</h3></div>
+          <div class="section-body">
+            <div class="form-group"><label class="form-label">预约协议</label><textarea class="form-textarea" id="cfg_agreement_appointment" rows="4">${Utils.sanitize(s.agreement_appointment || '')}</textarea></div>
+            <div class="form-group"><label class="form-label">平台服务协议</label><textarea class="form-textarea" id="cfg_agreement_platform" rows="4">${Utils.sanitize(s.agreement_platform || '')}</textarea></div>
+          </div>
+        </div>`;
+
+        // 3. 区域管理
+        const regionsHtml = regionsData.map(r => `<span class="region-tag" data-id="${r.id}">${Utils.sanitize(r.name)} <span class="del-region" onclick="deleteRegion(${r.id})">×</span></span>`).join('');
+        html += `<div class="section-card">
+          <div class="section-header"><h3>📍 区域管理（曹县24个乡镇）</h3></div>
+          <div class="section-body">
+            <div class="region-list" id="regionList">${regionsHtml || '<span style="color:var(--text-light);font-size:13px;">暂无区域</span>'}</div>
+            <div class="region-add">
+              <input type="text" id="newRegionName" placeholder="输入区域名称">
+              <select id="newRegionType"><option value="town">镇</option><option value="subdistrict">街道</option></select>
+              <button onclick="addRegion()">添加</button>
+            </div>
+          </div>
+        </div>`;
+
+        // 4. 超期阈值设置
+        html += `<div class="section-card">
+          <div class="section-header"><h3>⏰ 超期阈值设置</h3></div>
+          <div class="section-body">
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">超期天数</label><input class="form-input" id="cfg_overdue_days" type="number" value="${s.overdue_days || 3}"><div class="hint">订单超过此天数未完成自动完结</div></div>
+              <div class="form-group"><label class="form-label">区域单超时(分钟)</label><input class="form-input" id="cfg_region_timeout" type="number" value="${s.region_timeout || 30}"><div class="hint">超时后转入抢单池</div></div>
+              <div class="form-group"><label class="form-label">日志保留天数</label><input class="form-input" id="cfg_log_retention_days" type="number" value="${s.log_retention_days || 90}"></div>
+            </div>
+          </div>
+        </div>`;
+
+        // 5. 全局默认比例设置
+        html += `<div class="section-card">
+          <div class="section-header"><h3>📊 全局默认比例设置</h3></div>
+          <div class="section-body">
+            <div class="form-row-3">
+              <div class="form-group"><label class="form-label">默认平台抽成(%)</label><input class="form-input" id="cfg_default_platform_rate" type="number" step="0.1" value="${s.default_platform_rate || 10}"></div>
+              <div class="form-group"><label class="form-label">默认师傅抽成(%)</label><input class="form-input" id="cfg_default_technician_rate" type="number" step="0.1" value="${s.default_technician_rate || 5}"></div>
+              <div class="form-group"><label class="form-label">默认商家抽成(%)</label><input class="form-input" id="cfg_default_merchant_rate" type="number" step="0.1" value="${s.default_merchant_rate || 3}"></div>
+            </div>
+          </div>
+        </div>`;
+
+        // 6. 取消规则配置
+        html += `<div class="section-card">
+          <div class="section-header"><h3>❌ 取消规则配置</h3></div>
+          <div class="section-body">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">取消手续费(¥)</label><input class="form-input" id="cfg_cancel_fee" type="number" step="0.5" value="${s.cancel_fee || 5}"><div class="hint">用户取消订单时扣除的手续费</div></div>
+            </div>
+          </div>
+        </div>`;
+
+        // 7. 安全配置
+        html += `<div class="section-card">
+          <div class="section-header"><h3>🔒 安全配置</h3></div>
+          <div class="section-body">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">登录失败限制次数</label><input class="form-input" id="cfg_login_attempt_limit" type="number" value="${s.login_attempt_limit || 5}"><div class="hint">超过次数后账户锁定5分钟</div></div>
+              <div class="form-group"><label class="form-label">验证码有效期(秒)</label><input class="form-input" id="cfg_code_expire_seconds" type="number" value="${s.code_expire_seconds || 300}"></div>
+            </div>
+          </div>
+        </div>`;
+
+        container.innerHTML = html;
+      }
+
+      window.saveSettings = async function() {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.textContent = '保存中...';
+        const data = {};
+        const fields = [
+          'site_name', 'contact_phone', 'agreement_appointment', 'agreement_platform',
+          'overdue_days', 'region_timeout', 'log_retention_days',
+          'default_platform_rate', 'default_technician_rate', 'default_merchant_rate',
+          'cancel_fee', 'login_attempt_limit', 'code_expire_seconds'
+        ];
+        fields.forEach(f => {
+          const el = document.getElementById('cfg_' + f);
+          if (el) data[f] = el.value;
+        });
+        const res = await API.adminUpdateSettings(data);
+        btn.disabled = false;
+        btn.textContent = '💾 保存设置';
+        if (res.code === 200) {
+          Utils.success('保存成功');
+        } else {
+          Utils.error(res.message || '保存失败');
+        }
+      };
+
+      window.addRegion = async function() {
+        const name = document.getElementById('newRegionName').value.trim();
+        const type = document.getElementById('newRegionType').value;
+        if (!name) return Utils.error('请输入区域名称');
+        const res = await API.adminCreateRegion({ name, type });
+        if (res.code === 200) {
+          Utils.success('添加成功');
+          document.getElementById('newRegionName').value = '';
+          // 重新加载区域
+          const regionsRes = await API.adminGetRegions();
+          if (regionsRes.code === 200) {
+            regionsData = regionsRes.data || [];
+            renderRegionList();
+          }
+        } else {
+          Utils.error(res.message);
+        }
+      };
+
+      window.deleteRegion = async function(id) {
+        if (!confirm('确定删除该区域？')) return;
+        const res = await API.adminDeleteRegion(id);
+        if (res.code === 200) {
+          Utils.success('删除成功');
+          const regionsRes = await API.adminGetRegions();
+          if (regionsRes.code === 200) {
+            regionsData = regionsRes.data || [];
+            renderRegionList();
+          }
+        } else {
+          Utils.error(res.message);
+        }
+      };
+
+      function renderRegionList() {
+        const el = document.getElementById('regionList');
+        if (!el) return;
+        if (!regionsData || regionsData.length === 0) {
+          el.innerHTML = '<span style="color:var(--text-light);font-size:13px;">暂无区域</span>';
+          return;
+        }
+        el.innerHTML = regionsData.map(r => `<span class="region-tag" data-id="${r.id}">${Utils.sanitize(r.name)} <span class="del-region" onclick="deleteRegion(${r.id})">×</span></span>`).join('');
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 数据大屏</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #000e1a; color: #fff; min-height: 100vh; overflow-x: hidden; }
+    .screen-container { width: 100%; min-height: 100vh; padding: 20px 30px; position: relative; }
+    /* 顶部标题 */
+    .screen-header { text-align: center; padding: 20px 0 30px; position: relative; }
+    .screen-header h1 { font-size: 36px; font-weight: 700; background: linear-gradient(90deg, #1677FF, #40A9FF, #1677FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 6px; }
+    .screen-header .subtitle { color: rgba(255,255,255,0.4); font-size: 14px; margin-top: 4px; letter-spacing: 2px; }
+    .screen-header .status-indicator { position: absolute; right: 0; top: 20px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.6); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+    .status-dot.disconnected { background: var(--danger); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    /* 实时数据行 */
+    .realtime-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+    .realtime-card { background: linear-gradient(135deg, rgba(22,119,255,0.15), rgba(22,119,255,0.05)); border: 1px solid rgba(22,119,255,0.3); border-radius: 12px; padding: 20px; text-align: center; }
+    .realtime-card .value { font-size: 36px; font-weight: 700; color: #40A9FF; margin-bottom: 6px; }
+    .realtime-card .value .unit { font-size: 16px; color: rgba(255,255,255,0.5); }
+    .realtime-card .label { font-size: 14px; color: rgba(255,255,255,0.6); }
+    /* 图表区域 */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
+    .chart-card .chart-title { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+    /* 柱状图 */
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 10px; }
+    .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+    .bar { width: 70%; background: linear-gradient(to top, #1677FF, #40A9FF); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.6s ease; }
+    .bar-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+    .bar-value { font-size: 10px; color: rgba(255,255,255,0.7); margin-bottom: 2px; }
+    /* 饼图 */
+    .pie-container { display: flex; flex-direction: column; gap: 6px; }
+    .pie-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .pie-item .color-bar { width: 12px; height: 12px; border-radius: 3px; }
+    .pie-item .name { flex: 1; color: rgba(255,255,255,0.8); }
+    .pie-item .pct { color: rgba(255,255,255,0.5); }
+    .pie-bar-row { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+    /* 排行榜 */
+    .rank-list { display: flex; flex-direction: column; gap: 6px; }
+    .rank-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+    .rank-item .rank-num { width: 20px; text-align: center; font-weight: 700; color: rgba(255,255,255,0.4); }
+    .rank-item .rank-num.top3 { color: #FAAD14; }
+    .rank-item .rank-name { flex: 1; color: rgba(255,255,255,0.8); }
+    .rank-item .rank-count { color: #40A9FF; font-weight: 600; }
+    /* 底部区域 */
+    .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    /* 滚动公告 */
+    .notice-bar { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px 20px; overflow: hidden; }
+    .notice-bar .notice-title { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
+    .notice-scroll { height: 120px; overflow: hidden; position: relative; }
+    .notice-scroll-inner { animation: scrollUp 10s linear infinite; }
+    .notice-scroll-inner:hover { animation-play-state: paused; }
+    @keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+    .notice-scroll .notice-item { padding: 8px 0; font-size: 13px; color: rgba(255,255,255,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* 预警区域 */
+    .alert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .alert-card { background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.3); border-radius: 10px; padding: 16px; text-align: center; }
+    .alert-card .alert-value { font-size: 28px; font-weight: 700; color: #FF4D4F; }
+    .alert-card .alert-value.blink { animation: blink 1s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+    .alert-card .alert-label { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+    .alert-card .alert-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    /* 更新提示 */
+    .update-info { text-align: center; padding: 12px; color: rgba(255,255,255,0.3); font-size: 12px; }
+    @media (max-width: 1200px) { .realtime-row { grid-template-columns: repeat(3, 1fr); } .charts-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="screen-container">
+    <div class="screen-header">
+      <h1>佳乐家 · 数据大屏</h1>
+      <div class="subtitle">JIALEJIA V7.0 REAL-TIME MONITOR</div>
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">连接中...</span>
+        <span style="margin-left:12px;" id="updateTime"></span>
+      </div>
+    </div>
+
+    <!-- 实时数据 -->
+    <div class="realtime-row" id="realtimeRow">
+      <div class="realtime-card"><div class="value" id="rtTodayOrders">-</div><div class="label">今日订单</div></div>
+      <div class="realtime-card"><div class="value" id="rtTodayIncome">-</div><div class="label">今日成交额</div></div>
+      <div class="realtime-card"><div class="value" id="rtOnlineTechs">-</div><div class="label">在线师傅</div></div>
+      <div class="realtime-card"><div class="value" id="rtActiveOrders">-</div><div class="label">进行中订单</div></div>
+      <div class="realtime-card"><div class="value" id="rtTodayFee">-</div><div class="label">今日抽成</div></div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📊 近7天订单趋势</div>
+        <div class="bar-chart" id="trendChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🧩 服务类型占比</div>
+        <div class="pie-container" id="pieChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🏆 师傅接单排行榜</div>
+        <div class="rank-list" id="rankList"></div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="bottom-row">
+      <div class="notice-bar">
+        <div class="notice-title">📢 最新公告</div>
+        <div class="notice-scroll" id="noticeScroll">
+          <div class="notice-scroll-inner" id="noticeInner">
+            <div class="notice-item">加载中...</div>
+          </div>
+        </div>
+      </div>
+      <div class="notice-bar">
+        <div class="notice-title">⚠️ 异常预警</div>
+        <div class="alert-grid">
+          <div class="alert-card"><div class="alert-value blink" id="alertOverdue">0</div><div class="alert-label">超期订单</div><div class="alert-desc">需立即处理</div></div>
+          <div class="alert-card"><div class="alert-value" id="alertComplaints">0</div><div class="alert-label">投诉待处理</div><div class="alert-desc">含投诉与争议</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="update-info">数据每30秒自动刷新 · 佳乐家全平台服务系统 V7.0</div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+      let intervalId = null;
+      let noticeData = [];
+
+      function updateStatus(connected) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        if (connected) {
+          dot.className = 'status-dot';
+          text.textContent = '已连接';
+          text.style.color = 'rgba(255,255,255,0.6)';
+        } else {
+          dot.className = 'status-dot disconnected';
+          text.textContent = '连接异常';
+          text.style.color = '#FF4D4F';
+        }
+      }
+
+      function updateTime() {
+        document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('zh-CN');
+      }
+
+      async function loadData() {
+        try {
+          const res = await API.adminGetRealtime();
+          if (res.code !== 200) { updateStatus(false); return; }
+          updateStatus(true);
+          updateTime();
+          const d = res.data;
+          // 实时数据
+          document.getElementById('rtTodayOrders').textContent = d.todayOrders || 0;
+          document.getElementById('rtTodayIncome').innerHTML = (d.todayIncome || 0).toFixed(0) + '<span class="unit"> 元</span>';
+          document.getElementById('rtOnlineTechs').textContent = d.onlineTechs || 0;
+          document.getElementById('rtActiveOrders').textContent = d.activeOrders || 0;
+          document.getElementById('rtTodayFee').innerHTML = (d.todayFee || 0).toFixed(0) + '<span class="unit"> 元</span>';
+          // 趋势图
+          renderTrend(d.trend || []);
+          // 饼图
+          renderPie(d.servicePie || []);
+          // 排行榜
+          renderRank(d.topTechs || []);
+          // 预警
+          const overdue = d.overdueOrders || 0;
+          document.getElementById('alertOverdue').textContent = overdue;
+          document.getElementById('alertOverdue').className = 'alert-value' + (overdue > 0 ? ' blink' : '');
+          document.getElementById('alertComplaints').textContent = (d.pendingComplaints || 0) + (d.pendingDisputes || 0);
+        } catch(e) {
+          updateStatus(false);
+        }
+      }
+
+      function renderTrend(trend) {
+        const container = document.getElementById('trendChart');
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const key = Utils.formatDate(d);
+          const found = trend.find(t => t.day === key);
+          days.push({ label: (d.getMonth()+1)+'/'+d.getDate(), count: found ? found.cnt : 0 });
+        }
+        const max = Math.max(...days.map(d => d.count), 1);
+        container.innerHTML = '';
+        days.forEach(d => {
+          const g = document.createElement('div');
+          g.className = 'bar-group';
+          const h = Math.max(4, (d.count / max) * 150);
+          g.innerHTML = `<div class="bar-value">${d.count}</div><div class="bar" style="height:${h}px;"></div><div class="bar-label">${d.label}</div>`;
+          container.appendChild(g);
+        });
+      }
+
+      function renderPie(data) {
+        const container = document.getElementById('pieChart');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;">暂无数据</div>';
+          return;
+        }
+        const total = data.reduce((s, d) => s + d.cnt, 0);
+        const colors = ['#1677FF','#52C41A','#FAAD14','#FF4D4F','#13C2C2','#722ED1','#EB2F96'];
+        let html = '';
+        data.forEach((d, i) => {
+          const pct = total > 0 ? (d.cnt / total * 100).toFixed(1) : 0;
+          html += `<div class="pie-item"><span class="color-bar" style="background:${colors[i%colors.length]};"></span><span class="name">${d.name||d.service_name||'未知'}</span><span class="pct">${pct}%</span></div>`;
+        });
+        html += `<div class="pie-bar-row">`;
+        data.forEach((d, i) => {
+          const pct = total > 0 ? (d.cnt / total * 100) : 0;
+          html += `<div style="width:${pct}%;background:${colors[i%colors.length]};"></div>`;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+      }
+
+      function renderRank(techs) {
+        const container = document.getElementById('rankList');
+        if (!techs || techs.length === 0) {
+          container.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;">暂无数据</div>';
+          return;
+        }
+        container.innerHTML = techs.map((t, i) => `
+          <div class="rank-item">
+            <span class="rank-num ${i < 3 ? 'top3' : ''}">${i+1}</span>
+            <span class="rank-name">${Utils.sanitize(t.name)}</span>
+            <span class="rank-count">${t.cnt}单</span>
+          </div>
+        `).join('');
+      }
+
+      async function loadNotices() {
+        try {
+          const res = await API.getAnnouncements(1);
+          if (res.code === 200 && res.data && res.data.list) {
+            noticeData = res.data.list;
+            const inner = document.getElementById('noticeInner');
+            let html = '';
+            noticeData.concat(noticeData).forEach(a => {
+              html += `<div class="notice-item">📌 ${Utils.sanitize(a.title)}</div>`;
+            });
+            inner.innerHTML = html;
+          }
+        } catch(e) {}
+      }
+
+      // 初始加载
+      loadData();
+      loadNotices();
+      // 每30秒刷新
+      intervalId = setInterval(loadData, 30000);
+      // 公告每5分钟刷新
+      setInterval(loadNotices, 300000);
+
+      // 全屏快捷键 F
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'f' || e.key === 'F') {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

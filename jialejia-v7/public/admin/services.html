@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 服务管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #f0f2f5; display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #001529; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px 16px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-menu .menu-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: all 0.2s; font-size: 14px; gap: 10px; }
+    .sidebar-menu .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .sidebar-menu .menu-item.active { color: #fff; background: var(--primary); }
+    .sidebar-menu .menu-item .menu-icon { font-size: 18px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer .menu-item { display: flex; align-items: center; gap: 10px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 14px; padding: 8px 0; }
+    .sidebar-footer .menu-item:hover { color: #fff; }
+    .main { margin-left: 220px; flex: 1; min-height: 100vh; }
+    .main-header { background: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
+    .main-header h2 { font-size: 18px; font-weight: 600; }
+    .main-content { padding: 24px; }
+    .section-card { background: #fff; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+    .section-card .section-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .section-card .section-header h3 { font-size: 15px; font-weight: 600; }
+    .section-card .section-body { padding: 16px 20px; }
+    .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-bar select, .filter-bar input { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
+    .filter-bar select:focus, .filter-bar input:focus { border-color: var(--primary); }
+    .filter-bar .btn { padding: 8px 16px; font-size: 13px; }
+    .table-wrap { overflow-x: auto; }
+    .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table-wrap th { text-align: left; padding: 10px 10px; font-size: 12px; color: var(--text-light); font-weight: 500; border-bottom: 1px solid var(--border); background: #fafafa; white-space: nowrap; }
+    .table-wrap td { padding: 10px; border-bottom: 1px solid var(--border); }
+    .table-wrap tr:hover td { background: #fafafa; }
+    .table-wrap .action-link { color: var(--primary); cursor: pointer; margin-right: 8px; font-size: 12px; }
+    .table-wrap .action-link:hover { text-decoration: underline; }
+    .table-wrap .action-link.danger { color: var(--danger); }
+    .category-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .category-item { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .category-item:hover { border-color: var(--primary); }
+    .category-item.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .category-item .del-cat { color: var(--text-light); cursor: pointer; font-size: 14px; margin-left: 4px; }
+    .category-item .del-cat:hover { color: var(--danger); }
+    .loading-state { text-align: center; padding: 40px; color: var(--text-light); }
+    @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar-logo span, .sidebar-menu .menu-item span, .sidebar-footer .menu-item span { display: none; } .main { margin-left: 60px; } }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo"><span style="font-size:24px;">🏠</span> <span>佳乐家管理</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item" data-page="dashboard"><span class="menu-icon">📊</span> <span>仪表盘</span></div>
+      <div class="menu-item" data-page="orders"><span class="menu-icon">📋</span> <span>订单管理</span></div>
+      <div class="menu-item" data-page="technicians"><span class="menu-icon">🔧</span> <span>师傅管理</span></div>
+      <div class="menu-item" data-page="merchants"><span class="menu-icon">🏪</span> <span>商家管理</span></div>
+      <div class="menu-item active" data-page="services"><span class="menu-icon">🛠️</span> <span>服务管理</span></div>
+      <div class="menu-item" data-page="announcements"><span class="menu-icon">📢</span> <span>公告管理</span></div>
+      <div class="menu-item" data-page="dataview"><span class="menu-icon">📈</span> <span>数据大屏</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="menu-item" data-page="settings"><span class="menu-icon">⚙️</span> <span>系统设置</span></div>
+      <div class="menu-item" id="logoutBtn"><span class="menu-icon">🚪</span> <span>退出</span></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="main-header"><h2>服务管理</h2><div class="user-info"><span id="userDisplay">管理员</span></div></div>
+    <div class="main-content">
+      <!-- 分类管理 -->
+      <div class="section-card">
+        <div class="section-header">
+          <h3>分类管理</h3>
+          <button class="btn btn-sm btn-primary" onclick="showAddCategory()">+ 添加分类</button>
+        </div>
+        <div class="section-body">
+          <div class="category-list" id="categoryList"></div>
+        </div>
+      </div>
+
+      <!-- 项目管理 -->
+      <div class="section-card">
+        <div class="section-header">
+          <h3>项目管理</h3>
+          <div class="flex gap-8">
+            <select id="filterCategory" onchange="filterItems()"><option value="">全部分类</option></select>
+            <button class="btn btn-sm btn-primary" onclick="showAddItem()">+ 添加项目</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>名称</th><th>分类</th><th>价格区间</th><th>预估时长</th><th>抽成比例</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="itemsBody"></tbody>
+            </table>
+          </div>
+          <div class="loading-state" id="loadingState">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑分类弹窗 -->
+  <div class="modal-overlay hidden" id="categoryModal">
+    <div class="modal-box" style="max-width:380px;">
+      <div class="modal-title" id="categoryModalTitle">添加分类</div>
+      <div class="form-group"><label class="form-label">分类名称</label><input class="form-input" id="catName" placeholder="请输入分类名称"></div>
+      <div class="form-group"><label class="form-label">图标（emoji）</label><input class="form-input" id="catIcon" placeholder="如：❄️" maxlength="4"></div>
+      <div class="form-group"><label class="form-label">排序</label><input class="form-input" id="catSort" type="number" value="0"></div>
+      <div class="flex gap-8" style="justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeCategoryModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmCategory()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑项目弹窗 -->
+  <div class="modal-overlay hidden" id="itemModal">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-title" id="itemModalTitle">添加项目</div>
+      <div class="form-group"><label class="form-label">项目名称</label><input class="form-input" id="itemName" placeholder="请输入项目名称"></div>
+      <div class="form-group"><label class="form-label">所属分类</label><select class="form-select" id="itemCategory"></select></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">最低价(¥)</label><input class="form-input" id="itemPriceMin" type="number" step="1" value="0"></div>
+        <div class="form-group"><label class="form-label">最高价(¥)</label><input class="form-input" id="itemPriceMax" type="number" step="1" value="0"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">预估时长(分钟)</label><input class="form-input" id="itemDuration" type="number" value="60"></div>
+        <div class="form-group"><label class="form-label">排序分</label><input class="form-input" id="itemSort" type="number" value="0"></div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label class="form-label">平台抽成(%)</label><input class="form-input" id="itemPlatformRate" type="number" step="0.1" value="10"></div>
+        <div class="form-group"><label class="form-label">师傅抽成(%)</label><input class="form-input" id="itemTechRate" type="number" step="0.1" value="5"></div>
+        <div class="form-group"><label class="form-label">商家抽成(%)</label><input class="form-input" id="itemMerRate" type="number" step="0.1" value="3"></div>
+      </div>
+      <div class="flex gap-8" style="justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeItemModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmItem()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+      let categories = [];
+      let items = [];
+      let editCatId = null;
+      let editItemId = null;
+
+      document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+        item.addEventListener('click', function() { Utils.go(this.dataset.page + '.html'); });
+      });
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定退出登录？')) { Utils.logout(); window.location.href = 'login.html'; }
+      });
+      const userInfo = Utils.get('userInfo');
+      if (userInfo) document.getElementById('userDisplay').textContent = userInfo.username || '管理员';
+
+      loadServices();
+
+      async function loadServices() {
+        document.getElementById('loadingState').style.display = 'block';
+        const res = await API.adminGetServices();
+        document.getElementById('loadingState').style.display = 'none';
+        if (res.code !== 200) return;
+        categories = res.data.categories || [];
+        items = res.data.items || [];
+        renderCategories();
+        renderItems();
+        // 填充分类下拉
+        const sel1 = document.getElementById('filterCategory');
+        const sel2 = document.getElementById('itemCategory');
+        sel1.innerHTML = '<option value="">全部分类</option>';
+        sel2.innerHTML = '';
+        categories.forEach(c => {
+          sel1.innerHTML += `<option value="${c.id}">${c.icon||''} ${c.name}</option>`;
+          sel2.innerHTML += `<option value="${c.id}">${c.icon||''} ${c.name}</option>`;
+        });
+      }
+
+      function renderCategories() {
+        const el = document.getElementById('categoryList');
+        if (!categories || categories.length === 0) {
+          el.innerHTML = '<span style="color:var(--text-light);font-size:13px;">暂无分类</span>';
+          return;
+        }
+        el.innerHTML = categories.map(c => `
+          <div class="category-item" onclick="showEditCategory('${c.id}')">
+            ${c.icon||'📦'} ${Utils.sanitize(c.name)}
+            <span class="del-cat" onclick="event.stopPropagation();deleteCategory('${c.id}')">×</span>
+          </div>
+        `).join('');
+      }
+
+      function renderItems() {
+        const tbody = document.getElementById('itemsBody');
+        const filterCid = document.getElementById('filterCategory').value;
+        let filtered = items;
+        if (filterCid) filtered = items.filter(i => String(i.category_id) === filterCid);
+        if (!filtered || filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-light);">暂无项目</td></tr>';
+          return;
+        }
+        tbody.innerHTML = filtered.map(i => {
+          const cat = categories.find(c => c.id === i.category_id);
+          return `<tr>
+            <td><strong>${Utils.sanitize(i.name)}</strong></td>
+            <td>${cat ? Utils.sanitize(cat.name) : '-'}</td>
+            <td>${Utils.formatPrice(i.price_min)} ~ ${Utils.formatPrice(i.price_max)}</td>
+            <td>${i.duration || 60}分钟</td>
+            <td><span style="font-size:12px;">平台${i.platform_rate||10}% / 师傅${i.technician_rate||5}% / 商家${i.merchant_rate||3}%</span></td>
+            <td><span class="tag ${i.status === 1 ? 'tag-completed' : 'tag-cancelled'}">${i.status === 1 ? '上架' : '下架'}</span></td>
+            <td>
+              <span class="action-link" onclick="showEditItem('${i.id}')">编辑</span>
+              <span class="action-link ${i.status === 1 ? 'danger' : ''}" onclick="toggleItemStatus('${i.id}','${i.status}')">${i.status === 1 ? '下架' : '上架'}</span>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+
+      window.filterItems = function() { renderItems(); };
+
+      // 分类操作
+      window.showAddCategory = function() {
+        editCatId = null;
+        document.getElementById('categoryModalTitle').textContent = '添加分类';
+        document.getElementById('catName').value = '';
+        document.getElementById('catIcon').value = '';
+        document.getElementById('catSort').value = '0';
+        document.getElementById('categoryModal').classList.remove('hidden');
+      };
+      window.showEditCategory = function(id) {
+        const c = categories.find(x => String(x.id) === String(id));
+        if (!c) return;
+        editCatId = id;
+        document.getElementById('categoryModalTitle').textContent = '编辑分类';
+        document.getElementById('catName').value = c.name || '';
+        document.getElementById('catIcon').value = c.icon || '';
+        document.getElementById('catSort').value = c.sort_order || 0;
+        document.getElementById('categoryModal').classList.remove('hidden');
+      };
+      window.closeCategoryModal = function() { document.getElementById('categoryModal').classList.add('hidden'); };
+      window.confirmCategory = async function() {
+        const name = document.getElementById('catName').value.trim();
+        const icon = document.getElementById('catIcon').value.trim();
+        const sort_order = parseInt(document.getElementById('catSort').value) || 0;
+        if (!name) return Utils.error('请输入分类名称');
+        if (editCatId) {
+          const res = await API.adminUpdateCategory(editCatId, { name, icon, sort_order });
+          if (res.code === 200) { Utils.success('更新成功'); closeCategoryModal(); loadServices(); }
+          else Utils.error(res.message);
+        } else {
+          const res = await API.adminCreateCategory({ name, icon, sort_order });
+          if (res.code === 200) { Utils.success('添加成功'); closeCategoryModal(); loadServices(); }
+          else Utils.error(res.message);
+        }
+      };
+      window.deleteCategory = async function(id) {
+        if (!confirm('确定删除该分类？')) return;
+        const res = await API.adminDeleteCategory(id);
+        if (res.code === 200) { Utils.success('删除成功'); loadServices(); }
+        else Utils.error(res.message);
+      };
+
+      // 项目操作
+      window.showAddItem = function() {
+        editItemId = null;
+        document.getElementById('itemModalTitle').textContent = '添加项目';
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemCategory').value = categories.length > 0 ? categories[0].id : '';
+        document.getElementById('itemPriceMin').value = '0';
+        document.getElementById('itemPriceMax').value = '0';
+        document.getElementById('itemDuration').value = '60';
+        document.getElementById('itemSort').value = '0';
+        document.getElementById('itemPlatformRate').value = '10';
+        document.getElementById('itemTechRate').value = '5';
+        document.getElementById('itemMerRate').value = '3';
+        document.getElementById('itemModal').classList.remove('hidden');
+      };
+      window.showEditItem = function(id) {
+        const i = items.find(x => String(x.id) === String(id));
+        if (!i) return;
+        editItemId = id;
+        document.getElementById('itemModalTitle').textContent = '编辑项目';
+        document.getElementById('itemName').value = i.name || '';
+        document.getElementById('itemCategory').value = i.category_id || '';
+        document.getElementById('itemPriceMin').value = i.price_min || 0;
+        document.getElementById('itemPriceMax').value = i.price_max || 0;
+        document.getElementById('itemDuration').value = i.duration || 60;
+        document.getElementById('itemSort').value = i.sort_score || 0;
+        document.getElementById('itemPlatformRate').value = i.platform_rate || 10;
+        document.getElementById('itemTechRate').value = i.technician_rate || 5;
+        document.getElementById('itemMerRate').value = i.merchant_rate || 3;
+        document.getElementById('itemModal').classList.remove('hidden');
+      };
+      window.closeItemModal = function() { document.getElementById('itemModal').classList.add('hidden'); };
+      window.confirmItem = async function() {
+        const name = document.getElementById('itemName').value.trim();
+        const category_id = parseInt(document.getElementById('itemCategory').value);
+        const price_min = parseFloat(document.getElementById('itemPriceMin').value) || 0;
+        const price_max = parseFloat(document.getElementById('itemPriceMax').value) || 0;
+        const duration = parseInt(document.getElementById('itemDuration').value) || 60;
+        const sort_score = parseInt(document.getElementById('itemSort').value) || 0;
+        const platform_rate = parseFloat(document.getElementById('itemPlatformRate').value) || 10;
+        const technician_rate = parseFloat(document.getElementById('itemTechRate').value) || 5;
+        const merchant_rate = parseFloat(document.getElementById('itemMerRate').value) || 3;
+        if (!name) return Utils.error('请输入项目名称');
+        if (!category_id) return Utils.error('请选择分类');
+        const data = { name, category_id, price_min, price_max, duration, sort_score, platform_rate, technician_rate, merchant_rate };
+        if (editItemId) {
+          const res = await API.adminUpdateService(editItemId, data);
+          if (res.code === 200) { Utils.success('更新成功'); closeItemModal(); loadServices(); }
+          else Utils.error(res.message);
+        } else {
+          const res = await API.adminCreateService(data);
+          if (res.code === 200) { Utils.success('添加成功'); closeItemModal(); loadServices(); }
+          else Utils.error(res.message);
+        }
+      };
+      window.toggleItemStatus = async function(id, curStatus) {
+        const newStatus = curStatus === '1' ? 0 : 1;
+        const action = newStatus === 0 ? '下架' : '上架';
+        if (!confirm(`确定${action}该项目？`)) return;
+        const res = await API.adminUpdateService(id, { status: newStatus });
+        if (res.code === 200) { Utils.success(`${action}成功`); loadServices(); }
+        else Utils.error(res.message);
+      };
+
+      document.getElementById('categoryModal').addEventListener('click', function(e) { if (e.target === this) closeCategoryModal(); });
+      document.getElementById('itemModal').addEventListener('click', function(e) { if (e.target === this) closeItemModal(); });
+    })();
+  </script>
+</body>
+</html>

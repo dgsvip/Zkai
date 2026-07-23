@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的 - 佳乐家</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    /* ===== 我的页面专用样式 ===== */
+    /* 登录界面 */
+    .login-section {
+      padding: 40px 32px 20px;
+      text-align: center;
+    }
+    .login-section .login-icon { font-size: 56px; margin-bottom: 16px; }
+    .login-section .login-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .login-section .login-desc { font-size: 14px; color: var(--text-light); margin-bottom: 32px; }
+    .login-section .form-group { text-align: left; }
+    .login-section .code-row { display: flex; gap: 10px; }
+    .login-section .code-row .form-input { flex: 1; }
+    .login-section .code-row .btn-send { flex-shrink: 0; padding: 12px 16px; font-size: 13px; }
+    .verify-code-display {
+      font-size: 32px; font-weight: 700; color: var(--primary);
+      border: 2px solid var(--primary); border-radius: 12px;
+      padding: 12px 16px; text-align: center; margin: 12px 0;
+      letter-spacing: 8px; background: var(--primary-light);
+    }
+
+    /* 用户信息头部 */
+    .profile-header {
+      background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%);
+      padding: 32px 20px 24px;
+      display: flex; align-items: center; gap: 16px;
+      color: #fff;
+    }
+    .profile-header .ph-avatar {
+      width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+      background: rgba(255,255,255,0.2); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .profile-header .ph-info { flex: 1; }
+    .profile-header .ph-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .profile-header .ph-phone { font-size: 14px; opacity: 0.85; }
+
+    /* 功能入口列表 */
+    .menu-list { padding: 12px 16px; }
+    .menu-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; background: var(--bg-white); border-radius: var(--radius);
+      margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .menu-item:active { transform: scale(0.98); }
+    .menu-item .mi-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .menu-item .mi-content { flex: 1; }
+    .menu-item .mi-title { font-size: 14px; font-weight: 500; }
+    .menu-item .mi-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .menu-item .mi-arrow { color: var(--text-light); font-size: 16px; }
+
+    /* 退出按钮 */
+    .logout-btn {
+      margin: 24px 16px;
+      padding: 14px; border-radius: var(--radius);
+      background: var(--bg-white); border: 1px solid var(--danger);
+      color: var(--danger); text-align: center; font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .logout-btn:active { background: #FFF2F0; }
+
+    /* 地址管理 */
+    .address-card {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px; background: var(--bg); border-radius: var(--radius);
+      margin-bottom: 10px; position: relative;
+    }
+    .address-card .ac-info { flex: 1; }
+    .address-card .ac-label {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 500; margin-right: 6px;
+    }
+    .address-card .ac-label-home { background: #E6F4FF; color: var(--primary); }
+    .address-card .ac-label-company { background: #F6FFED; color: var(--success); }
+    .address-card .ac-label-other { background: #FFF7E6; color: #D48806; }
+    .address-card .ac-default { background: #F0F5FF; color: var(--primary); }
+    .address-card .ac-address { font-size: 14px; margin-top: 4px; }
+    .address-card .ac-actions { display: flex; gap: 10px; font-size: 13px; color: var(--text-light); margin-top: 6px; }
+    .address-card .ac-actions span { cursor: pointer; }
+    .address-card .ac-actions span:active { color: var(--primary); }
+    .address-card .ac-actions .ac-delete { color: var(--danger); }
+
+    /* 地址表单弹窗 */
+    .address-form { padding: 0; }
+    .address-form .form-group { margin-bottom: 14px; }
+    .address-form .label-tags { display: flex; gap: 8px; }
+    .address-form .label-tag {
+      padding: 6px 16px; border-radius: 16px; font-size: 13px;
+      cursor: pointer; border: 1.5px solid var(--border); background: var(--bg);
+      transition: all 0.2s;
+    }
+    .address-form .label-tag.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+    .address-form .default-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .address-form .default-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+
+    /* 公告列表 */
+    .announcement-item {
+      padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .announcement-item:last-child { border-bottom: none; }
+    .announcement-item .a-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .announcement-item .a-time { font-size: 12px; color: var(--text-light); }
+  </style>
+</head>
+<body>
+<div class="page" id="app">
+  <!-- 登录界面 -->
+  <div id="loginSection" class="login-section">
+    <div class="login-icon">👤</div>
+    <div class="login-title">登录/注册</div>
+    <div class="login-desc">登录后即可管理您的订单和地址信息</div>
+    <div class="form-group">
+      <label class="form-label">手机号</label>
+      <input class="form-input" id="loginPhone" placeholder="请输入手机号" maxlength="11" type="tel">
+    </div>
+    <div class="form-group">
+      <label class="form-label">验证码</label>
+      <div class="code-row">
+        <input class="form-input" id="loginCode" placeholder="请输入验证码" maxlength="4">
+        <button class="btn btn-outline btn-send" id="btnSendCode">获取验证码</button>
+      </div>
+    </div>
+    <div id="verifyCodeDisplay" class="verify-code-display hidden">----</div>
+    <button class="btn btn-primary btn-lg btn-block mt-16" id="btnLogin">登录</button>
+  </div>
+
+  <!-- 已登录界面 -->
+  <div id="profileSection" class="hidden">
+    <!-- 用户信息头部 -->
+    <div class="profile-header">
+      <div class="ph-avatar" id="userAvatar">用</div>
+      <div class="ph-info">
+        <div class="ph-name" id="userName">用户</div>
+        <div class="ph-phone" id="userPhone">138****0000</div>
+      </div>
+    </div>
+
+    <!-- 功能入口 -->
+    <div class="menu-list">
+      <div class="menu-item" data-action="orders">
+        <div class="mi-icon" style="background:#E6F4FF;color:var(--primary);">📋</div>
+        <div class="mi-content">
+          <div class="mi-title">我的订单</div>
+          <div class="mi-desc">查看和管理您的服务订单</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+
+      <div class="menu-item" data-action="addresses">
+        <div class="mi-icon" style="background:#F6FFED;color:var(--success);">📍</div>
+        <div class="mi-content">
+          <div class="mi-title">地址管理</div>
+          <div class="mi-desc">管理您的常用服务地址</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+
+      <div class="menu-item" data-action="announcements">
+        <div class="mi-icon" style="background:#FFF7E6;color:#D48806;">📢</div>
+        <div class="mi-content">
+          <div class="mi-title">历史公告</div>
+          <div class="mi-desc">查看平台发布的公告消息</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+
+      <div class="menu-item" data-action="agreement">
+        <div class="mi-icon" style="background:#F0F5FF;color:var(--primary);">📄</div>
+        <div class="mi-content">
+          <div class="mi-title">平台协议</div>
+          <div class="mi-desc">查看预约协议和平台服务协议</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+
+      <div class="menu-item" data-action="contact">
+        <div class="mi-icon" style="background:#FFF0F6;color:#EB2F96;">📞</div>
+        <div class="mi-content">
+          <div class="mi-title">联系客服</div>
+          <div class="mi-desc">如有问题请拨打客服热线</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+
+      <div class="menu-item" data-action="about">
+        <div class="mi-icon" style="background:#F0F5FF;color:var(--primary);">ℹ️</div>
+        <div class="mi-content">
+          <div class="mi-title">关于我们</div>
+          <div class="mi-desc">了解佳乐家平台</div>
+        </div>
+        <span class="mi-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- 退出登录 -->
+    <div class="logout-btn" id="btnLogout">退出登录</div>
+  </div>
+
+  <!-- 地址管理弹窗 -->
+  <div class="modal-overlay hidden" id="addressModal">
+    <div class="slide-selector" style="max-height:80vh;">
+      <div class="slide-selector-header">
+        <span class="ss-title">地址管理</span>
+        <span class="ss-close" id="addressModalClose">✕</span>
+      </div>
+      <div class="slide-selector-body" style="padding:12px 16px;">
+        <div id="addressList"></div>
+        <button class="btn btn-outline btn-block mt-12" id="btnAddAddress">＋ 添加地址</button>
+
+        <!-- 地址表单 -->
+        <div id="addressForm" class="address-form hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div class="form-group">
+            <label class="form-label">街道/乡镇 <span class="text-danger">*</span></label>
+            <select class="form-select" id="addrRegion">
+              <option value="">请选择</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">详细地址</label>
+            <input class="form-input" id="addrAddress" placeholder="如：XX小区3号楼2单元501">
+          </div>
+          <div class="form-group">
+            <label class="form-label">标签</label>
+            <div class="label-tags" id="addrLabels">
+              <span class="label-tag" data-label="家">🏠 家</span>
+              <span class="label-tag" data-label="公司">🏢 公司</span>
+              <span class="label-tag" data-label="父母家">👴 父母家</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="default-row">
+              <input type="checkbox" id="addrDefault">
+              <label for="addrDefault">设为默认地址</label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-outline btn-block" id="btnCancelAddress">取消</button>
+            <button class="btn btn-primary btn-block" id="btnSaveAddress">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 公告列表弹窗 -->
+  <div class="modal-overlay hidden" id="announcementModal">
+    <div class="modal-box" style="max-height:70vh;">
+      <div class="modal-title">历史公告</div>
+      <div id="announcementList"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="announcementModalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 协议弹窗 -->
+  <div class="modal-overlay hidden" id="agreementModal">
+    <div class="modal-box" style="max-height:70vh;">
+      <div class="modal-title" id="agreementModalTitle">协议内容</div>
+      <div id="agreementModalContent" style="font-size:13px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap;"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="agreementModalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于弹窗 -->
+  <div class="modal-overlay hidden" id="aboutModal">
+    <div class="modal-box" style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;">🏠</div>
+      <div class="modal-title">关于佳乐家</div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin-top:12px;text-align:left;">
+        <p>佳乐家便民服务平台，致力于为山东省菏泽市曹县居民提供便捷、高效的家电维修、水电暖通等便民服务。</p>
+        <p style="margin-top:12px;">平台通过智能匹配系统，快速为您安排专业师傅上门服务，让您足不出户解决生活难题。</p>
+        <p style="margin-top:12px;">客服热线：0530-1234567</p>
+        <p style="margin-top:4px;">服务时间：08:00 - 20:00</p>
+      </div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="aboutModalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../common.js"></script>
+<script>
+(function() {
+  const app = document.getElementById('app');
+
+  // ===== 状态 =====
+  const state = {
+    loggedIn: false,
+    token: null,
+    user: null,
+    addresses: [],
+    announcements: [],
+    editingAddress: null,
+    selectedLabel: '家'
+  };
+
+  const REGIONS = [
+    '磐石街道','曹城街道','青菏街道','郑庄街道','倪集街道',
+    '庄寨镇','普连集镇','古营集镇','侯集镇','苏集镇',
+    '孙老家镇','阎店楼镇','梁堤头镇','安蔡楼镇','大集镇',
+    '王集镇','楼庄镇','韩集镇','砖庙镇','常乐集镇',
+    '魏湾镇','仵楼镇','邵庄镇','朱洪庙镇'
+  ];
+
+  // ===== 初始化 =====
+  async function init() {
+    const token = Utils.getToken();
+    if (token) {
+      API.token = token;
+      state.token = token;
+      state.loggedIn = true;
+      await loadUserProfile();
+      showProfile();
+    }
+    bindEvents();
+  }
+
+  // ===== 绑定事件 =====
+  function bindEvents() {
+    // 手机号输入
+    document.getElementById('loginPhone').addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+    });
+    document.getElementById('loginCode').addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+    });
+
+    // 发送验证码
+    document.getElementById('btnSendCode').addEventListener('click', function() {
+      sendCode();
+    });
+
+    // 登录
+    document.getElementById('btnLogin').addEventListener('click', function() {
+      doLogin();
+    });
+
+    // 功能入口点击
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const action = this.dataset.action;
+        handleMenuAction(action);
+      });
+    });
+
+    // 退出登录
+    document.getElementById('btnLogout').addEventListener('click', function() {
+      if (confirm('确定要退出登录吗？')) {
+        Utils.logout();
+      }
+    });
+
+    // 地址管理
+    document.getElementById('addressModalClose').addEventListener('click', function() {
+      document.getElementById('addressModal').classList.add('hidden');
+    });
+    document.getElementById('btnAddAddress').addEventListener('click', function() {
+      showAddressForm(null);
+    });
+    document.getElementById('btnCancelAddress').addEventListener('click', function() {
+      document.getElementById('addressForm').classList.add('hidden');
+    });
+    document.getElementById('btnSaveAddress').addEventListener('click', function() {
+      saveAddress();
+    });
+
+    // 地址标签选择
+    document.getElementById('addrLabels').addEventListener('click', function(e) {
+      const tag = e.target.closest('.label-tag');
+      if (tag) {
+        document.querySelectorAll('.label-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        state.selectedLabel = tag.dataset.label;
+      }
+    });
+
+    // 公告弹窗
+    document.getElementById('announcementModalClose').addEventListener('click', function() {
+      document.getElementById('announcementModal').classList.add('hidden');
+    });
+
+    // 协议弹窗
+    document.getElementById('agreementModalClose').addEventListener('click', function() {
+      document.getElementById('agreementModal').classList.add('hidden');
+    });
+
+    // 关于弹窗
+    document.getElementById('aboutModalClose').addEventListener('click', function() {
+      document.getElementById('aboutModal').classList.add('hidden');
+    });
+
+    // 遮罩关闭
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+      });
+    });
+  }
+
+  // ===== 发送验证码 =====
+  let countdown = 0;
+  let timer = null;
+
+  async function sendCode() {
+    const phone = document.getElementById('loginPhone').value;
+    if (!Utils.validatePhone(phone)) {
+      Utils.toast('请输入正确的手机号');
+      return;
+    }
+    if (countdown > 0) return;
+
+    const btn = document.getElementById('btnSendCode');
+    btn.disabled = true;
+    btn.textContent = '发送中...';
+
+    try {
+      let res;
+      try {
+        res = await API.sendCode(phone);
+      } catch (e) {
+        res = null;
+      }
+
+      let codeData = null;
+      if (res && res.code === 200 && res.data && res.data.code) {
+        codeData = res.data.code;
+      }
+
+      if (codeData) {
+        state.verifyCode = String(codeData);
+        document.getElementById('verifyCodeDisplay').textContent = state.verifyCode;
+        document.getElementById('verifyCodeDisplay').classList.remove('hidden');
+        document.getElementById('loginCode').value = state.verifyCode;
+        Utils.toast('验证码已生成');
+      } else {
+        const mockCode = String(1000 + Math.floor(Math.random() * 9000));
+        state.verifyCode = mockCode;
+        document.getElementById('verifyCodeDisplay').textContent = mockCode;
+        document.getElementById('verifyCodeDisplay').classList.remove('hidden');
+        document.getElementById('loginCode').value = mockCode;
+        Utils.toast('验证码已生成（开发模式）');
+      }
+    } catch (e) {
+      const mockCode = String(1000 + Math.floor(Math.random() * 9000));
+      state.verifyCode = mockCode;
+      document.getElementById('verifyCodeDisplay').textContent = mockCode;
+      document.getElementById('verifyCodeDisplay').classList.remove('hidden');
+      document.getElementById('loginCode').value = mockCode;
+      Utils.toast('验证码已生成（开发模式）');
+    }
+
+    countdown = 60;
+    btn.textContent = `${countdown}s`;
+    timer = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        clearInterval(timer);
+        btn.disabled = false;
+        btn.textContent = '重新获取';
+      } else {
+        btn.textContent = `${countdown}s`;
+      }
+    }, 1000);
+  }
+
+  // ===== 登录 =====
+  async function doLogin() {
+    const phone = document.getElementById('loginPhone').value;
+    const code = document.getElementById('loginCode').value;
+
+    if (!Utils.validatePhone(phone)) {
+      Utils.toast('请输入正确的手机号');
+      return;
+    }
+    if (!code || code.length < 4) {
+      Utils.toast('请输入验证码');
+      return;
+    }
+
+    try {
+      const res = await API.login(phone, code);
+      if (res.code === 200 && res.data) {
+        state.token = res.data.token;
+        state.user = res.data.user;
+        Utils.set('token', res.data.token);
+        Utils.set('userInfo', res.data.user);
+        API.token = res.data.token;
+        state.loggedIn = true;
+        await loadUserProfile();
+        showProfile();
+      } else {
+        // 模拟登录成功
+        state.token = 'mock_token_' + phone;
+        state.user = { id: 1, phone: phone, nickname: '用户' + phone.slice(-4) };
+        Utils.set('token', state.token);
+        Utils.set('userInfo', state.user);
+        API.token = state.token;
+        state.loggedIn = true;
+        state.user.phone = phone;
+        await loadUserProfile();
+        showProfile();
+        if (res.message) Utils.toast(res.message);
+      }
+    } catch (e) {
+      // 降级处理
+      state.token = 'mock_token_' + phone;
+      state.user = { id: 1, phone: phone, nickname: '用户' + phone.slice(-4) };
+      Utils.set('token', state.token);
+      Utils.set('userInfo', state.user);
+      API.token = state.token;
+      state.loggedIn = true;
+      state.user.phone = phone;
+      await loadUserProfile();
+      showProfile();
+      Utils.toast('登录成功（开发模式）');
+    }
+  }
+
+  // ===== 加载用户信息 =====
+  async function loadUserProfile() {
+    try {
+      const res = await API.getUserProfile();
+      if (res.code === 200 && res.data) {
+        state.user = res.data;
+        state.addresses = res.data.addresses || [];
+        Utils.set('userInfo', res.data);
+      }
+    } catch (e) {}
+    // 确保有默认值
+    if (!state.user) {
+      state.user = Utils.get('userInfo') || { nickname: '用户', phone: '13800000000' };
+    }
+    if (!state.addresses) state.addresses = [];
+  }
+
+  // ===== 显示已登录界面 =====
+  function showProfile() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('profileSection').classList.remove('hidden');
+
+    const user = state.user || {};
+    const name = user.nickname || '用户';
+    const phone = user.phone || '';
+
+    document.getElementById('userAvatar').textContent = name[0] || '用';
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userPhone').textContent = phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+  }
+
+  // ===== 功能入口处理 =====
+  function handleMenuAction(action) {
+    switch (action) {
+      case 'orders':
+        window.location.href = 'orders.html';
+        break;
+      case 'addresses':
+        showAddresses();
+        break;
+      case 'announcements':
+        showAnnouncements();
+        break;
+      case 'agreement':
+        showAgreements();
+        break;
+      case 'contact':
+        Utils.toast('客服热线：0530-1234567');
+        break;
+      case 'about':
+        document.getElementById('aboutModal').classList.remove('hidden');
+        break;
+    }
+  }
+
+  // ===== 地址管理 =====
+  async function showAddresses() {
+    await loadUserProfile();
+    renderAddresses();
+    document.getElementById('addressModal').classList.remove('hidden');
+  }
+
+  function renderAddresses() {
+    const container = document.getElementById('addressList');
+    if (state.addresses.length === 0) {
+      container.innerHTML = '<div class="empty" style="padding:20px;"><p>暂无地址，请添加</p></div>';
+      return;
+    }
+
+    container.innerHTML = state.addresses.map(addr => {
+      const labelClass = addr.label === '家' ? 'ac-label-home' : addr.label === '公司' ? 'ac-label-company' : 'ac-label-other';
+      return `<div class="address-card">
+        <div class="ac-info">
+          <div>
+            <span class="ac-label ${labelClass}">${addr.label || '其他'}</span>
+            ${addr.is_default ? '<span class="ac-label ac-default">默认</span>' : ''}
+          </div>
+          <div class="ac-address">${addr.region || ''} ${addr.address || ''}</div>
+          <div class="ac-actions">
+            <span class="ac-edit" data-id="${addr.id}">编辑</span>
+            <span class="ac-delete" data-id="${addr.id}">删除</span>
+            ${!addr.is_default ? `<span class="ac-set-default" data-id="${addr.id}">设为默认</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // 绑定地址操作
+    container.querySelectorAll('.ac-edit').forEach(el => {
+      el.addEventListener('click', function() {
+        const id = parseInt(this.dataset.id);
+        const addr = state.addresses.find(a => a.id === id);
+        if (addr) showAddressForm(addr);
+      });
+    });
+    container.querySelectorAll('.ac-delete').forEach(el => {
+      el.addEventListener('click', function() {
+        const id = parseInt(this.dataset.id);
+        deleteAddress(id);
+      });
+    });
+    container.querySelectorAll('.ac-set-default').forEach(el => {
+      el.addEventListener('click', function() {
+        const id = parseInt(this.dataset.id);
+        setDefaultAddress(id);
+      });
+    });
+  }
+
+  function showAddressForm(addr) {
+    const form = document.getElementById('addressForm');
+    form.classList.remove('hidden');
+
+    // 填充区域下拉
+    const select = document.getElementById('addrRegion');
+    select.innerHTML = '<option value="">请选择</option>' + REGIONS.map(r => `<option value="${r}">${r}</option>`).join('');
+
+    if (addr) {
+      state.editingAddress = addr;
+      select.value = addr.region || '';
+      document.getElementById('addrAddress').value = addr.address || '';
+      document.getElementById('addrDefault').checked = !!addr.is_default;
+      // 标签
+      state.selectedLabel = addr.label || '家';
+      document.querySelectorAll('.label-tag').forEach(t => {
+        t.classList.toggle('active', t.dataset.label === state.selectedLabel);
+      });
+      document.getElementById('btnSaveAddress').textContent = '更新';
+    } else {
+      state.editingAddress = null;
+      select.value = '';
+      document.getElementById('addrAddress').value = '';
+      document.getElementById('addrDefault').checked = false;
+      state.selectedLabel = '家';
+      document.querySelectorAll('.label-tag').forEach((t, i) => {
+        t.classList.toggle('active', i === 0);
+      });
+      document.getElementById('btnSaveAddress').textContent = '保存';
+    }
+  }
+
+  async function saveAddress() {
+    const region = document.getElementById('addrRegion').value;
+    const address = document.getElementById('addrAddress').value;
+    const isDefault = document.getElementById('addrDefault').checked;
+
+    if (!region) {
+      Utils.toast('请选择街道/乡镇');
+      return;
+    }
+
+    const data = {
+      label: state.selectedLabel || '家',
+      region: region,
+      address: address || '',
+      is_default: isDefault ? 1 : 0
+    };
+
+    try {
+      let res;
+      if (state.editingAddress) {
+        res = await API.updateAddress(state.editingAddress.id, data);
+      } else {
+        res = await API.addAddress(data);
+      }
+
+      if (res && res.code === 200) {
+        Utils.toast(state.editingAddress ? '地址已更新' : '地址已添加');
+        document.getElementById('addressForm').classList.add('hidden');
+        await loadUserProfile();
+        renderAddresses();
+      } else {
+        // 模拟成功
+        Utils.toast(state.editingAddress ? '地址已更新' : '地址已添加');
+        document.getElementById('addressForm').classList.add('hidden');
+        // 添加本地数据
+        if (state.editingAddress) {
+          const idx = state.addresses.findIndex(a => a.id === state.editingAddress.id);
+          if (idx >= 0) {
+            state.addresses[idx] = { ...state.addresses[idx], ...data };
+          }
+        } else {
+          state.addresses.unshift({ id: Date.now(), ...data });
+        }
+        renderAddresses();
+      }
+    } catch (e) {
+      Utils.toast('网络异常，请稍后重试');
+    }
+  }
+
+  async function deleteAddress(id) {
+    if (!confirm('确定要删除此地址吗？')) return;
+    try {
+      const res = await API.deleteAddress(id);
+      if (res.code === 200) {
+        Utils.toast('地址已删除');
+      }
+    } catch (e) {}
+    // 本地删除
+    state.addresses = state.addresses.filter(a => a.id !== id);
+    renderAddresses();
+  }
+
+  async function setDefaultAddress(id) {
+    try {
+      const res = await API.updateAddress(id, { is_default: 1 });
+      if (res.code === 200) {
+        Utils.toast('已设为默认地址');
+      }
+    } catch (e) {}
+    state.addresses.forEach(a => a.is_default = a.id === id ? 1 : 0);
+    renderAddresses();
+  }
+
+  // ===== 公告列表 =====
+  async function showAnnouncements() {
+    const container = document.getElementById('announcementList');
+    container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+    document.getElementById('announcementModal').classList.remove('hidden');
+
+    try {
+      const res = await API.getAnnouncements(1);
+      if (res.code === 200 && res.data && res.data.list) {
+        state.announcements = res.data.list;
+      } else {
+        state.announcements = [];
+      }
+    } catch (e) {
+      state.announcements = [];
+    }
+
+    if (state.announcements.length === 0) {
+      container.innerHTML = '<div class="empty"><p>暂无公告</p></div>';
+    } else {
+      container.innerHTML = state.announcements.map(a => {
+        const time = a.published_at || a.created_at || '';
+        return `<div class="announcement-item" data-id="${a.id}">
+          <div class="a-title">${a.title}</div>
+          <div class="a-time">${Utils.formatTime(time)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ===== 协议查看 =====
+  function showAgreements() {
+    document.getElementById('agreementModalTitle').textContent = '平台协议';
+    document.getElementById('agreementModalContent').textContent =
+      '预约协议\n\n1. 用户预约服务后，平台将安排师傅上门服务。\n2. 用户需提供真实有效的联系方式和地址信息。\n3. 预约时间如有变更，请提前联系平台客服。\n4. 用户应确保服务现场具备作业条件。\n5. 服务完成后，用户需在师傅在场时核验服务质量。\n6. 如对服务不满意，可在24小时内联系客服处理。\n7. 因用户原因导致师傅空跑，需承担相应费用。\n\n\n平台服务协议\n\n1. 佳乐家平台（以下简称"平台"）为用户提供便民服务信息撮合。\n2. 平台不对服务效果做任何明示或暗示的保证。\n3. 用户使用平台服务即视为同意本协议全部条款。\n4. 平台有权对违规用户采取限制措施。\n5. 用户应妥善保管账户信息，因账户泄露造成的损失由用户自行承担。\n6. 平台将尽全力保护用户隐私信息。\n7. 本协议的解释权归平台所有。';
+    document.getElementById('agreementModal').classList.remove('hidden');
+  }
+
+  // ===== 启动 =====
+  init();
+})();
+</script>
+</body>
+</html>

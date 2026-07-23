@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的 - 佳乐家师傅端</title>
+<link rel="stylesheet" href="../common.css">
+<style>
+/* ===== 页面布局 ===== */
+.page { max-width: 750px; margin: 0 auto; min-height: 100vh; background: #f5f5f5; padding-bottom: 70px; }
+
+/* ===== 师傅信息头部 ===== */
+.profile-header { background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%); padding: 24px 16px 30px; color: #fff; }
+.profile-info { display: flex; align-items: center; gap: 16px; }
+.profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #fff; overflow: hidden; }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-name { font-size: 20px; font-weight: 700; }
+.profile-detail { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+.profile-stats { display: flex; gap: 16px; margin-top: 16px; }
+.profile-stat { flex: 1; text-align: center; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 8px; }
+.profile-stat-value { font-size: 20px; font-weight: 700; }
+.profile-stat-label { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+/* ===== 信用分 ===== */
+.credit-score { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
+.credit-score .score { font-size: 24px; font-weight: 700; }
+.credit-score .label { font-size: 12px; opacity: 0.8; }
+.credit-score .level { margin-left: auto; font-size: 13px; background: rgba(255,255,255,0.2); padding: 3px 12px; border-radius: 12px; }
+
+/* ===== 功能菜单 ===== */
+.menu-section { margin: 12px; }
+.menu-group { background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.menu-item { display: flex; align-items: center; padding: 14px 16px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid #f5f5f5; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { background: #f5f5f5; }
+.menu-item .icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; }
+.menu-item .icon.blue { background: #E6F7FF; }
+.menu-item .icon.green { background: #F6FFED; }
+.menu-item .icon.orange { background: #FFF7E6; }
+.menu-item .icon.red { background: #FFF1F0; }
+.menu-item .icon.purple { background: #F0F0FF; }
+.menu-item .text { flex: 1; font-size: 14px; }
+.menu-item .arrow { color: #ccc; font-size: 16px; }
+.menu-item .extra { font-size: 12px; color: #999; margin-right: 8px; }
+
+/* ===== 退出按钮 ===== */
+.logout-btn { display: block; width: calc(100% - 24px); margin: 20px auto; padding: 14px; text-align: center; background: #fff; border-radius: 12px; font-size: 15px; color: #FF4D4F; font-weight: 500; cursor: pointer; border: none; }
+.logout-btn:active { background: #FFF1F0; }
+
+/* ===== 收入明细 ===== */
+.income-section { background: #fff; border-radius: 12px; margin: 12px; padding: 16px; }
+.income-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.income-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.income-item { text-align: center; padding: 10px; }
+.income-item .amount { font-size: 18px; font-weight: 700; color: #1677FF; }
+.income-item .label { font-size: 12px; color: #999; margin-top: 4px; }
+
+/* ===== 历史订单 ===== */
+.history-section { margin: 12px; }
+.history-filters { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.history-filter { padding: 6px 16px; border-radius: 16px; font-size: 13px; border: 1.5px solid #e0e0e0; background: #fff; cursor: pointer; white-space: nowrap; color: #666; }
+.history-filter.active { border-color: #1677FF; color: #1677FF; background: #F0F5FF; }
+.history-card { background: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.history-card .h-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.history-card .h-service { font-size: 14px; font-weight: 600; }
+.history-card .h-price { color: #FF4D4F; font-weight: 700; font-size: 14px; }
+.history-card .h-info { font-size: 12px; color: #999; }
+.history-card .h-time { font-size: 12px; color: #999; }
+
+/* ===== 自建单悬浮按钮 ===== */
+.fab { position: fixed; bottom: 80px; right: calc(50% - 375px + 20px); width: 56px; height: 56px; border-radius: 50%; background: #FF6B35; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 16px rgba(255,107,53,0.4); cursor: pointer; z-index: 500; transition: 0.2s; }
+.fab:active { transform: scale(0.9); }
+@media (min-width: 751px) { .fab { right: calc(50% - 355px); } }
+
+/* ===== 自建单浮窗 ===== */
+.create-form .form-group { margin-bottom: 14px; }
+.create-form .form-label { font-size: 13px; color: #666; margin-bottom: 6px; display: block; font-weight: 500; }
+.create-form .form-input, .create-form select, .create-form textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #f0f0f0; border-radius: 8px; font-size: 14px; background: #fff; }
+.create-form .form-input:focus, .create-form select:focus, .create-form textarea:focus { border-color: #1677FF; }
+
+/* ===== Tab切换（历史/收入） ===== */
+.section-tabs { display: flex; background: #fff; border-radius: 10px; overflow: hidden; margin: 12px; }
+.section-tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; color: #666; cursor: pointer; transition: 0.2s; }
+.section-tab.active { color: #1677FF; font-weight: 600; background: #F0F5FF; }
+.section-content { display: none; }
+.section-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- 师傅信息头部 -->
+  <div class="profile-header">
+    <div class="profile-info">
+      <div class="profile-avatar" id="profileAvatar">👤</div>
+      <div>
+        <div class="profile-name" id="profileName">加载中...</div>
+        <div class="profile-detail" id="profileDetail">-</div>
+      </div>
+    </div>
+    <div class="credit-score">
+      <div>
+        <div class="label">信用分</div>
+        <div class="score" id="creditScore">-</div>
+      </div>
+      <div class="level" id="creditLevel">-</div>
+    </div>
+  </div>
+
+  <!-- 收入汇总 -->
+  <div class="income-section" id="incomeSection">
+    <h3>💰 收入汇总</h3>
+    <div class="income-grid">
+      <div class="income-item">
+        <div class="amount" id="incomeToday">¥0</div>
+        <div class="label">今日收入</div>
+      </div>
+      <div class="income-item">
+        <div class="amount" id="incomeMonth">¥0</div>
+        <div class="label">本月收入</div>
+      </div>
+      <div class="income-item">
+        <div class="amount" id="incomeTotal">¥0</div>
+        <div class="label">累计收入</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab切换：历史订单 / 收入明细 -->
+  <div class="section-tabs">
+    <div class="section-tab active" onclick="switchSection('history')">历史订单</div>
+    <div class="section-tab" onclick="switchSection('income')">收入明细</div>
+  </div>
+
+  <!-- 历史订单 -->
+  <div class="section-content active" id="historySection">
+    <div class="history-filters" id="historyFilters">
+      <span class="history-filter active" data-filter="all" onclick="filterHistory('all')">全部</span>
+      <span class="history-filter" data-filter="today" onclick="filterHistory('today')">今天</span>
+      <span class="history-filter" data-filter="week" onclick="filterHistory('week')">本周</span>
+      <span class="history-filter" data-filter="month" onclick="filterHistory('month')">本月</span>
+      <span class="history-filter" data-filter="completed" onclick="filterHistory('completed')">已完成</span>
+      <span class="history-filter" data-filter="cancelled" onclick="filterHistory('cancelled')">已取消</span>
+    </div>
+    <div id="historyList" style="margin:0 12px">
+      <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+    </div>
+  </div>
+
+  <!-- 收入明细 -->
+  <div class="section-content" id="incomeDetailSection">
+    <div id="incomeList" style="margin:12px">
+      <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+    </div>
+  </div>
+
+  <!-- 功能菜单 -->
+  <div class="menu-section">
+    <div class="menu-group">
+      <div class="menu-item" onclick="showCreditRules()">
+        <div class="icon blue">📊</div>
+        <span class="text">信用分规则</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="showGallery()">
+        <div class="icon green">🖼️</div>
+        <span class="text">我的图库</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="showDisputes()">
+        <div class="icon orange">⚖️</div>
+        <span class="text">争议申诉</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="showRangeSettings()">
+        <div class="icon purple">📍</div>
+        <span class="text">接单范围设置</span>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-item" onclick="showAnnouncements()">
+        <div class="icon blue">📢</div>
+        <span class="text">历史公告</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="showAgreements()">
+        <div class="icon green">📄</div>
+        <span class="text">平台协议</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="contactService()">
+        <div class="icon orange">📞</div>
+        <span class="text">联系客服</span>
+        <span class="extra">400-888-8888</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="toggleNightMode()">
+        <div class="icon purple">🌙</div>
+        <span class="text">夜间模式</span>
+        <span id="nightModeStatus" class="extra">关闭</span>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退出登录 -->
+  <button class="logout-btn" onclick="handleLogout()">退出登录</button>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item" onclick="Utils.go('/technician/index.html')">
+      <i>📋</i><span>工单</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/technician/ongoing.html')">
+      <i>⚡</i><span>进行中</span>
+    </div>
+    <div class="tabbar-item active" onclick="Utils.go('/technician/profile.html')">
+      <i>👤</i><span>我的</span>
+    </div>
+  </div>
+</div>
+
+<!-- 自建单悬浮按钮 -->
+<div class="fab" id="fabBtn" onclick="showCreateOrderForm()">+</div>
+
+<script src="../common.js"></script>
+<script>
+let currentSection = 'history';
+let historyFilter = 'all';
+let historyData = [];
+let incomeData = [];
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', function() {
+  if (!checkAuth('technician')) return;
+  loadProfile();
+  loadHistory();
+  loadIncome();
+});
+
+// ===== 加载师傅信息 =====
+async function loadProfile() {
+  const res = await API.techGetProfile();
+  if (res.code === 0 && res.data) {
+    const d = res.data;
+    const avatar = document.getElementById('profileAvatar');
+    if (d.avatar) {
+      avatar.innerHTML = '<img src="' + d.avatar + '" alt="avatar">';
+    } else {
+      avatar.textContent = (d.name || '师傅').charAt(0);
+    }
+    document.getElementById('profileName').textContent = d.name || '未知';
+    const region = d.region_name || d.region || '-';
+    document.getElementById('profileDetail').textContent = region + ' · ' + (d.phone || '-');
+    document.getElementById('creditScore').textContent = d.credit_score || d.credit || '-';
+    document.getElementById('creditLevel').textContent = d.credit_level || '普通';
+  }
+}
+
+// ===== 加载历史订单 =====
+async function loadHistory() {
+  const container = document.getElementById('historyList');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+
+  const params = {};
+  if (historyFilter === 'today') params.date = 'today';
+  else if (historyFilter === 'week') params.date = 'week';
+  else if (historyFilter === 'month') params.date = 'month';
+  else if (historyFilter === 'completed') params.status = 'completed';
+  else if (historyFilter === 'cancelled') params.status = 'cancelled';
+
+  const res = await API.techGetHistory(params);
+  if (res.code === 0 && res.data) {
+    historyData = res.data.list || res.data.orders || res.data;
+    if (!Array.isArray(historyData)) historyData = [];
+    renderHistory(historyData);
+  } else {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px"><i>📭</i><p>暂无历史订单</p></div>';
+  }
+}
+
+// ===== 渲染历史订单 =====
+function renderHistory(orders) {
+  const container = document.getElementById('historyList');
+  if (!orders || orders.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px"><i>📭</i><p>暂无历史订单</p></div>';
+    return;
+  }
+  let html = '';
+  orders.forEach(order => {
+    const statusLabel = Utils.statusText(order.status);
+    const statusClass = Utils.statusClass(order.status);
+    html += '<div class="history-card">';
+    html += '<div class="h-row"><span class="h-service">' + Utils.sanitize(order.service_category || order.service_name || '通用服务') + '</span><span class="h-price">' + Utils.formatPrice(order.price || order.estimated_price || 0) + '</span></div>';
+    html += '<div class="h-row"><span class="h-info">' + Utils.sanitize(order.address || '') + '</span><span class="tag ' + statusClass + '">' + statusLabel + '</span></div>';
+    if (order.completed_at) html += '<div class="h-time">完工时间：' + Utils.formatTime(order.completed_at) + '</div>';
+    else if (order.created_at) html += '<div class="h-time">创建时间：' + Utils.formatTime(order.created_at) + '</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ===== 筛选历史订单 =====
+function filterHistory(filter) {
+  historyFilter = filter;
+  document.querySelectorAll('.history-filter').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === filter);
+  });
+  loadHistory();
+}
+
+// ===== 加载收入明细 =====
+async function loadIncome() {
+  // 从统计API获取收入数据
+  const res = await API.techGetStatistics();
+  if (res.code === 0 && res.data) {
+    const d = res.data;
+    document.getElementById('incomeToday').textContent = '¥' + (d.today_income || 0);
+    document.getElementById('incomeMonth').textContent = '¥' + (d.month_income || 0);
+    document.getElementById('incomeTotal').textContent = '¥' + (d.total_income || 0);
+  }
+
+  // 加载收入明细列表
+  const container = document.getElementById('incomeList');
+  const balanceRes = await API.techGetBalance();
+  if (balanceRes.code === 0 && balanceRes.data) {
+    const items = balanceRes.data.list || balanceRes.data.records || balanceRes.data.items || [];
+    if (items.length > 0) {
+      let html = '';
+      items.forEach(item => {
+        html += '<div class="history-card">';
+        html += '<div class="h-row"><span class="h-service">' + Utils.sanitize(item.description || item.type || '收入') + '</span><span class="h-price" style="color:' + (item.amount > 0 ? '#52C41A' : '#FF4D4F') + '">' + (item.amount > 0 ? '+' : '') + Utils.formatPrice(item.amount || 0) + '</span></div>';
+        html += '<div class="h-time">' + Utils.formatTime(item.created_at || item.time) + '</div>';
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<div class="empty-state" style="padding:40px 20px"><i>💰</i><p>暂无收入记录</p></div>';
+    }
+  } else {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px"><i>💰</i><p>暂无收入记录</p></div>';
+  }
+}
+
+// ===== Tab切换 =====
+function switchSection(section) {
+  currentSection = section;
+  document.querySelectorAll('.section-tab').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && section === 'history') || (i === 1 && section === 'income'));
+  });
+  document.getElementById('historySection').classList.toggle('active', section === 'history');
+  document.getElementById('incomeDetailSection').classList.toggle('active', section === 'income');
+  if (section === 'income') loadIncome();
+}
+
+// ===== 功能菜单操作 =====
+function showCreditRules() {
+  const content = `
+    <div style="margin-bottom:12px;line-height:1.8;font-size:14px;color:#666">
+      <p><strong>信用分规则</strong></p>
+      <p>• 初始信用分：100分</p>
+      <p>• 按时完成订单：+2分/单</p>
+      <p>• 获得好评：+1分/次</p>
+      <p>• 取消订单：-5分/次</p>
+      <p>• 超期未完工：-10分/次</p>
+      <p>• 用户投诉：-15分/次</p>
+      <p>• 信用分＜60将限制接单</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-block" onclick="closeModal()">知道了</button>
+    </div>
+  `;
+  showModal('📊 信用分规则', content);
+}
+
+function showGallery() {
+  Utils.loading(true);
+  API.techGetGallery().then(res => {
+    Utils.loading(false);
+    if (res.code === 0 && res.data) {
+      const images = res.data.list || res.data.images || [];
+      let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">';
+      if (images.length === 0) {
+        html = '<div style="text-align:center;padding:30px;color:#999">暂无图片</div>';
+      } else {
+        images.forEach(img => {
+          html += '<div style="border-radius:8px;overflow:hidden;aspect-ratio:1"><img src="' + img + '" style="width:100%;height:100%;object-fit:cover"></div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">关闭</button></div>';
+      showModal('🖼️ 我的图库', html);
+    } else {
+      showModal('🖼️ 我的图库', '<div style="text-align:center;padding:30px;color:#999">暂无图片</div><div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">关闭</button></div>');
+    }
+  });
+}
+
+function showDisputes() {
+  Utils.loading(true);
+  API.techGetDisputes().then(res => {
+    Utils.loading(false);
+    const items = (res.code === 0 && res.data) ? (res.data.list || res.data.disputes || []) : [];
+    let html = '';
+    if (items.length === 0) {
+      html = '<div style="text-align:center;padding:30px;color:#999">暂无争议记录</div>';
+    } else {
+      items.forEach(d => {
+        html += '<div class="history-card"><div class="h-row"><span class="h-service">' + (d.order_no || '') + '</span><span class="tag ' + Utils.statusClass(d.status) + '">' + Utils.statusText(d.status) + '</span></div><div class="h-info" style="font-size:12px;color:#999;margin-top:4px">' + (d.reason || '') + '</div></div>';
+      });
+    }
+    html += '<div class="modal-actions" style="margin-top:12px"><button class="btn btn-primary btn-block" onclick="showCreateDispute()">提交申诉</button></div>';
+    showModal('⚖️ 争议申诉', html);
+  });
+}
+
+function showCreateDispute() {
+  closeModal();
+  const content = `
+    <div class="form-group">
+      <label class="form-label">订单编号</label>
+      <input type="text" class="form-input" id="disputeOrderNo" placeholder="请输入订单编号">
+    </div>
+    <div class="form-group">
+      <label class="form-label">申诉原因</label>
+      <textarea class="form-input" id="disputeReason" placeholder="请详细描述申诉原因" rows="4"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitDispute()">提交</button>
+    </div>
+  `;
+  showModal('📝 提交申诉', content);
+}
+
+async function submitDispute() {
+  const orderNo = document.getElementById('disputeOrderNo').value.trim();
+  const reason = document.getElementById('disputeReason').value.trim();
+  if (!orderNo) return Utils.error('请输入订单编号');
+  if (!reason) return Utils.error('请输入申诉原因');
+  Utils.loading(true);
+  const res = await API.techCreateDispute({ order_no: orderNo, reason: reason });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('申诉已提交');
+  } else {
+    Utils.error(res.message || '提交失败');
+  }
+}
+
+function showRangeSettings() {
+  const content = `
+    <div style="margin-bottom:12px;font-size:14px;color:#666">
+      <p>接单范围设置（开发中）</p>
+      <p style="margin-top:8px">您可以在设置中调整接单距离和区域偏好。</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">接单距离（公里）</label>
+      <select class="form-input">
+        <option>5公里</option>
+        <option selected>10公里</option>
+        <option>20公里</option>
+        <option>30公里</option>
+        <option>不限</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="Utils.success('设置已保存');closeModal()">保存</button>
+    </div>
+  `;
+  showModal('📍 接单范围设置', content);
+}
+
+function showAnnouncements() {
+  Utils.loading(true);
+  API.getAnnouncements(1).then(res => {
+    Utils.loading(false);
+    const items = (res.code === 0 && res.data) ? (res.data.list || res.data.announcements || []) : [];
+    let html = '';
+    if (items.length === 0) {
+      html = '<div style="text-align:center;padding:30px;color:#999">暂无公告</div>';
+    } else {
+      items.forEach(a => {
+        html += '<div class="history-card" style="cursor:pointer" onclick="Utils.success(\'' + Utils.sanitize((a.title || '').replace(/'/g, "\\'")) + '\')"><div class="h-row"><span class="h-service">' + Utils.sanitize(a.title || '') + '</span></div><div class="h-time">' + Utils.formatTime(a.created_at) + '</div></div>';
+      });
+    }
+    html += '<div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">关闭</button></div>';
+    showModal('📢 历史公告', html);
+  });
+}
+
+function showAgreements() {
+  const content = `
+    <div style="margin-bottom:12px;line-height:1.8;font-size:14px;color:#666;max-height:300px;overflow-y:auto">
+      <p><strong>平台服务协议</strong></p>
+      <p style="margin-top:8px">一、服务条款</p>
+      <p>1. 师傅需保证提供真实、有效的个人信息。</p>
+      <p>2. 师傅应按时完成接单，不得无故取消订单。</p>
+      <p>3. 服务过程中应遵守职业道德，保证服务质量。</p>
+      <p>4. 如因师傅原因造成用户损失，师傅需承担相应责任。</p>
+      <p style="margin-top:8px">二、结算规则</p>
+      <p>1. 完工后由平台统一结算，T+1到账。</p>
+      <p>2. 增项费用需经用户确认后方可收取。</p>
+      <p>3. 平台收取一定比例的服务费。</p>
+      <p style="margin-top:8px">三、违规处理</p>
+      <p>1. 多次取消订单将影响信用分。</p>
+      <p>2. 严重违规将终止合作。</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-block" onclick="closeModal()">我已阅读</button>
+    </div>
+  `;
+  showModal('📄 平台协议', content);
+}
+
+function contactService() {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText('400-888-8888').then(() => {
+      Utils.success('客服电话已复制：400-888-8888');
+    });
+  } else {
+    Utils.success('客服电话：400-888-8888');
+  }
+}
+
+function toggleNightMode() {
+  const statusEl = document.getElementById('nightModeStatus');
+  const isNight = statusEl.textContent === '关闭';
+  statusEl.textContent = isNight ? '开启' : '关闭';
+  if (isNight) {
+    document.querySelector('.page').style.background = '#1a1a2e';
+    document.querySelector('.page').style.color = '#ccc';
+    Utils.success('夜间模式已开启');
+  } else {
+    document.querySelector('.page').style.background = '#f5f5f5';
+    document.querySelector('.page').style.color = '';
+    Utils.success('夜间模式已关闭');
+  }
+}
+
+// ===== 退出登录 =====
+function handleLogout() {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.id = 'confirmModal';
+  overlay.innerHTML = '<div class="confirm-box"><div class="title">确认退出</div><div class="desc">确定要退出登录吗？</div><div class="actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-danger" id="confirmLogoutBtn">退出</button></div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('confirmLogoutBtn').onclick = function() {
+    overlay.remove();
+    Utils.logout();
+  };
+}
+
+// ===== 弹窗工具 =====
+function showModal(title, content) {
+  closeModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'dynamicModal';
+  overlay.innerHTML = '<div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:17px;font-weight:600">' + title + '</h3><span style="font-size:22px;color:#999;cursor:pointer" onclick="closeModal()">✕</span></div>' + content + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function closeModal() {
+  const el = document.getElementById('dynamicModal');
+  if (el) el.remove();
+  const confirmEl = document.getElementById('confirmModal');
+  if (confirmEl) confirmEl.remove();
+}
+
+// ==============================
+// 自建单
+// ==============================
+function showCreateOrderForm() {
+  const content = `
+    <div class="create-form">
+      <div class="form-group">
+        <label class="form-label">服务类别</label>
+        <select class="form-input" id="createCategory">
+          <option value="repair">家电维修</option>
+          <option value="clean">清洁服务</option>
+          <option value="install">安装服务</option>
+          <option value="move">搬运服务</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">客户姓名</label>
+        <input type="text" class="form-input" id="createName" placeholder="请输入客户姓名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">联系电话</label>
+        <input type="tel" class="form-input" id="createPhone" placeholder="请输入客户手机号" maxlength="11">
+      </div>
+      <div class="form-group">
+        <label class="form-label">服务地址</label>
+        <input type="text" class="form-input" id="createAddress" placeholder="请输入服务地址">
+      </div>
+      <div class="form-group">
+        <label class="form-label">预估金额（元）</label>
+        <input type="number" class="form-input" id="createPrice" placeholder="请输入预估金额" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <textarea class="form-input" id="createRemark" placeholder="可选填写备注" rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitCreateOrder()">创建工单</button>
+      </div>
+    </div>
+  `;
+  showModal('📝 创建自建单', content);
+}
+
+async function submitCreateOrder() {
+  const name = document.getElementById('createName').value.trim();
+  const phone = document.getElementById('createPhone').value.trim();
+  const address = document.getElementById('createAddress').value.trim();
+  const category = document.getElementById('createCategory').value;
+  const price = document.getElementById('createPrice').value;
+  const remark = document.getElementById('createRemark').value.trim();
+
+  if (!name) return Utils.error('请输入客户姓名');
+  if (!phone || !Utils.validatePhone(phone)) return Utils.error('请输入有效手机号');
+  if (!address) return Utils.error('请输入服务地址');
+
+  Utils.loading(true);
+  const res = await API.createOrder({
+    service_category: category,
+    customer_name: name,
+    phone: phone,
+    address: address,
+    estimated_price: parseFloat(price) || 0,
+    remark: remark,
+    source: 'self',
+    technician_self: true
+  });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('自建单创建成功');
+  } else {
+    Utils.error(res.message || '创建失败');
+  }
+}
+</script>
+</body>
+</html>

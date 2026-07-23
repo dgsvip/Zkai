@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>代报 - 佳乐家商家端</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    /* ===== 消息中心 ===== */
+    .msg-item { display: flex; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+    .msg-item:last-child { border-bottom: none; }
+    .msg-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .msg-icon.order { background: #E6F4FF; }
+    .msg-icon.income { background: #F6FFED; }
+    .msg-icon.notice { background: #FFF7E6; }
+    .msg-content { flex: 1; }
+    .msg-title { font-size: 14px; font-weight: 500; }
+    .msg-time { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+    .msg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; margin-top: 4px; }
+
+    /* ===== 代报单表单 ===== */
+    .proxy-form { padding-top: 4px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .service-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .service-option { padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+    .service-option:active { transform: scale(0.97); }
+    .service-option.selected { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .service-option .price { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .service-option.selected .price { color: var(--primary); }
+
+    /* ===== 历史记录 ===== */
+    .history-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .history-item:last-child { border-bottom: none; }
+    .history-info { flex: 1; }
+    .history-service { font-size: 14px; font-weight: 500; }
+    .history-customer { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .history-time { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+    .history-right { text-align: right; }
+    .history-amount { font-weight: 600; }
+    .history-status { font-size: 12px; margin-top: 2px; }
+
+    /* ===== 折叠面板 ===== */
+    .collapse-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; cursor: pointer; }
+    .collapse-header .arrow { transition: transform 0.2s; font-size: 12px; }
+    .collapse-header .arrow.open { transform: rotate(180deg); }
+    .collapse-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .collapse-body.open { max-height: 2000px; }
+
+    /* ===== 内容区 ===== */
+    .section { padding: 0 16px; }
+    .section-gap { height: 12px; }
+    .submit-bar { padding: 12px 16px; background: var(--bg-white); border-top: 1px solid var(--border); position: sticky; bottom: 60px; z-index: 10; }
+    .submit-bar .btn { border-radius: 10px; height: 46px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <!-- ====== 消息中心 ====== -->
+    <div class="section" style="padding-top:16px;">
+      <div class="card">
+        <div class="collapse-header" onclick="toggleMessages()">
+          <span class="card-title">🔔 消息中心</span>
+          <span class="arrow" id="msgArrow">▼</span>
+        </div>
+        <div class="collapse-body" id="msgBody">
+          <div class="card-body" id="msgList">
+            <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 代报单表单 ====== -->
+    <div class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📝 新建代报单</span>
+        </div>
+        <div class="proxy-form">
+          <!-- 服务类型 -->
+          <div class="form-group">
+            <label class="form-label">服务类型 <span class="text-danger">*</span></label>
+            <div class="service-options" id="serviceOptions">
+              <div class="loading" style="padding:10px 0;"><div class="loading-spinner"></div>加载服务...</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">客户姓名 <span class="text-danger">*</span></label>
+              <input class="form-input" id="custName" placeholder="请输入姓名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">客户电话 <span class="text-danger">*</span></label>
+              <input class="form-input" id="custPhone" type="tel" placeholder="请输入电话" maxlength="11">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">服务地址 <span class="text-danger">*</span></label>
+            <input class="form-input" id="custAddress" placeholder="请输入详细地址">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">预约日期 <span class="text-danger">*</span></label>
+              <input class="form-input" id="apptDate" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">预约时间 <span class="text-danger">*</span></label>
+              <input class="form-input" id="apptTime" type="time">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">客户备注</label>
+            <textarea class="form-textarea" id="custRemark" placeholder="客户特殊要求或备注" rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">商家备注</label>
+            <textarea class="form-textarea" id="merchantRemark" placeholder="内部备注（仅自己可见）" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提交按钮 -->
+    <div class="submit-bar">
+      <button class="btn btn-primary btn-block" onclick="submitOrder()">提交代报单</button>
+    </div>
+
+    <!-- ====== 代报历史记录 ====== -->
+    <div class="section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 代报历史</span>
+        </div>
+        <div class="card-body" id="historyList">
+          <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <!-- ====== 底部导航栏 ====== -->
+    <div class="tabbar">
+      <div class="tabbar-item" onclick="Utils.go('/merchant/promote.html')">
+        <i>📢</i><span>推广</span>
+      </div>
+      <div class="tabbar-item active" onclick="Utils.go('/merchant/proxy.html')">
+        <i>📝</i><span>代报</span>
+      </div>
+      <div class="tabbar-item" onclick="Utils.go('/merchant/profile.html')">
+        <i>👤</i><span>我的</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    // ===== 页面状态 =====
+    let selectedServiceId = null;
+    let serviceItems = [];
+
+    // ===== 初始化 =====
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkAuth()) return;
+      initDate();
+      loadServices();
+      loadMessages();
+      loadHistory();
+    });
+
+    function checkAuth() {
+      const token = Utils.get('token');
+      if (!token) {
+        Utils.error('请先登录');
+        Utils.go('/merchant/promote.html');
+        return false;
+      }
+      API.token = token;
+      return true;
+    }
+
+    function initDate() {
+      const today = Utils.formatDate(new Date());
+      document.getElementById('apptDate').value = today;
+      document.getElementById('apptDate').min = today;
+      document.getElementById('apptTime').value = '09:00';
+    }
+
+    // ===== 消息中心 =====
+    function toggleMessages() {
+      const body = document.getElementById('msgBody');
+      const arrow = document.getElementById('msgArrow');
+      body.classList.toggle('open');
+      arrow.classList.toggle('open');
+    }
+
+    async function loadMessages() {
+      const container = document.getElementById('msgList');
+      try {
+        const res = await API.merGetOrders();
+        // 消息从订单数据衍生
+        const msgs = [];
+        if (res.code === 0 && res.data) {
+          const orders = Array.isArray(res.data) ? res.data : (res.data.list || res.data.orders || []);
+          orders.slice(0, 5).forEach(o => {
+            const statusText = Utils.statusText(o.status);
+            msgs.push({
+              type: 'order',
+              title: '订单 ' + (o.order_no || '') + ' 状态变更为：' + statusText,
+              time: o.updated_at || o.created_at || ''
+            });
+          });
+        }
+        // 添加一些默认消息
+        if (msgs.length === 0) {
+          msgs.push({ type: 'notice', title: '欢迎使用佳乐家商家端', time: new Date().toISOString() });
+        }
+        renderMessages(container, msgs);
+      } catch (e) {
+        container.innerHTML = '<div class="empty"><p>暂无消息</p></div>';
+      }
+    }
+
+    function renderMessages(container, msgs) {
+      if (msgs.length === 0) {
+        container.innerHTML = '<div class="empty"><p>暂无消息</p></div>';
+        return;
+      }
+      const iconMap = { order: '📋', income: '💰', notice: '📢' };
+      const clsMap = { order: 'order', income: 'income', notice: 'notice' };
+      let html = '';
+      msgs.forEach((m, i) => {
+        html += '<div class="msg-item">' +
+          '<div class="msg-icon ' + (clsMap[m.type] || 'notice') + '">' + (iconMap[m.type] || '📢') + '</div>' +
+          '<div class="msg-content"><div class="msg-title">' + Utils.sanitize(m.title) + '</div>' +
+          '<div class="msg-time">' + Utils.formatTime(m.time) + '</div></div>' +
+          (i === 0 ? '<div class="msg-dot"></div>' : '') +
+        '</div>';
+      });
+      container.innerHTML = html;
+      // 默认展开消息
+      document.getElementById('msgBody').classList.add('open');
+      document.getElementById('msgArrow').classList.add('open');
+    }
+
+    // ===== 加载服务类型 =====
+    async function loadServices() {
+      const container = document.getElementById('serviceOptions');
+      try {
+        const res = await API.getCategories();
+        let items = [];
+        if (res.code === 0 && res.data) {
+          items = Array.isArray(res.data) ? res.data : (res.data.list || []);
+        }
+        if (items.length === 0) {
+          // 加载服务项作为备选
+          const res2 = await API.getServiceItems();
+          if (res2.code === 0 && res2.data) {
+            const allItems = Array.isArray(res2.data) ? res2.data : (res2.data.list || []);
+            items = allItems.map(i => ({ id: i.id, name: i.name, price: i.price }));
+          }
+        }
+        serviceItems = items;
+        renderServices(container, items);
+      } catch (e) {
+        container.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+      }
+    }
+
+    function renderServices(container, items) {
+      if (items.length === 0) {
+        // 提供默认服务选项
+        const defaults = [
+          { id: 1, name: '家电维修', price: 80 },
+          { id: 2, name: '水电维修', price: 60 },
+          { id: 3, name: '保洁清洗', price: 100 },
+          { id: 4, name: '家居安装', price: 70 }
+        ];
+        serviceItems = defaults;
+        items = defaults;
+      }
+      let html = '';
+      items.forEach(item => {
+        html += '<div class="service-option" data-id="' + item.id + '" onclick="selectService(this, ' + item.id + ')">' +
+          '<div>' + Utils.sanitize(item.name) + '</div>' +
+          '<div class="price">' + Utils.formatPrice(item.price || 0) + '</div>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function selectService(el, id) {
+      document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedServiceId = id;
+    }
+
+    // ===== 提交代报单 =====
+    async function submitOrder() {
+      if (!selectedServiceId) return Utils.error('请选择服务类型');
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+      const date = document.getElementById('apptDate').value;
+      const time = document.getElementById('apptTime').value;
+      const custRemark = document.getElementById('custRemark').value.trim();
+      const merchantRemark = document.getElementById('merchantRemark').value.trim();
+
+      if (!name) return Utils.error('请输入客户姓名');
+      if (!phone || !Utils.validatePhone(phone)) return Utils.error('请输入正确的客户电话');
+      if (!address) return Utils.error('请输入服务地址');
+      if (!date) return Utils.error('请选择预约日期');
+      if (!time) return Utils.error('请选择预约时间');
+
+      // 找到选中的服务
+      const selectedItem = serviceItems.find(i => i.id === selectedServiceId);
+      const serviceName = selectedItem ? selectedItem.name : '';
+
+      const data = {
+        service_id: selectedServiceId,
+        service_name: serviceName,
+        customer_name: name,
+        customer_phone: phone,
+        service_address: address,
+        appointment_date: date,
+        appointment_time: time,
+        customer_remark: custRemark,
+        merchant_remark: merchantRemark
+      };
+
+      Utils.loading(true);
+      try {
+        const res = await API.merCreateOrder(data);
+        if (res.code === 0) {
+          Utils.success('代报单提交成功');
+          // 重置表单
+          resetForm();
+          // 刷新历史
+          loadHistory();
+        } else {
+          Utils.error(res.message || '提交失败');
+        }
+      } catch (e) {
+        Utils.error('网络异常');
+      } finally {
+        Utils.loading(false);
+      }
+    }
+
+    function resetForm() {
+      document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+      selectedServiceId = null;
+      document.getElementById('custName').value = '';
+      document.getElementById('custPhone').value = '';
+      document.getElementById('custAddress').value = '';
+      const today = Utils.formatDate(new Date());
+      document.getElementById('apptDate').value = today;
+      document.getElementById('apptTime').value = '09:00';
+      document.getElementById('custRemark').value = '';
+      document.getElementById('merchantRemark').value = '';
+    }
+
+    // ===== 代报历史 =====
+    async function loadHistory() {
+      const container = document.getElementById('historyList');
+      try {
+        const res = await API.merGetOrders();
+        let list = [];
+        if (res.code === 0 && res.data) {
+          list = Array.isArray(res.data) ? res.data : (res.data.list || res.data.orders || []);
+        }
+        if (list.length === 0) {
+          container.innerHTML = '<div class="empty"><p>暂无代报记录</p></div>';
+          return;
+        }
+        // 按时间倒序
+        list.sort((a, b) => {
+          const ta = a.created_at || a.updated_at || '';
+          const tb = b.created_at || b.updated_at || '';
+          return tb.localeCompare(ta);
+        });
+        let html = '';
+        list.forEach(item => {
+          const statusClass = Utils.statusClass(item.status);
+          const statusText = Utils.statusText(item.status);
+          html += '<div class="history-item">' +
+            '<div class="history-info"><div class="history-service">' + Utils.sanitize(item.service_name || '--') + '</div>' +
+            '<div class="history-customer">' + Utils.sanitize(item.customer_name || '--') + ' | ' + Utils.sanitize(item.customer_phone || '--') + '</div>' +
+            '<div class="history-time">' + Utils.formatTime(item.created_at) + '</div></div>' +
+            '<div class="history-right"><div class="history-amount">' + Utils.formatPrice(item.price || item.amount || 0) + '</div>' +
+            '<div class="history-status"><span class="tag ' + statusClass + '">' + statusText + '</span></div></div>' +
+          '</div>';
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+      }
+    }
+  </script>
+</body>
+</html>

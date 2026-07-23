@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>预约服务 - 佳乐家</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    /* ===== 预约页专用样式 ===== */
+    .booking-banner {
+      background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%);
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .booking-banner h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .booking-banner p { font-size: 13px; opacity: 0.85; }
+
+    /* 公告滚动 */
+    .notice-bar {
+      background: #FFFBE6;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #D48806;
+      cursor: pointer;
+      border-bottom: 1px solid #FFE58F;
+    }
+    .notice-bar .notice-icon { font-size: 16px; flex-shrink: 0; }
+    .notice-bar .notice-text {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .notice-bar .notice-arrow { font-size: 12px; flex-shrink: 0; }
+
+    /* 步骤容器 */
+    .step-section { padding: 16px; }
+    .step-title {
+      font-size: 15px; font-weight: 600; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .step-title .step-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      font-size: 12px; display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* 分类Tab */
+    .category-tabs {
+      display: flex; gap: 8px; padding: 0 0 12px 0;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .category-tab {
+      flex-shrink: 0; padding: 8px 18px; border-radius: 20px;
+      background: var(--bg); color: var(--text-secondary); font-size: 13px;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .category-tab.active { background: var(--primary); color: #fff; }
+
+    /* 服务项目网格 */
+    .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .service-item {
+      background: var(--bg-white); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 12px 8px;
+      text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .service-item:active { transform: scale(0.97); }
+    .service-item.selected { border-color: var(--primary); background: var(--primary-light); }
+    .service-item .s-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    .service-item .s-price { font-size: 12px; color: var(--danger); font-weight: 600; }
+    .service-item .s-rating { font-size: 11px; color: var(--text-light); }
+
+    /* 日期选择 */
+    .date-scroll {
+      display: flex; gap: 8px; padding: 0 0 12px 0;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .date-scroll::-webkit-scrollbar { display: none; }
+    .date-item {
+      flex-shrink: 0; width: 60px; padding: 10px 0;
+      border-radius: var(--radius); background: var(--bg);
+      text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .date-item.active { background: var(--primary); color: #fff; }
+    .date-item .d-week { font-size: 11px; margin-bottom: 2px; }
+    .date-item .d-day { font-size: 16px; font-weight: 600; }
+    .date-item .d-month { font-size: 10px; opacity: 0.7; }
+    .date-item.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* 时间网格 */
+    .time-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .time-item {
+      padding: 10px 0; border-radius: 8px; background: var(--bg);
+      text-align: center; font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .time-item.active { background: var(--primary); color: #fff; }
+    .time-item.disabled { opacity: 0.35; pointer-events: none; }
+
+    /* 区域选择器 */
+    .region-selector {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      max-height: 300px; overflow-y: auto;
+    }
+    .region-item {
+      padding: 10px; border-radius: 8px; background: var(--bg);
+      text-align: center; font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .region-item:active { background: var(--primary-light); }
+    .region-item.selected { background: var(--primary); color: #fff; }
+
+    /* 底部订单汇总 */
+    .order-summary {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 750px; background: var(--bg-white);
+      border-top: 1px solid var(--border); padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+      display: flex; align-items: center; gap: 12px;
+      z-index: 1000; box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    .order-summary .summary-info { flex: 1; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .order-summary .summary-info .total-price { font-size: 18px; color: var(--danger); font-weight: 700; }
+    .order-summary .btn-book { padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 10px; }
+
+    /* 协议 */
+    .agreement-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+    .agreement-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .agreement-row a { color: var(--primary); text-decoration: underline; }
+
+    /* 滑动选择器弹窗 */
+    .slide-selector {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 750px; background: var(--bg-white);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      z-index: 2000; animation: slideUp 0.3s;
+      max-height: 70vh; display: flex; flex-direction: column;
+    }
+    .slide-selector-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .slide-selector-header .ss-title { font-size: 16px; font-weight: 600; }
+    .slide-selector-header .ss-close { font-size: 18px; color: var(--text-light); cursor: pointer; }
+    .slide-selector-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+
+    /* 订单结果弹窗 */
+    .result-box {
+      text-align: center; padding: 20px 0;
+    }
+    .result-box .order-no {
+      font-size: 32px; font-weight: 700; color: var(--primary);
+      border: 2px solid var(--primary); border-radius: 12px;
+      padding: 16px 20px; display: inline-block; margin: 12px 0;
+      letter-spacing: 2px;
+    }
+    .result-box .verify-code {
+      font-size: 32px; font-weight: 700; color: var(--primary);
+      border: 2px solid var(--primary); border-radius: 12px;
+      padding: 16px 20px; display: inline-block; margin: 12px 0;
+      letter-spacing: 4px;
+    }
+    .result-box .result-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+    .result-box .result-tip { font-size: 13px; color: var(--text-light); margin-top: 12px; }
+
+    /* 公告列表弹窗 */
+    .announcement-item {
+      padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .announcement-item:last-child { border-bottom: none; }
+    .announcement-item .a-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .announcement-item .a-time { font-size: 12px; color: var(--text-light); }
+    .announcement-item .a-summary { font-size: 13px; color: var(--text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  </style>
+</head>
+<body>
+<div class="page" id="app">
+  <!-- 顶部横幅 -->
+  <div class="booking-banner">
+    <h2>🏠 佳乐家 · 便民服务</h2>
+    <p>山东省菏泽市曹县 · 全区域覆盖</p>
+  </div>
+
+  <!-- 公告滚动条 -->
+  <div class="notice-bar" id="noticeBar">
+    <span class="notice-icon">📢</span>
+    <span class="notice-text" id="noticeText">加载公告中...</span>
+    <span class="notice-arrow">›</span>
+  </div>
+
+  <!-- 第一步：选择服务 -->
+  <div class="step-section" id="stepService">
+    <div class="step-title"><span class="step-num">1</span>选择服务</div>
+    <div class="category-tabs" id="categoryTabs"></div>
+    <div class="service-grid" id="serviceGrid"></div>
+  </div>
+
+  <!-- 第二步：选择时间 -->
+  <div class="step-section" id="stepTime">
+    <div class="step-title"><span class="step-num">2</span>选择时间</div>
+    <div class="date-scroll" id="dateScroll"></div>
+    <div class="time-grid" id="timeGrid"></div>
+  </div>
+
+  <!-- 第三步：服务地址 -->
+  <div class="step-section" id="stepAddress">
+    <div class="step-title"><span class="step-num">3</span>服务地址</div>
+    <div class="form-group">
+      <label class="form-label">街道/乡镇 <span class="text-danger">*</span></label>
+      <div class="form-input" id="regionDisplay" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span id="regionText" class="text-light">请选择街道/乡镇</span>
+        <span style="color:var(--text-light)">›</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">门牌号/详细地址</label>
+      <input class="form-input" id="addressInput" placeholder="如：XX小区3号楼2单元501" maxlength="100">
+    </div>
+  </div>
+
+  <!-- 第四步：联系人 -->
+  <div class="step-section" id="stepContact">
+    <div class="step-title"><span class="step-num">4</span>联系人信息</div>
+    <div class="form-group">
+      <label class="form-label">姓名 <span class="text-danger">*</span></label>
+      <input class="form-input" id="nameInput" placeholder="请输入您的姓名（2-20字符）" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">手机号 <span class="text-danger">*</span></label>
+      <input class="form-input" id="phoneInput" placeholder="请输入11位手机号" maxlength="11" type="tel">
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <textarea class="form-textarea" id="noteInput" placeholder="选填，如特殊需求、上门时间等" rows="3"></textarea>
+    </div>
+  </div>
+
+  <!-- 第五步：协议确认 -->
+  <div class="step-section" id="stepAgreement">
+    <div class="step-title"><span class="step-num">5</span>协议确认</div>
+    <div class="agreement-row">
+      <input type="checkbox" id="agreeAppointment">
+      <label for="agreeAppointment">我已阅读并同意 <a href="javascript:void(0)" id="viewAppointmentAgreement">《预约协议》</a></label>
+    </div>
+    <div class="agreement-row">
+      <input type="checkbox" id="agreePlatform">
+      <label for="agreePlatform">我已阅读并同意 <a href="javascript:void(0)" id="viewPlatformAgreement">《平台服务协议》</a></label>
+    </div>
+  </div>
+
+  <!-- 底部固定栏 -->
+  <div class="order-summary" id="orderSummary">
+    <div class="summary-info">
+      <div id="summaryText">请选择服务项目</div>
+      <div class="total-price" id="totalPrice">¥0.00</div>
+    </div>
+    <button class="btn btn-primary btn-book" id="btnBook" disabled>立即预约</button>
+  </div>
+
+  <!-- 滑动选择器弹窗 -->
+  <div class="modal-overlay hidden" id="regionModal">
+    <div class="slide-selector">
+      <div class="slide-selector-header">
+        <span class="ss-title">选择街道/乡镇</span>
+        <span class="ss-close" id="regionModalClose">✕</span>
+      </div>
+      <div class="slide-selector-body">
+        <div class="region-selector" id="regionGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 公告列表弹窗 -->
+  <div class="modal-overlay hidden" id="noticeModal">
+    <div class="modal-box" style="max-height:70vh;">
+      <div class="modal-title">平台公告</div>
+      <div id="noticeList"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="noticeModalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 公告详情弹窗 -->
+  <div class="modal-overlay hidden" id="noticeDetailModal">
+    <div class="modal-box">
+      <div class="modal-title" id="noticeDetailTitle">公告标题</div>
+      <div id="noticeDetailContent" style="font-size:14px;color:var(--text-secondary);line-height:1.8;"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="noticeDetailClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 协议内容弹窗 -->
+  <div class="modal-overlay hidden" id="agreementModal">
+    <div class="modal-box" style="max-height:70vh;">
+      <div class="modal-title" id="agreementModalTitle">协议内容</div>
+      <div id="agreementModalContent" style="font-size:13px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap;"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" id="agreementModalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下单成功弹窗 -->
+  <div class="modal-overlay hidden" id="successModal">
+    <div class="modal-box" style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;">✅</div>
+      <div class="modal-title">预约成功</div>
+      <div class="result-box">
+        <div class="result-label">订单编号</div>
+        <div class="order-no" id="resultOrderNo">---</div>
+        <div class="result-label" style="margin-top:16px;">查单验证码</div>
+        <div class="verify-code" id="resultVerifyCode">---</div>
+        <div class="result-tip">请妥善保管验证码，师傅上门时需核验</div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn btn-outline btn-block" id="successViewOrders">查看订单</button>
+        <button class="btn btn-primary btn-block" id="successContinue">继续预约</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../common.js"></script>
+<script>
+(function() {
+  const app = document.getElementById('app');
+
+  // ===== 数据状态 =====
+  const state = {
+    categories: [],
+    serviceItems: [],
+    announcements: [],
+    selectedCategoryId: null,
+    selectedItem: null,
+    selectedDate: null,
+    selectedTime: null,
+    selectedRegion: null,
+    name: '',
+    phone: '',
+    address: '',
+    note: '',
+    agreeAppointment: false,
+    agreePlatform: false,
+    submitting: false
+  };
+
+  // 曹县24个街道乡镇
+  const REGIONS = [
+    '磐石街道','曹城街道','青菏街道','郑庄街道','倪集街道',
+    '庄寨镇','普连集镇','古营集镇','侯集镇','苏集镇',
+    '孙老家镇','阎店楼镇','梁堤头镇','安蔡楼镇','大集镇',
+    '王集镇','楼庄镇','韩集镇','砖庙镇','常乐集镇',
+    '魏湾镇','仵楼镇','邵庄镇','朱洪庙镇'
+  ];
+
+  // ===== 占位数据 =====
+  const FALLBACK_CATEGORIES = [
+    { id: 1, name: '空调服务', icon: '❄️', sort_order: 1 },
+    { id: 2, name: '厨电服务', icon: '🍳', sort_order: 2 },
+    { id: 3, name: '智能家电', icon: '📺', sort_order: 3 },
+    { id: 4, name: '水电暖通', icon: '💧', sort_order: 4 },
+    { id: 5, name: '环境电器', icon: '🌬️', sort_order: 5 }
+  ];
+  const FALLBACK_ITEMS = [
+    { id: 1, category_id: 1, name: '空调清洗', price_min: 80, price_max: 150 },
+    { id: 2, category_id: 1, name: '空调加氟', price_min: 100, price_max: 200 },
+    { id: 3, category_id: 1, name: '空调维修', price_min: 80, price_max: 300 },
+    { id: 4, category_id: 1, name: '空调安装', price_min: 150, price_max: 400 },
+    { id: 5, category_id: 1, name: '空调移机', price_min: 200, price_max: 500 },
+    { id: 6, category_id: 2, name: '油烟机清洗', price_min: 60, price_max: 120 },
+    { id: 7, category_id: 2, name: '油烟机维修', price_min: 50, price_max: 200 },
+    { id: 8, category_id: 2, name: '燃气灶维修', price_min: 50, price_max: 150 },
+    { id: 9, category_id: 2, name: '消毒柜维修', price_min: 50, price_max: 150 },
+    { id: 10, category_id: 2, name: '集成灶维修', price_min: 80, price_max: 250 },
+    { id: 11, category_id: 3, name: '电视维修', price_min: 50, price_max: 200 },
+    { id: 12, category_id: 3, name: '冰箱维修', price_min: 60, price_max: 250 },
+    { id: 13, category_id: 3, name: '洗衣机维修', price_min: 50, price_max: 200 },
+    { id: 14, category_id: 3, name: '热水器维修', price_min: 60, price_max: 200 },
+    { id: 15, category_id: 3, name: '智能门锁安装', price_min: 80, price_max: 150 },
+    { id: 16, category_id: 4, name: '水管维修', price_min: 50, price_max: 150 },
+    { id: 17, category_id: 4, name: '电路维修', price_min: 50, price_max: 200 },
+    { id: 18, category_id: 4, name: '水龙头更换', price_min: 30, price_max: 80 },
+    { id: 19, category_id: 4, name: '马桶维修', price_min: 40, price_max: 120 },
+    { id: 20, category_id: 4, name: '暖气片安装', price_min: 100, price_max: 300 },
+    { id: 21, category_id: 5, name: '空气净化器清洗', price_min: 50, price_max: 100 },
+    { id: 22, category_id: 5, name: '净水器维修', price_min: 60, price_max: 200 },
+    { id: 23, category_id: 5, name: '新风机清洗', price_min: 80, price_max: 150 },
+    { id: 24, category_id: 5, name: '除湿机维修', price_min: 50, price_max: 150 },
+    { id: 25, category_id: 5, name: '加湿器维修', price_min: 40, price_max: 100 }
+  ];
+
+  // ===== 初始化 =====
+  async function init() {
+    await loadAnnouncements();
+    await loadCategories();
+    renderDateSelection();
+    renderTimeGrid();
+    renderRegionSelector();
+    bindEvents();
+    updateSummary();
+  }
+
+  // ===== 加载公告 =====
+  async function loadAnnouncements() {
+    try {
+      const res = await API.getAnnouncements(1);
+      if (res.code === 200 && res.data && res.data.list) {
+        state.announcements = res.data.list;
+      } else {
+        state.announcements = [];
+      }
+    } catch (e) {
+      state.announcements = [];
+    }
+    renderNoticeBar();
+  }
+
+  function renderNoticeBar() {
+    const noticeText = document.getElementById('noticeText');
+    if (state.announcements.length > 0) {
+      noticeText.textContent = state.announcements[0].title;
+    } else {
+      noticeText.textContent = '暂无最新公告';
+    }
+  }
+
+  // ===== 加载分类 =====
+  async function loadCategories() {
+    let cats = [];
+    try {
+      const res = await API.getCategories();
+      if (res.code === 200 && res.data) {
+        cats = res.data;
+      }
+    } catch (e) {}
+    if (!cats || cats.length === 0) cats = FALLBACK_CATEGORIES;
+    state.categories = cats;
+    renderCategoryTabs();
+    if (cats.length > 0) {
+      selectCategory(cats[0].id);
+    }
+  }
+
+  function renderCategoryTabs() {
+    const container = document.getElementById('categoryTabs');
+    container.innerHTML = state.categories.map(c =>
+      `<div class="category-tab ${c.id === state.selectedCategoryId ? 'active' : ''}" data-id="${c.id}">${c.icon || ''} ${c.name}</div>`
+    ).join('');
+  }
+
+  async function selectCategory(cid) {
+    state.selectedCategoryId = cid;
+    state.selectedItem = null;
+    renderCategoryTabs();
+    updateSummary();
+
+    let items = [];
+    try {
+      const res = await API.getServiceItems(cid);
+      if (res.code === 200 && res.data) {
+        items = res.data;
+      }
+    } catch (e) {}
+    if (!items || items.length === 0) {
+      items = FALLBACK_ITEMS.filter(i => i.category_id === cid);
+    }
+    state.serviceItems = items;
+    renderServiceGrid();
+  }
+
+  function renderServiceGrid() {
+    const container = document.getElementById('serviceGrid');
+    if (state.serviceItems.length === 0) {
+      container.innerHTML = '<div class="text-light text-center" style="grid-column:1/-1;padding:20px;">暂无服务项目</div>';
+      return;
+    }
+    container.innerHTML = state.serviceItems.map(item =>
+      `<div class="service-item ${state.selectedItem && state.selectedItem.id === item.id ? 'selected' : ''}" data-id="${item.id}">
+        <div class="s-name">${item.name}</div>
+        <div class="s-price">¥${item.price_min}起</div>
+        <div class="s-rating">⭐ ${(Math.random() * 2 + 3).toFixed(1)}</div>
+      </div>`
+    ).join('');
+  }
+
+  // ===== 日期选择 =====
+  function renderDateSelection() {
+    const container = document.getElementById('dateScroll');
+    const now = new Date();
+    const todayStr = Utils.formatDate(now);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDate = Utils.formatDate(tomorrow);
+    if (!state.selectedDate) state.selectedDate = defaultDate;
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+      const dateStr = Utils.formatDate(d);
+      const weekDay = Utils.getWeekDay(d);
+      const dayNum = d.getDate();
+      const month = d.getMonth() + 1;
+      const isPast = i === 0 && d.getHours() >= 18;
+      days.push({ dateStr, weekDay, dayNum, month, isPast, isToday: i === 0 });
+    }
+
+    container.innerHTML = days.map(d =>
+      `<div class="date-item ${d.dateStr === state.selectedDate ? 'active' : ''} ${d.isPast ? 'disabled' : ''}" data-date="${d.dateStr}">
+        <div class="d-week">${d.isToday ? '今天' : d.weekDay}</div>
+        <div class="d-day">${d.dayNum}</div>
+        <div class="d-month">${d.month}月</div>
+      </div>`
+    ).join('');
+
+    // 如果选中日期已过去，重置为明天
+    const selectedIsPast = days.find(d => d.dateStr === state.selectedDate)?.isPast;
+    if (selectedIsPast) {
+      state.selectedDate = defaultDate;
+      renderDateSelection();
+    }
+
+    // 选中日期后刷新时间网格
+    renderTimeGrid();
+  }
+
+  // ===== 时间选择 =====
+  function renderTimeGrid() {
+    const container = document.getElementById('timeGrid');
+    const times = [];
+    const now = new Date();
+    const isToday = state.selectedDate === Utils.formatDate(now);
+
+    for (let h = 8; h <= 18; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === 18 && m > 0) continue;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        let disabled = false;
+        if (isToday) {
+          const totalMin = h * 60 + m;
+          const nowMin = now.getHours() * 60 + now.getMinutes();
+          if (totalMin <= nowMin + 30) disabled = true;
+        }
+        times.push({ timeStr, disabled });
+      }
+    }
+
+    container.innerHTML = times.map(t =>
+      `<div class="time-item ${t.timeStr === state.selectedTime ? 'active' : ''} ${t.disabled ? 'disabled' : ''}" data-time="${t.timeStr}">${t.timeStr}</div>`
+    ).join('');
+  }
+
+  // ===== 区域选择 =====
+  function renderRegionSelector() {
+    const container = document.getElementById('regionGrid');
+    container.innerHTML = REGIONS.map(r =>
+      `<div class="region-item ${r === state.selectedRegion ? 'selected' : ''}" data-region="${r}">${r}</div>`
+    ).join('');
+  }
+
+  // ===== 更新底部汇总 =====
+  function updateSummary() {
+    const summaryText = document.getElementById('summaryText');
+    const totalPrice = document.getElementById('totalPrice');
+    const btnBook = document.getElementById('btnBook');
+
+    let parts = [];
+    if (state.selectedItem) parts.push(state.selectedItem.name);
+    if (state.selectedDate) parts.push(state.selectedDate);
+    if (state.selectedTime) parts.push(state.selectedTime);
+    if (state.selectedRegion) parts.push(state.selectedRegion);
+
+    if (state.selectedItem) {
+      summaryText.textContent = parts.join(' | ') || '请选择服务项目';
+      totalPrice.textContent = Utils.formatPrice(state.selectedItem.price_min);
+    } else {
+      summaryText.textContent = '请选择服务项目';
+      totalPrice.textContent = '¥0.00';
+    }
+
+    // 检查是否可以预约
+    const canBook = state.selectedItem && state.selectedDate && state.selectedTime &&
+      state.selectedRegion && state.name && state.phone &&
+      state.agreeAppointment && state.agreePlatform &&
+      Utils.validateName(state.name) && Utils.validatePhone(state.phone);
+    btnBook.disabled = !canBook;
+  }
+
+  // ===== 绑定事件 =====
+  function bindEvents() {
+    // 分类Tab点击
+    document.getElementById('categoryTabs').addEventListener('click', function(e) {
+      const tab = e.target.closest('.category-tab');
+      if (tab) {
+        const cid = parseInt(tab.dataset.id);
+        if (cid !== state.selectedCategoryId) selectCategory(cid);
+      }
+    });
+
+    // 服务项目点击
+    document.getElementById('serviceGrid').addEventListener('click', function(e) {
+      const item = e.target.closest('.service-item');
+      if (item) {
+        const id = parseInt(item.dataset.id);
+        const found = state.serviceItems.find(s => s.id === id);
+        if (found) {
+          state.selectedItem = found;
+          renderServiceGrid();
+          updateSummary();
+        }
+      }
+    });
+
+    // 日期选择
+    document.getElementById('dateScroll').addEventListener('click', function(e) {
+      const item = e.target.closest('.date-item');
+      if (item && !item.classList.contains('disabled')) {
+        state.selectedDate = item.dataset.date;
+        state.selectedTime = null;
+        renderDateSelection();
+        renderTimeGrid();
+        updateSummary();
+      }
+    });
+
+    // 时间选择
+    document.getElementById('timeGrid').addEventListener('click', function(e) {
+      const item = e.target.closest('.time-item');
+      if (item && !item.classList.contains('disabled')) {
+        state.selectedTime = item.dataset.time;
+        renderTimeGrid();
+        updateSummary();
+      }
+    });
+
+    // 区域选择弹窗
+    document.getElementById('regionDisplay').addEventListener('click', function() {
+      document.getElementById('regionModal').classList.remove('hidden');
+    });
+    document.getElementById('regionModalClose').addEventListener('click', function() {
+      document.getElementById('regionModal').classList.add('hidden');
+    });
+    document.getElementById('regionGrid').addEventListener('click', function(e) {
+      const item = e.target.closest('.region-item');
+      if (item) {
+        state.selectedRegion = item.dataset.region;
+        document.getElementById('regionText').textContent = state.selectedRegion;
+        document.getElementById('regionText').classList.remove('text-light');
+        document.getElementById('regionModal').classList.add('hidden');
+        renderRegionSelector();
+        updateSummary();
+      }
+    });
+
+    // 联系人输入
+    document.getElementById('nameInput').addEventListener('input', function() {
+      state.name = this.value;
+      updateSummary();
+    });
+    document.getElementById('phoneInput').addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+      state.phone = this.value;
+      updateSummary();
+    });
+    document.getElementById('addressInput').addEventListener('input', function() {
+      state.address = this.value;
+    });
+    document.getElementById('noteInput').addEventListener('input', function() {
+      state.note = this.value;
+    });
+
+    // 协议复选框
+    document.getElementById('agreeAppointment').addEventListener('change', function() {
+      state.agreeAppointment = this.checked;
+      updateSummary();
+    });
+    document.getElementById('agreePlatform').addEventListener('change', function() {
+      state.agreePlatform = this.checked;
+      updateSummary();
+    });
+
+    // 查看协议
+    document.getElementById('viewAppointmentAgreement').addEventListener('click', function() {
+      showAgreement('预约协议', '预约协议内容：\n\n1. 用户预约服务后，平台将安排师傅上门服务。\n2. 用户需提供真实有效的联系方式和地址信息。\n3. 预约时间如有变更，请提前联系平台客服。\n4. 用户应确保服务现场具备作业条件。\n5. 服务完成后，用户需在师傅在场时核验服务质量。\n6. 如对服务不满意，可在24小时内联系客服处理。\n7. 因用户原因导致师傅空跑，需承担相应费用。');
+    });
+    document.getElementById('viewPlatformAgreement').addEventListener('click', function() {
+      showAgreement('平台服务协议', '平台服务协议内容：\n\n1. 佳乐家平台（以下简称"平台"）为用户提供便民服务信息撮合。\n2. 平台不对服务效果做任何明示或暗示的保证。\n3. 用户使用平台服务即视为同意本协议全部条款。\n4. 平台有权对违规用户采取限制措施。\n5. 用户应妥善保管账户信息，因账户泄露造成的损失由用户自行承担。\n6. 平台将尽全力保护用户隐私信息。\n7. 本协议的解释权归平台所有。');
+    });
+
+    // 公告相关
+    document.getElementById('noticeBar').addEventListener('click', function() {
+      showNoticeList();
+    });
+    document.getElementById('noticeModalClose').addEventListener('click', function() {
+      document.getElementById('noticeModal').classList.add('hidden');
+    });
+    document.getElementById('noticeDetailClose').addEventListener('click', function() {
+      document.getElementById('noticeDetailModal').classList.add('hidden');
+    });
+
+    // 协议弹窗关闭
+    document.getElementById('agreementModalClose').addEventListener('click', function() {
+      document.getElementById('agreementModal').classList.add('hidden');
+    });
+
+    // 立即预约
+    document.getElementById('btnBook').addEventListener('click', function() {
+      if (this.disabled) return;
+      submitOrder();
+    });
+
+    // 结果弹窗
+    document.getElementById('successViewOrders').addEventListener('click', function() {
+      window.location.href = 'orders.html';
+    });
+    document.getElementById('successContinue').addEventListener('click', function() {
+      document.getElementById('successModal').classList.add('hidden');
+      resetForm();
+    });
+
+    // 点击弹窗遮罩关闭
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+      });
+    });
+  }
+
+  // ===== 公告列表 =====
+  async function showNoticeList() {
+    const container = document.getElementById('noticeList');
+    if (state.announcements.length === 0) {
+      await loadAnnouncements();
+    }
+    if (state.announcements.length === 0) {
+      container.innerHTML = '<div class="empty"><p>暂无公告</p></div>';
+    } else {
+      container.innerHTML = state.announcements.map(a => {
+        const time = a.published_at || a.created_at || '';
+        return `<div class="announcement-item" data-id="${a.id}">
+          <div class="a-title">${a.title}</div>
+          <div class="a-time">${Utils.formatTime(time)}</div>
+        </div>`;
+      }).join('');
+      // 点击查看详情
+      container.querySelectorAll('.announcement-item').forEach(el => {
+        el.addEventListener('click', function() {
+          const id = this.dataset.id;
+          showNoticeDetail(id);
+        });
+      });
+    }
+    document.getElementById('noticeModal').classList.remove('hidden');
+  }
+
+  async function showNoticeDetail(id) {
+    try {
+      const res = await API.getAnnouncementDetail(id);
+      if (res.code === 200 && res.data) {
+        document.getElementById('noticeDetailTitle').textContent = res.data.title;
+        document.getElementById('noticeDetailContent').textContent = res.data.content || '暂无内容';
+      } else {
+        document.getElementById('noticeDetailTitle').textContent = '公告详情';
+        document.getElementById('noticeDetailContent').textContent = '加载失败';
+      }
+    } catch (e) {
+      const a = state.announcements.find(a => a.id == id);
+      document.getElementById('noticeDetailTitle').textContent = a ? a.title : '公告详情';
+      document.getElementById('noticeDetailContent').textContent = '加载失败，请稍后重试';
+    }
+    document.getElementById('noticeDetailModal').classList.remove('hidden');
+  }
+
+  // ===== 协议弹窗 =====
+  function showAgreement(title, content) {
+    document.getElementById('agreementModalTitle').textContent = title;
+    document.getElementById('agreementModalContent').textContent = content;
+    document.getElementById('agreementModal').classList.remove('hidden');
+  }
+
+  // ===== 提交订单 =====
+  async function submitOrder() {
+    if (state.submitting) return;
+    if (!state.selectedItem || !state.selectedDate || !state.selectedTime || !state.selectedRegion) {
+      Utils.toast('请完善预约信息');
+      return;
+    }
+    if (!Utils.validateName(state.name)) {
+      Utils.toast('请输入正确的姓名（2-20字符）');
+      return;
+    }
+    if (!Utils.validatePhone(state.phone)) {
+      Utils.toast('请输入正确的手机号');
+      return;
+    }
+
+    state.submitting = true;
+    const btn = document.getElementById('btnBook');
+    btn.disabled = true;
+    btn.textContent = '提交中...';
+
+    const data = {
+      user_name: state.name,
+      user_phone: state.phone,
+      user_region: state.selectedRegion,
+      user_address: state.address || '',
+      user_note: state.note || '',
+      service_item_id: state.selectedItem.id,
+      appointment_date: state.selectedDate,
+      appointment_time: state.selectedTime
+    };
+
+    try {
+      const res = await API.createOrder(data);
+      if (res.code === 200 && res.data) {
+        showSuccess(res.data.order_no, res.data.verify_code);
+      } else {
+        Utils.toast(res.message || '下单失败，请稍后重试');
+      }
+    } catch (e) {
+      Utils.toast('网络异常，请稍后重试');
+    }
+
+    state.submitting = false;
+    btn.disabled = false;
+    btn.textContent = '立即预约';
+  }
+
+  function showSuccess(orderNo, verifyCode) {
+    document.getElementById('resultOrderNo').textContent = orderNo || '---';
+    document.getElementById('resultVerifyCode').textContent = verifyCode || '---';
+    document.getElementById('successModal').classList.remove('hidden');
+  }
+
+  function resetForm() {
+    state.selectedItem = null;
+    state.selectedDate = null;
+    state.selectedTime = null;
+    state.selectedRegion = null;
+    state.name = '';
+    state.phone = '';
+    state.address = '';
+    state.note = '';
+    state.agreeAppointment = false;
+    state.agreePlatform = false;
+
+    // 重置UI
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    state.selectedDate = Utils.formatDate(tomorrow);
+
+    renderServiceGrid();
+    renderDateSelection();
+    renderTimeGrid();
+    renderRegionSelector();
+
+    document.getElementById('regionText').textContent = '请选择街道/乡镇';
+    document.getElementById('regionText').classList.add('text-light');
+    document.getElementById('nameInput').value = '';
+    document.getElementById('phoneInput').value = '';
+    document.getElementById('addressInput').value = '';
+    document.getElementById('noteInput').value = '';
+    document.getElementById('agreeAppointment').checked = false;
+    document.getElementById('agreePlatform').checked = false;
+
+    updateSummary();
+  }
+
+  // ===== 启动 =====
+  init();
+})();
+</script>
+</body>
+</html>

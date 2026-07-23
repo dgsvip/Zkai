@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 订单管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #f0f2f5; display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #001529; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px 16px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo span { color: #fff; }
+    .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-menu .menu-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: all 0.2s; font-size: 14px; gap: 10px; }
+    .sidebar-menu .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .sidebar-menu .menu-item.active { color: #fff; background: var(--primary); }
+    .sidebar-menu .menu-item .menu-icon { font-size: 18px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer .menu-item { display: flex; align-items: center; gap: 10px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 14px; padding: 8px 0; }
+    .sidebar-footer .menu-item:hover { color: #fff; }
+    .main { margin-left: 220px; flex: 1; min-height: 100vh; }
+    .main-header { background: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
+    .main-header h2 { font-size: 18px; font-weight: 600; }
+    .main-content { padding: 24px; }
+    .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stats-row .stat-item { background: #fff; border-radius: 10px; padding: 14px 20px; flex: 1; min-width: 120px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+    .stats-row .stat-item:hover { border-color: var(--primary); }
+    .stats-row .stat-item.active { border-color: var(--primary); background: var(--primary-light); }
+    .stats-row .stat-item .num { font-size: 22px; font-weight: 700; }
+    .stats-row .stat-item .label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    .filter-bar { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .filter-bar select, .filter-bar input { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
+    .filter-bar select:focus, .filter-bar input:focus { border-color: var(--primary); }
+    .filter-bar .filter-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .filter-bar .filter-btn:hover { background: var(--primary-dark); }
+    .filter-bar .tab-btn { padding: 8px 16px; background: #fff; color: var(--text-secondary); border: 1.5px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .filter-bar .tab-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .table-card { background: #fff; border-radius: 12px; padding: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+    .table-card table { width: 100%; border-collapse: collapse; }
+    .table-card th { text-align: left; padding: 12px 10px; font-size: 13px; color: var(--text-light); font-weight: 500; border-bottom: 1px solid var(--border); background: #fafafa; }
+    .table-card td { padding: 10px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .table-card tr:hover td { background: #fafafa; }
+    .table-card .action-link { color: var(--primary); cursor: pointer; font-size: 13px; margin-right: 8px; }
+    .table-card .action-link:hover { text-decoration: underline; }
+    .table-card .action-link.danger { color: var(--danger); }
+    .pagination { padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+    .pagination .page-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 13px; background: #fff; }
+    .pagination .page-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .pagination .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pagination .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pagination .page-info { font-size: 13px; color: var(--text-light); }
+    .modal-lg { max-width: 600px; }
+    .timeline { padding: 10px 0; }
+    .timeline-item { position: relative; padding-left: 24px; padding-bottom: 16px; border-left: 2px solid var(--border); margin-left: 6px; }
+    .timeline-item:last-child { border-left-color: transparent; }
+    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; }
+    .timeline-item .time { font-size: 12px; color: var(--text-light); }
+    .timeline-item .content { font-size: 14px; margin-top: 2px; }
+    .loading-state { text-align: center; padding: 40px; color: var(--text-light); }
+    @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar-logo span, .sidebar-menu .menu-item span, .sidebar-footer .menu-item span { display: none; } .main { margin-left: 60px; } }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo"><span style="font-size:24px;">🏠</span> <span>佳乐家管理</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item" data-page="dashboard"><span class="menu-icon">📊</span> <span>仪表盘</span></div>
+      <div class="menu-item active" data-page="orders"><span class="menu-icon">📋</span> <span>订单管理</span></div>
+      <div class="menu-item" data-page="technicians"><span class="menu-icon">🔧</span> <span>师傅管理</span></div>
+      <div class="menu-item" data-page="merchants"><span class="menu-icon">🏪</span> <span>商家管理</span></div>
+      <div class="menu-item" data-page="services"><span class="menu-icon">🛠️</span> <span>服务管理</span></div>
+      <div class="menu-item" data-page="announcements"><span class="menu-icon">📢</span> <span>公告管理</span></div>
+      <div class="menu-item" data-page="dataview"><span class="menu-icon">📈</span> <span>数据大屏</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="menu-item" data-page="settings"><span class="menu-icon">⚙️</span> <span>系统设置</span></div>
+      <div class="menu-item" id="logoutBtn"><span class="menu-icon">🚪</span> <span>退出</span></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="main-header"><h2>订单管理</h2><div class="user-info"><span id="userDisplay">管理员</span></div></div>
+    <div class="main-content">
+      <div class="stats-row" id="statsRow">
+        <div class="stat-item active" data-status="all"><div class="num" id="countAll">-</div><div class="label">全部</div></div>
+        <div class="stat-item" data-status="pending"><div class="num" id="countPending">-</div><div class="label">待接单</div></div>
+        <div class="stat-item" data-status="accepted"><div class="num" id="countAccepted">-</div><div class="label">进行中</div></div>
+        <div class="stat-item" data-status="completed"><div class="num" id="countCompleted">-</div><div class="label">已完成</div></div>
+        <div class="stat-item" data-status="overdue"><div class="num" id="countOverdue">-</div><div class="label">超期</div></div>
+      </div>
+      <div class="filter-bar">
+        <select id="filterStatus"><option value="all">全部状态</option><option value="pending">待接单</option><option value="bidding">抢单中</option><option value="accepted">进行中</option><option value="in_progress">已开工</option><option value="completed">已完成</option><option value="cancelled">已取消</option><option value="overdue_closed">超期完结</option><option value="disputed">争议中</option></select>
+        <select id="filterSource"><option value="">全部来源</option><option value="user">用户端</option><option value="merchant">商家端</option></select>
+        <input type="date" id="filterStartDate">
+        <input type="date" id="filterEndDate">
+        <button class="filter-btn" onclick="applyFilter()">筛选</button>
+        <button class="filter-btn" onclick="resetFilter()" style="background:var(--text-light);">重置</button>
+        <span style="flex:1;"></span>
+        <button class="tab-btn" id="tabNormal" onclick="switchTab('normal')">订单列表</button>
+        <button class="tab-btn" id="tabRecycle" onclick="switchTab('recycle')">回收站</button>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th style="width:30px;"><input type="checkbox" id="checkAll"></th><th>订单号</th><th>服务</th><th>用户</th><th>电话</th><th>区域</th><th>来源</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+        <div class="loading-state" id="loadingState">加载中...</div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详情弹窗 -->
+  <div class="modal-overlay hidden" id="detailModal">
+    <div class="modal-box modal-lg" style="max-width:640px;">
+      <div class="flex-between mb-16"><span class="modal-title" style="margin:0;">订单详情</span><span style="font-size:24px;cursor:pointer;color:var(--text-light);" onclick="closeDetail()">×</span></div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- 转派弹窗 -->
+  <div class="modal-overlay hidden" id="transferModal">
+    <div class="modal-box" style="max-width:400px;">
+      <div class="modal-title">强制转派</div>
+      <div class="form-group"><label class="form-label">目标师傅ID</label><input class="form-input" id="transferTechId" placeholder="请输入师傅ID"></div>
+      <div class="form-group"><label class="form-label">备注</label><textarea class="form-textarea" id="transferRemark" rows="3"></textarea></div>
+      <div class="flex gap-8" style="justify-content:flex-end;"><button class="btn btn-ghost" onclick="closeTransfer()">取消</button><button class="btn btn-primary" onclick="confirmTransfer()">确认转派</button></div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+      let currentPage = 1, currentStatus = 'all', currentTab = 'normal';
+      let transferOrderId = null;
+
+      document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+        item.addEventListener('click', function() {
+          const page = this.dataset.page;
+          Utils.go(page + '.html');
+        });
+      });
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定退出登录？')) { Utils.logout(); window.location.href = 'login.html'; }
+      });
+      const userInfo = Utils.get('userInfo');
+      if (userInfo) document.getElementById('userDisplay').textContent = userInfo.username || '管理员';
+
+      // 统计项点击
+      document.querySelectorAll('.stats-row .stat-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.stats-row .stat-item').forEach(s => s.classList.remove('active'));
+          this.classList.add('active');
+          currentStatus = this.dataset.status;
+          currentPage = 1;
+          loadOrders();
+        });
+      });
+
+      // 全选
+      document.getElementById('checkAll').addEventListener('change', function() {
+        document.querySelectorAll('#ordersBody input[type="checkbox"]').forEach(cb => cb.checked = this.checked);
+      });
+
+      window.applyFilter = function() {
+        currentPage = 1;
+        loadOrders();
+      };
+      window.resetFilter = function() {
+        document.getElementById('filterStatus').value = 'all';
+        document.getElementById('filterSource').value = '';
+        document.getElementById('filterStartDate').value = '';
+        document.getElementById('filterEndDate').value = '';
+        currentPage = 1;
+        loadOrders();
+      };
+
+      window.switchTab = function(tab) {
+        currentTab = tab;
+        currentPage = 1;
+        document.getElementById('tabNormal').classList.toggle('active', tab === 'normal');
+        document.getElementById('tabRecycle').classList.toggle('active', tab === 'recycle');
+        loadOrders();
+      };
+      document.getElementById('tabNormal').classList.add('active');
+
+      loadOrders();
+
+      async function loadOrders() {
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('loadingState').textContent = '加载中...';
+        const params = { page: currentPage };
+        if (currentStatus !== 'all' && currentStatus !== 'overdue') params.status = currentStatus;
+        if (currentTab === 'recycle') params.deleted = '1';
+        const source = document.getElementById('filterSource').value;
+        if (source) params.source = source;
+        const startDate = document.getElementById('filterStartDate').value;
+        const endDate = document.getElementById('filterEndDate').value;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        const res = await API.adminGetOrders(params);
+        document.getElementById('loadingState').style.display = 'none';
+        if (res.code !== 200) return;
+        const data = res.data;
+        renderOrders(data.list || []);
+        renderPagination(data);
+        updateStats(data.list || []);
+      }
+
+      function renderOrders(orders) {
+        const tbody = document.getElementById('ordersBody');
+        if (!orders || orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light);">暂无订单</td></tr>';
+          return;
+        }
+        // 过滤超期
+        let filtered = orders;
+        if (currentStatus === 'overdue') {
+          filtered = orders.filter(o => o.status === 'accepted' || o.status === 'overdue_closed');
+        }
+        tbody.innerHTML = filtered.map(o => {
+          const isOverdue = o.status === 'accepted' && o.accepted_at && (Date.now() - new Date(o.accepted_at).getTime()) > 3*24*60*60*1000;
+          return `<tr>
+            <td><input type="checkbox" value="${o.id}"></td>
+            <td style="font-family:monospace;font-size:12px;color:var(--primary);">${Utils.sanitize(o.order_no)}</td>
+            <td>${Utils.sanitize(o.service_name)}</td>
+            <td>${Utils.sanitize(o.user_name)}</td>
+            <td>${Utils.sanitize(o.user_phone)}</td>
+            <td>${Utils.sanitize(o.user_region)}</td>
+            <td>${o.source === 'merchant' ? '商家' : '用户'}</td>
+            <td>${Utils.formatPrice(o.price)}</td>
+            <td><span class="tag ${isOverdue ? 'tag-overdue' : Utils.statusClass(o.status)}">${isOverdue ? '超期' : Utils.statusText(o.status)}</span></td>
+            <td>
+              <span class="action-link" onclick="showDetail('${o.order_no}')">详情</span>
+              ${o.status !== 'deleted' ? `<span class="action-link" onclick="showTransfer('${o.id}')">转派</span><span class="action-link danger" onclick="deleteOrder('${o.id}')">删除</span>` : `<span class="action-link" onclick="restoreOrder('${o.id}')">恢复</span>`}
+            </td>
+          </tr>`;
+        }).join('');
+      }
+
+      function updateStats(orders) {
+        const all = orders.length;
+        const pending = orders.filter(o => o.status === 'pending' || o.status === 'bidding').length;
+        const accepted = orders.filter(o => o.status === 'accepted' || o.status === 'in_progress').length;
+        const completed = orders.filter(o => o.status === 'completed').length;
+        const overdue = orders.filter(o => o.status === 'overdue_closed' || (o.status === 'accepted' && o.accepted_at && (Date.now() - new Date(o.accepted_at).getTime()) > 3*24*60*60*1000)).length;
+        document.getElementById('countAll').textContent = all;
+        document.getElementById('countPending').textContent = pending;
+        document.getElementById('countAccepted').textContent = accepted;
+        document.getElementById('countCompleted').textContent = completed;
+        document.getElementById('countOverdue').textContent = overdue;
+      }
+
+      function renderPagination(data) {
+        const el = document.getElementById('pagination');
+        if (!data || data.totalPages <= 1) { el.innerHTML = ''; return; }
+        let html = `<span class="page-info">共${data.total}条</span>`;
+        html += `<button class="page-btn" ${currentPage<=1?'disabled':''} onclick="goPage(${currentPage-1})">上一页</button>`;
+        for (let i = Math.max(1, currentPage-2); i <= Math.min(data.totalPages, currentPage+2); i++) {
+          html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" ${currentPage>=data.totalPages?'disabled':''} onclick="goPage(${currentPage+1})">下一页</button>`;
+        el.innerHTML = html;
+      }
+
+      window.goPage = function(p) { currentPage = p; loadOrders(); };
+
+      window.showDetail = async function(orderNo) {
+        const res = await API.getOrderDetail(orderNo);
+        if (res.code !== 200) return Utils.error(res.message);
+        const o = res.data;
+        let html = `<div class="flex-between mb-12"><span><strong>订单号：</strong>${o.order_no}</span><span><span class="tag ${Utils.statusClass(o.status)}">${Utils.statusText(o.status)}</span></span></div>`;
+        html += `<div class="grid-2 mb-12" style="font-size:13px;">`;
+        html += `<div><strong>服务：</strong>${Utils.sanitize(o.service_name)}</div>`;
+        html += `<div><strong>金额：</strong>${Utils.formatPrice(o.price)}</div>`;
+        html += `<div><strong>用户：</strong>${Utils.sanitize(o.user_name)}</div>`;
+        html += `<div><strong>电话：</strong>${Utils.sanitize(o.user_phone)}</div>`;
+        html += `<div><strong>区域：</strong>${Utils.sanitize(o.user_region)}</div>`;
+        html += `<div><strong>地址：</strong>${Utils.sanitize(o.user_address)}</div>`;
+        html += `<div><strong>来源：</strong>${o.source === 'merchant' ? '商家' : '用户'}</div>`;
+        html += `<div><strong>时间：</strong>${Utils.formatTime(o.created_at)}</div>`;
+        html += `</div>`;
+        // 时间线
+        if (o.logs && o.logs.length > 0) {
+          html += `<div class="divider"></div><h4 style="margin-bottom:8px;">操作时间线</h4><div class="timeline">`;
+          o.logs.forEach(log => {
+            html += `<div class="timeline-item"><div class="time">${Utils.formatTime(log.created_at)}</div><div class="content">${Utils.sanitize(log.content)}</div></div>`;
+          });
+          html += `</div>`;
+        }
+        // 备注
+        if (o.remarks && o.remarks.length > 0) {
+          html += `<div class="divider"></div><h4 style="margin-bottom:8px;">备注汇总</h4>`;
+          o.remarks.forEach(r => {
+            html += `<div class="flex-between" style="font-size:13px;padding:4px 0;"><span>${Utils.sanitize(r.content)}</span><span style="color:var(--text-light);">${Utils.formatTime(r.created_at)}</span></div>`;
+          });
+        }
+        // 评价
+        if (o.evaluation) {
+          html += `<div class="divider"></div><h4 style="margin-bottom:8px;">评价记录</h4>`;
+          html += `<div style="font-size:13px;">态度：${'⭐'.repeat(o.evaluation.rating_attitude)} 技能：${'⭐'.repeat(o.evaluation.rating_skill)} 准时：${'⭐'.repeat(o.evaluation.rating_punctuality)}</div>`;
+          if (o.evaluation.comment) html += `<div style="font-size:13px;margin-top:4px;">评价：${Utils.sanitize(o.evaluation.comment)}</div>`;
+        }
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.remove('hidden');
+      };
+
+      window.closeDetail = function() { document.getElementById('detailModal').classList.add('hidden'); };
+
+      window.showTransfer = function(id) {
+        transferOrderId = id;
+        document.getElementById('transferTechId').value = '';
+        document.getElementById('transferRemark').value = '';
+        document.getElementById('transferModal').classList.remove('hidden');
+      };
+      window.closeTransfer = function() { document.getElementById('transferModal').classList.add('hidden'); transferOrderId = null; };
+      window.confirmTransfer = async function() {
+        const techId = document.getElementById('transferTechId').value.trim();
+        if (!techId) return Utils.error('请输入师傅ID');
+        const res = await API.adminUpdateOrder(transferOrderId, { technician_id: parseInt(techId), status: 'accepted' });
+        if (res.code === 200) { Utils.success('转派成功'); closeTransfer(); loadOrders(); }
+        else Utils.error(res.message);
+      };
+
+      window.deleteOrder = async function(id) {
+        if (!confirm('确定删除此订单？可在回收站恢复。')) return;
+        const res = await API.adminUpdateOrder(id, { status: 'deleted' });
+        if (res.code === 200) { Utils.success('已删除'); loadOrders(); }
+        else Utils.error(res.message);
+      };
+
+      window.restoreOrder = async function(id) {
+        const res = await API.adminRestoreOrder(id);
+        if (res.code === 200) { Utils.success('已恢复'); loadOrders(); }
+        else Utils.error(res.message);
+      };
+
+      document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDetail();
+      });
+      document.getElementById('transferModal').addEventListener('click', function(e) {
+        if (e.target === this) closeTransfer();
+      });
+    })();
+  </script>
+</body>
+</html>

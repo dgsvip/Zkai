@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>进行中 - 佳乐家师傅端</title>
+<link rel="stylesheet" href="../common.css">
+<style>
+/* ===== 页面特有样式 ===== */
+.page { max-width: 750px; margin: 0 auto; min-height: 100vh; background: #f5f5f5; padding-bottom: 70px; }
+
+/* ===== 顶部标题 ===== */
+.ongoing-header { background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%); padding: 16px 16px 20px; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.ongoing-header h1 { font-size: 20px; font-weight: 700; }
+.ongoing-header .count { font-size: 14px; opacity: 0.85; }
+
+/* ===== 进行中订单卡片 ===== */
+.ongoing-list { padding: 12px; }
+.order-card { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+.order-card.warning { border-left: 4px solid #FAAD14; }
+.order-card-header { padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: center; }
+.order-card-header .service-name { font-size: 15px; font-weight: 600; }
+.order-card-body { padding: 0 14px 8px; }
+.info-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 5px; font-size: 13px; color: #666; }
+.info-row .label { color: #999; white-space: nowrap; min-width: 56px; }
+.info-row .value { flex: 1; color: #333; }
+.info-row .value.bold { font-weight: 600; }
+.order-card-actions { padding: 8px 14px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.order-card-actions .btn { flex: 1; min-width: calc(50% - 4px); font-size: 12px; padding: 8px 6px; }
+
+/* ===== 状态标签 ===== */
+.status-tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.status-tag.ongoing { background: #E6F7FF; color: #1677FF; }
+.status-tag.timeout { background: #FFF7E6; color: #D48806; }
+.status-tag.overdue { background: #FFF1F0; color: #CF1322; }
+
+/* ===== 弹窗 ===== */
+.modal-box { position: relative; }
+.modal-box .form-group { margin-bottom: 14px; }
+.modal-box .form-label { font-size: 13px; color: #666; margin-bottom: 6px; display: block; font-weight: 500; }
+.modal-box .form-input, .modal-box select, .modal-box textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #f0f0f0; border-radius: 8px; font-size: 14px; background: #fff; }
+.modal-box .form-input:focus, .modal-box select:focus, .modal-box textarea:focus { border-color: #1677FF; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn { flex: 1; }
+
+/* ===== 完工照片上传 ===== */
+.photo-upload { display: flex; gap: 10px; flex-wrap: wrap; }
+.photo-upload-item { width: 80px; height: 80px; border: 1.5px dashed #ddd; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 12px; background: #fafafa; }
+.photo-upload-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.photo-upload-item .add-icon { font-size: 24px; }
+
+/* ===== 快捷选项 ===== */
+.quick-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.quick-option { padding: 6px 14px; border-radius: 16px; font-size: 13px; border: 1.5px solid #e0e0e0; background: #fff; cursor: pointer; color: #666; transition: all 0.2s; }
+.quick-option:active { border-color: #1677FF; color: #1677FF; background: #F0F5FF; }
+.quick-option.selected { border-color: #1677FF; color: #1677FF; background: #F0F5FF; }
+
+/* ===== 转派选择 ===== */
+.transfer-list { max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
+.transfer-item { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; border: 1.5px solid #f0f0f0; transition: 0.2s; }
+.transfer-item:active { background: #F0F5FF; }
+.transfer-item.selected { border-color: #1677FF; background: #F0F5FF; }
+.transfer-item .avatar { width: 36px; height: 36px; border-radius: 50%; background: #E6F7FF; display: flex; align-items: center; justify-content: center; color: #1677FF; font-weight: 600; font-size: 14px; margin-right: 10px; }
+.transfer-item .info { flex: 1; }
+.transfer-item .name { font-size: 14px; font-weight: 500; }
+.transfer-item .region { font-size: 12px; color: #999; }
+
+/* ===== 空状态 ===== */
+.empty-state { text-align: center; padding: 80px 20px; color: #999; }
+.empty-state i { font-size: 56px; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 14px; }
+
+/* ===== 确认弹窗 ===== */
+.confirm-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.confirm-box { background: #fff; border-radius: 14px; width: 80%; max-width: 320px; padding: 24px 20px; text-align: center; }
+.confirm-box .title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.confirm-box .desc { font-size: 14px; color: #666; margin-bottom: 20px; }
+.confirm-box .actions { display: flex; gap: 10px; }
+.confirm-box .actions .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- 顶部标题 -->
+  <div class="ongoing-header">
+    <div>
+      <h1>⚡ 进行中</h1>
+      <div class="count" id="orderCount">共 0 单</div>
+    </div>
+    <div>
+      <span class="status-tag ongoing" id="statusTag">进行中</span>
+    </div>
+  </div>
+
+  <!-- 订单列表 -->
+  <div id="ongoingList" class="ongoing-list">
+    <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item" onclick="Utils.go('/technician/index.html')">
+      <i>📋</i><span>工单</span>
+    </div>
+    <div class="tabbar-item active" onclick="Utils.go('/technician/ongoing.html')">
+      <i>⚡</i><span>进行中</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/technician/profile.html')">
+      <i>👤</i><span>我的</span>
+    </div>
+  </div>
+</div>
+
+<script src="../common.js"></script>
+<script>
+let activeOrders = [];
+let selectedTransferTech = null;
+let uploadedPhotos = [];
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', function() {
+  if (!checkAuth('technician')) return;
+  loadActiveOrders();
+});
+
+// ===== 加载进行中订单 =====
+async function loadActiveOrders() {
+  const container = document.getElementById('ongoingList');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+
+  const res = await API.techGetActiveOrders();
+  if (res.code === 0 && res.data) {
+    activeOrders = Array.isArray(res.data) ? res.data : (res.data.list || res.data.orders || []);
+    renderOrders(activeOrders);
+    document.getElementById('orderCount').textContent = '共 ' + activeOrders.length + ' 单';
+  } else {
+    container.innerHTML = '<div class="empty-state"><i>📋</i><p>暂无进行中的订单</p></div>';
+    document.getElementById('orderCount').textContent = '共 0 单';
+  }
+}
+
+// ===== 渲染订单列表 =====
+function renderOrders(orders) {
+  const container = document.getElementById('ongoingList');
+  if (!orders || orders.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i>📋</i><p>暂无进行中的订单</p></div>';
+    return;
+  }
+
+  let html = '';
+  orders.forEach(order => {
+    const isWarning = order.is_warning || order.warning || (order.status === 'in_progress' && order.elapsed_hours > 20);
+    const statusLabel = order.is_overdue ? '即将超时' : (order.status === 'in_progress' ? '进行中' : Utils.statusText(order.status));
+    const statusClass = order.is_overdue ? 'timeout' : 'ongoing';
+
+    html += '<div class="order-card' + (isWarning ? ' warning' : '') + '" data-no="' + order.order_no + '">';
+    html += '<div class="order-card-header">';
+    html += '<span class="service-name">' + Utils.sanitize(order.service_category || order.service_name || '通用服务') + '</span>';
+    html += '<span class="status-tag ' + statusClass + '">' + statusLabel + '</span>';
+    html += '</div>';
+
+    html += '<div class="order-card-body">';
+    if (order.address) {
+      html += '<div class="info-row"><span class="label">📍 地址</span><span class="value bold">' + Utils.sanitize(order.address) + '</span></div>';
+    }
+    if (order.phone) {
+      html += '<div class="info-row"><span class="label">📞 电话</span><span class="value">' + order.phone + '</span></div>';
+    }
+    if (order.appointment_time) {
+      html += '<div class="info-row"><span class="label">🕐 预约</span><span class="value">' + Utils.formatTime(order.appointment_time) + '</span></div>';
+    }
+    if (order.price || order.estimated_price) {
+      html += '<div class="info-row"><span class="label">💰 价格</span><span class="value" style="color:#FF4D4F;font-weight:700">' + Utils.formatPrice(order.price || order.estimated_price) + '</span></div>';
+    }
+    if (order.remark) {
+      html += '<div class="info-row"><span class="label">📝 备注</span><span class="value" style="color:#999">' + Utils.sanitize(order.remark) + '</span></div>';
+    }
+    if (order.elapsed_hours !== undefined && order.elapsed_hours > 0) {
+      html += '<div class="info-row"><span class="label">⏱ 已耗时</span><span class="value" style="color:' + (order.elapsed_hours >= 24 ? '#FAAD14' : '#999') + '">约 ' + order.elapsed_hours + ' 小时</span></div>';
+    }
+    html += '</div>';
+
+    // 操作按钮
+    html += '<div class="order-card-actions">';
+    html += '<button class="btn btn-success btn-sm" onclick="showCompleteModal(\'' + order.order_no + '\')">✅ 完工</button>';
+    html += '<button class="btn btn-outline btn-sm" onclick="showTransferModal(\'' + order.order_no + '\')">🔄 转派</button>';
+    html += '<button class="btn btn-ghost btn-sm" style="border:1px solid #f0f0f0" onclick="showCancelModal(\'' + order.order_no + '\')">❌ 取消</button>';
+    html += '<button class="btn btn-ghost btn-sm" style="border:1px solid #f0f0f0" onclick="showOnsiteModal(\'' + order.order_no + '\')">📍 现场状态</button>';
+    html += '<button class="btn btn-ghost btn-sm" style="border:1px solid #f0f0f0;flex-basis:100%" onclick="showAdditionModal(\'' + order.order_no + '\')">➕ 增项申请</button>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ===== 弹窗工具 =====
+function showModal(title, content) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'dynamicModal';
+  overlay.innerHTML = '<div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:17px;font-weight:600">' + title + '</h3><span style="font-size:22px;color:#999;cursor:pointer" onclick="closeModal()">✕</span></div>' + content + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function closeModal() {
+  const el = document.getElementById('dynamicModal');
+  if (el) el.remove();
+  const confirmEl = document.getElementById('confirmModal');
+  if (confirmEl) confirmEl.remove();
+}
+
+// ==============================
+// 1. 完工弹窗
+// ==============================
+function showCompleteModal(orderNo) {
+  const content = `
+    <div class="form-group">
+      <label class="form-label">实收金额（元）</label>
+      <input type="number" class="form-input" id="completeAmount" placeholder="请输入实收金额" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">质保期</label>
+      <select class="form-input" id="completeWarranty">
+        <option value="0">无质保</option>
+        <option value="3">3个月</option>
+        <option value="6">6个月</option>
+        <option value="12" selected>12个月</option>
+        <option value="24">24个月</option>
+        <option value="36">36个月</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">完工照片</label>
+      <div class="photo-upload" id="photoUploadArea">
+        <div class="photo-upload-item" onclick="triggerUpload()">
+          <span class="add-icon">+</span>
+          <span>上传照片</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <textarea class="form-input" id="completeRemark" placeholder="可选填写完工备注" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmComplete('${orderNo}')">确认完工</button>
+    </div>
+  `;
+  showModal('✅ 确认完工', content);
+}
+
+function triggerUpload() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = function(e) {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      if (uploadedPhotos.length >= 6) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        uploadedPhotos.push(ev.target.result);
+        renderPhotos();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+
+function renderPhotos() {
+  const area = document.getElementById('photoUploadArea');
+  if (!area) return;
+  let html = '';
+  uploadedPhotos.forEach((photo, i) => {
+    html += '<div class="photo-upload-item" style="position:relative"><img src="' + photo + '"><span style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#FF4D4F;color:#fff;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="removePhoto(' + i + ')">✕</span></div>';
+  });
+  if (uploadedPhotos.length < 6) {
+    html += '<div class="photo-upload-item" onclick="triggerUpload()"><span class="add-icon">+</span><span>上传照片</span></div>';
+  }
+  area.innerHTML = html;
+}
+
+function removePhoto(idx) {
+  uploadedPhotos.splice(idx, 1);
+  renderPhotos();
+}
+
+async function confirmComplete(orderNo) {
+  const amount = document.getElementById('completeAmount').value;
+  if (!amount || parseFloat(amount) <= 0) return Utils.error('请输入实收金额');
+
+  // 二次确认
+  showConfirm('确认完工', '确认完成此订单？提交后不可撤回。', async () => {
+    const warranty = document.getElementById('completeWarranty').value;
+    const remark = document.getElementById('completeRemark').value;
+    Utils.loading(true);
+    const res = await API.techCompleteOrder({
+      order_no: orderNo,
+      actual_amount: parseFloat(amount),
+      warranty_months: parseInt(warranty),
+      remark: remark,
+      photos: uploadedPhotos
+    });
+    Utils.loading(false);
+    closeModal();
+    if (res.code === 0) {
+      Utils.success('完工提交成功');
+      loadActiveOrders();
+    } else {
+      Utils.error(res.message || '操作失败');
+    }
+  });
+}
+
+// ==============================
+// 2. 转派弹窗
+// ==============================
+function showTransferModal(orderNo) {
+  selectedTransferTech = null;
+  const content = `
+    <div class="form-group">
+      <label class="form-label">选择同区域师傅</label>
+      <div class="transfer-list" id="transferList">
+        <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">转派备注</label>
+      <textarea class="form-input" id="transferRemark" placeholder="请输入转派原因或备注" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmTransfer('${orderNo}')">确认转派</button>
+    </div>
+  `;
+  showModal('🔄 转派订单', content);
+
+  // 加载同区域师傅
+  loadTransferCandidates();
+}
+
+async function loadTransferCandidates() {
+  const container = document.getElementById('transferList');
+  if (!container) return;
+  // 模拟师傅列表，实际应调用API获取同区域师傅
+  const res = await API.techGetProfile();
+  if (res.code === 0 && res.data) {
+    const region = res.data.region_name || res.data.region;
+    // 尝试从API获取同区域师傅列表，这里用模拟数据
+    container.innerHTML = '<div style="padding:10px;text-align:center;color:#999">正在加载同区域师傅...</div>';
+
+    // 模拟数据 - 实际应从API获取
+    const mockTechs = [
+      { name: '张师傅', region: region || '城南区', phone: '138****0001' },
+      { name: '李师傅', region: region || '城南区', phone: '138****0002' },
+      { name: '王师傅', region: region || '城南区', phone: '138****0003' },
+      { name: '赵师傅', region: region || '城南区', phone: '138****0004' },
+    ];
+
+    let html = '';
+    mockTechs.forEach((tech, i) => {
+      html += '<div class="transfer-item" data-idx="' + i + '" onclick="selectTransferTech(' + i + ')">';
+      html += '<div class="avatar">' + tech.name.charAt(0) + '</div>';
+      html += '<div class="info"><div class="name">' + tech.name + '</div><div class="region">' + tech.region + ' · ' + tech.phone + '</div></div>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+}
+
+function selectTransferTech(idx) {
+  document.querySelectorAll('.transfer-item').forEach(el => el.classList.remove('selected'));
+  const el = document.querySelector('.transfer-item[data-idx="' + idx + '"]');
+  if (el) {
+    el.classList.add('selected');
+    selectedTransferTech = idx;
+  }
+}
+
+async function confirmTransfer(orderNo) {
+  if (selectedTransferTech === null) return Utils.error('请选择转派的师傅');
+  const remark = document.getElementById('transferRemark').value;
+  Utils.loading(true);
+  const res = await API.techTransferOrder({
+    order_no: orderNo,
+    target_tech: selectedTransferTech,
+    remark: remark
+  });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('转派成功');
+    loadActiveOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+// ==============================
+// 3. 取消弹窗
+// ==============================
+function showCancelModal(orderNo) {
+  const quickOptions = ['材料不足', '用户改期', '距离太远', '无法联系用户', '超出服务范围', '用户取消'];
+  let optionsHtml = '';
+  quickOptions.forEach(opt => {
+    optionsHtml += '<span class="quick-option" onclick="selectCancelReason(this,\'' + opt + '\')">' + opt + '</span>';
+  });
+
+  const content = `
+    <div class="form-group">
+      <label class="form-label">快捷选择</label>
+      <div class="quick-options">${optionsHtml}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">或手动输入原因</label>
+      <textarea class="form-input" id="cancelReason" placeholder="请输入取消原因" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmCancel('${orderNo}')">确认取消</button>
+    </div>
+  `;
+  showModal('❌ 取消订单', content);
+}
+
+function selectCancelReason(el, reason) {
+  document.querySelectorAll('.quick-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('cancelReason').value = reason;
+}
+
+async function confirmCancel(orderNo) {
+  const reason = document.getElementById('cancelReason').value.trim();
+  if (!reason) return Utils.error('请选择或输入取消原因');
+  Utils.loading(true);
+  const res = await API.techCancelOrder({
+    order_no: orderNo,
+    reason: reason
+  });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('取消成功');
+    loadActiveOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+// ==============================
+// 4. 现场状态上报
+// ==============================
+function showOnsiteModal(orderNo) {
+  const statuses = [
+    { key: 'arrived', label: '已到达', icon: '📍' },
+    { key: 'not_home', label: '用户不在', icon: '🚪' },
+    { key: 'no_answer', label: '联系不上', icon: '📵' },
+    { key: 'user_cancel', label: '用户取消', icon: '❌' },
+    { key: 'reschedule', label: '改约', icon: '📅' },
+  ];
+
+  let btnsHtml = '';
+  statuses.forEach(s => {
+    btnsHtml += '<button class="btn btn-outline btn-sm" style="flex:1;min-width:calc(33% - 8px)" onclick="confirmOnsite(\'' + orderNo + '\',\'' + s.key + '\',\'' + s.label + '\')">' + s.icon + ' ' + s.label + '</button>';
+  });
+
+  const content = `
+    <div style="margin-bottom:12px;font-size:14px;color:#666">请选择现场状态：</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${btnsHtml}</div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal()">关闭</button>
+    </div>
+  `;
+  showModal('📍 现场状态上报', content);
+}
+
+async function confirmOnsite(orderNo, status, label) {
+  Utils.loading(true);
+  const res = await API.techOnsiteStatus({
+    order_no: orderNo,
+    status: status
+  });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('状态已上报：' + label);
+    loadActiveOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+// ==============================
+// 5. 增项申请
+// ==============================
+function showAdditionModal(orderNo) {
+  const content = `
+    <div class="form-group">
+      <label class="form-label">增项名称</label>
+      <input type="text" class="form-input" id="additionName" placeholder="如：增加打孔服务">
+    </div>
+    <div class="form-group">
+      <label class="form-label">增项金额（元）</label>
+      <input type="number" class="form-input" id="additionAmount" placeholder="请输入金额" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">增项说明</label>
+      <textarea class="form-input" id="additionRemark" placeholder="详细说明增项内容" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmAddition('${orderNo}')">提交申请</button>
+    </div>
+  `;
+  showModal('➕ 增项申请', content);
+}
+
+async function confirmAddition(orderNo) {
+  const name = document.getElementById('additionName').value.trim();
+  const amount = document.getElementById('additionAmount').value;
+  const remark = document.getElementById('additionRemark').value.trim();
+  if (!name) return Utils.error('请输入增项名称');
+  if (!amount || parseFloat(amount) <= 0) return Utils.error('请输入有效金额');
+  Utils.loading(true);
+  const res = await API.techAdditionRequest({
+    order_no: orderNo,
+    name: name,
+    amount: parseFloat(amount),
+    remark: remark
+  });
+  Utils.loading(false);
+  closeModal();
+  if (res.code === 0) {
+    Utils.success('增项申请已提交');
+    loadActiveOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+// ==============================
+// 二次确认弹窗
+// ==============================
+function showConfirm(title, desc, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.id = 'confirmModal';
+  overlay.innerHTML = '<div class="confirm-box"><div class="title">' + title + '</div><div class="desc">' + desc + '</div><div class="actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" id="confirmBtn">确认</button></div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('confirmBtn').onclick = function() {
+    overlay.remove();
+    onConfirm();
+  };
+}
+</script>
+</body>
+</html>

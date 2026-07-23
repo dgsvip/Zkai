@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>佳乐家 - 便民服务平台</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    /* ===== 首页专用样式 ===== */
+    .page {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #1677FF 0%, #0958D9 45%, #F5F5F5 45%, #F5F5F5 100%);
+    }
+
+    /* 品牌区域 */
+    .brand-section {
+      text-align: center;
+      padding: 60px 20px 40px;
+      color: #fff;
+    }
+    .brand-section .brand-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 16px;
+      backdrop-filter: blur(10px);
+    }
+    .brand-section .brand-name {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .brand-section .brand-slogan {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    /* 入口卡片区域 */
+    .entry-section {
+      padding: 0 20px;
+      margin-top: 10px;
+    }
+    .entry-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .entry-card:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .entry-card .ec-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .entry-card .ec-content {
+      flex: 1;
+    }
+    .entry-card .ec-title {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .entry-card .ec-desc {
+      font-size: 13px;
+      color: var(--text-light);
+    }
+    .entry-card .ec-arrow {
+      font-size: 20px;
+      color: var(--text-light);
+    }
+
+    /* 服务范围 */
+    .service-area {
+      text-align: center;
+      padding: 20px 20px 30px;
+      color: var(--text-light);
+      font-size: 13px;
+      margin-top: auto;
+    }
+    .service-area .area-icon {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- 品牌区域 -->
+  <div class="brand-section">
+    <div class="brand-logo">🏠</div>
+    <div class="brand-name">佳乐家</div>
+    <div class="brand-slogan">专业便民服务，一键到家</div>
+  </div>
+
+  <!-- 入口卡片 -->
+  <div class="entry-section">
+    <div class="entry-card" onclick="window.location.href='user/booking.html'">
+      <div class="ec-icon" style="background:#E6F4FF;color:#1677FF;">📋</div>
+      <div class="ec-content">
+        <div class="ec-title">预约服务</div>
+        <div class="ec-desc">家电维修、清洗、安装一站式预约</div>
+      </div>
+      <span class="ec-arrow">›</span>
+    </div>
+
+    <div class="entry-card" onclick="window.location.href='user/orders.html'">
+      <div class="ec-icon" style="background:#F6FFED;color:#52C41A;">🔍</div>
+      <div class="ec-content">
+        <div class="ec-title">查单</div>
+        <div class="ec-desc">查看订单状态、服务进度</div>
+      </div>
+      <span class="ec-arrow">›</span>
+    </div>
+
+    <div class="entry-card" onclick="window.location.href='user/profile.html'">
+      <div class="ec-icon" style="background:#FFF7E6;color:#FAAD14;">👤</div>
+      <div class="ec-content">
+        <div class="ec-title">我的</div>
+        <div class="ec-desc">个人信息、地址管理、联系客服</div>
+      </div>
+      <span class="ec-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- 服务范围 -->
+  <div class="service-area">
+    <div class="area-icon">📍</div>
+    <div>山东省菏泽市曹县 · 全区域覆盖</div>
+  </div>
+</div>
+</body>
+</html>

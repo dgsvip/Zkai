@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 后台管理登录</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1677FF 0%, #0958D9 50%, #003A8C 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+    }
+    .login-container {
+      width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo h1 {
+      font-size: 28px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .login-logo p {
+      color: var(--text-light);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .login-form .form-group {
+      margin-bottom: 20px;
+    }
+    .login-form .form-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .login-form .form-input {
+      height: 48px;
+      padding: 0 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    .login-form .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22,119,255,0.1);
+    }
+    .login-btn {
+      width: 100%;
+      height: 48px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .login-btn:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 4px 16px rgba(22,119,255,0.4);
+    }
+    .login-btn:active { transform: scale(0.98); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-error {
+      color: var(--danger);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 12px;
+      display: none;
+    }
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--text-light);
+      font-size: 12px;
+    }
+    .login-input-icon {
+      position: relative;
+    }
+    .login-input-icon .icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 18px;
+    }
+    .login-input-icon .form-input {
+      padding-left: 44px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-logo">
+      <h1>🏠 佳乐家</h1>
+      <p>后台管理平台 V7.0</p>
+    </div>
+    <form class="login-form" id="loginForm">
+      <div class="form-group">
+        <label class="form-label">账号</label>
+        <div class="login-input-icon">
+          <span class="icon">👤</span>
+          <input class="form-input" type="text" id="username" placeholder="请输入管理员账号" autocomplete="username">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <div class="login-input-icon">
+          <span class="icon">🔒</span>
+          <input class="form-input" type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" type="submit" id="loginBtn">登 录</button>
+    </form>
+    <div class="login-footer">佳乐家全平台服务系统 © 2024</div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      // 如果已登录，直接跳转
+      if (API.token) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      const form = document.getElementById('loginForm');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const loginBtn = document.getElementById('loginBtn');
+      const errorEl = document.getElementById('loginError');
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!username || !password) {
+          showError('请输入账号和密码');
+          return;
+        }
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+        errorEl.style.display = 'none';
+        try {
+          const res = await API.adminLogin(username, password);
+          if (res.code === 200 && res.data && res.data.token) {
+            Utils.set('token', res.data.token);
+            Utils.set('userInfo', res.data.user);
+            API.token = res.data.token;
+            Utils.success('登录成功');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+          } else {
+            showError(res.message || '登录失败，请检查账号密码');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '登 录';
+          }
+        } catch (err) {
+          showError('网络异常，请稍后重试');
+          loginBtn.disabled = false;
+          loginBtn.textContent = '登 录';
+        }
+      });
+
+      function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+      }
+
+      // 回车登录
+      passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') form.dispatchEvent(new Event('submit'));
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>佳乐家 - 师傅端</title>
+<link rel="stylesheet" href="../common.css">
+<style>
+/* ===== 登录页面 ===== */
+.login-page { max-width: 750px; margin: 0 auto; min-height: 100vh; background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px; }
+.login-logo { width: 80px; height: 80px; background: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; color: #1677FF; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(22,119,255,0.3); }
+.login-title { color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.login-subtitle { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 40px; }
+.login-card { background: #fff; border-radius: 16px; padding: 32px 24px; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.login-input-wrap { position: relative; margin-bottom: 16px; }
+.login-input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999; font-size: 18px; }
+.login-input-wrap input { width: 100%; padding: 14px 14px 14px 42px; border: 1.5px solid #f0f0f0; border-radius: 10px; font-size: 15px; background: #fafafa; transition: all 0.2s; }
+.login-input-wrap input:focus { border-color: #1677FF; background: #fff; box-shadow: 0 0 0 3px rgba(22,119,255,0.1); }
+.login-btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; background: #1677FF; color: #fff; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.login-btn:active { background: #0958D9; transform: scale(0.98); }
+
+/* ===== 主页样式 ===== */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== 师傅信息卡 ===== */
+.tech-header { background: linear-gradient(135deg, #1677FF 0%, #0958D9 100%); padding: 20px 16px 24px; color: #fff; }
+.tech-info { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.tech-avatar { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; overflow: hidden; }
+.tech-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.tech-name { font-size: 18px; font-weight: 700; }
+.tech-region { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+.tech-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.tech-stat-item { text-align: center; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 6px; }
+.tech-stat-value { font-size: 18px; font-weight: 700; }
+.tech-stat-label { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+.tech-balance { background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.tech-balance-label { font-size: 12px; opacity: 0.8; }
+.tech-balance-value { font-size: 20px; font-weight: 700; }
+.busy-toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+.busy-toggle label { font-size: 13px; opacity: 0.85; cursor: pointer; }
+.switch { position: relative; width: 44px; height: 24px; background: rgba(255,255,255,0.3); border-radius: 12px; cursor: pointer; transition: 0.2s; }
+.switch.active { background: #52C41A; }
+.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: 0.2s; }
+.switch.active::after { left: 22px; }
+
+/* ===== 新手引导 ===== */
+.guide-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+.guide-box { background: #fff; border-radius: 16px; padding: 30px 24px; width: 85%; max-width: 380px; text-align: center; }
+.guide-step { display: none; }
+.guide-step.active { display: block; }
+.guide-icon { font-size: 48px; margin-bottom: 16px; }
+.guide-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.guide-desc { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 24px; }
+.guide-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.guide-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.2s; }
+.guide-dot.active { width: 24px; border-radius: 4px; background: #1677FF; }
+.guide-btn { width: 100%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; background: #1677FF; color: #fff; cursor: pointer; border: none; }
+
+/* ===== Tab 切换 ===== */
+.order-tabs { display: flex; background: #fff; padding: 0 4px; border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; z-index: 50; }
+.order-tab { flex: 1; text-align: center; padding: 12px 4px; font-size: 13px; color: #666; cursor: pointer; position: relative; transition: 0.2s; }
+.order-tab.active { color: #1677FF; font-weight: 600; }
+.order-tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 3px; background: #1677FF; border-radius: 2px; }
+.order-tab .badge { position: absolute; top: 6px; right: 8px; min-width: 16px; height: 16px; line-height: 16px; padding: 0 5px; font-size: 10px; }
+
+/* ===== 工单卡片 ===== */
+.order-list { padding: 12px; }
+.order-card { background: #fff; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+.order-card.overdue { border: 1.5px solid #FF4D4F; box-shadow: 0 0 0 2px rgba(255,77,79,0.08); }
+.order-card-header { padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: center; }
+.order-card-header .service-category { font-size: 15px; font-weight: 600; }
+.order-tags { display: flex; gap: 6px; }
+.order-source-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.order-source-tag.area { background: #E6F7FF; color: #1677FF; }
+.order-source-tag.pool { background: #FFF7E6; color: #D48806; }
+.order-source-tag.transfer { background: #F6FFED; color: #52C41A; }
+.order-card-body { padding: 0 14px 12px; }
+.order-info-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px; font-size: 13px; color: #666; }
+.order-info-row .label { color: #999; white-space: nowrap; min-width: 56px; }
+.order-info-row .value { flex: 1; color: #333; }
+.order-info-row .value.bold { font-weight: 600; color: #1a1a1a; }
+.order-address { display: flex; align-items: center; gap: 4px; }
+.order-address .addr-text { font-weight: 600; color: #1a1a1a; }
+.copy-btn { font-size: 11px; color: #1677FF; cursor: pointer; padding: 1px 6px; border-radius: 4px; background: #F0F5FF; white-space: nowrap; }
+.call-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 6px; background: #F0F5FF; color: #1677FF; font-size: 13px; cursor: pointer; }
+.order-price { color: #FF4D4F; font-size: 15px; font-weight: 700; }
+.order-remark { background: #fafafa; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #999; margin-top: 6px; }
+.order-countdown { font-size: 12px; color: #FF4D4F; font-weight: 600; }
+.order-actions { display: flex; gap: 8px; padding: 8px 14px 12px; }
+.order-actions .btn { flex: 1; font-size: 13px; }
+.order-card-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px 12px; }
+
+/* ===== 空状态 ===== */
+.empty-state { text-align: center; padding: 60px 20px; color: #999; }
+.empty-state i { font-size: 48px; margin-bottom: 12px; display: block; }
+
+/* ===== 弹窗额外样式 ===== */
+.modal-box textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #f0f0f0; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 80px; }
+.modal-box textarea:focus { border-color: #1677FF; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== 登录页面 ===== -->
+<div id="loginPage" class="login-page">
+  <div class="login-logo">JLJ</div>
+  <div class="login-title">佳乐家师傅端</div>
+  <div class="login-subtitle">V7.0 · 专业服务管理平台</div>
+  <div class="login-card">
+    <div class="login-input-wrap">
+      <i>📱</i>
+      <input type="tel" id="loginPhone" placeholder="请输入手机号" maxlength="11" autocomplete="tel">
+    </div>
+    <div class="login-input-wrap">
+      <i>🔒</i>
+      <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="handleLogin()">登 录</button>
+  </div>
+</div>
+
+<!-- ===== 主页面 ===== -->
+<div id="mainPage" class="page active">
+  <!-- 顶部信息卡 -->
+  <div class="tech-header" id="techHeader">
+    <div class="tech-info">
+      <div class="tech-avatar" id="techAvatar">👤</div>
+      <div style="flex:1">
+        <div class="tech-name" id="techName">加载中...</div>
+        <div class="tech-region" id="techRegion">-</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;opacity:0.8">账户余额</div>
+        <div class="tech-balance-value" id="techBalance">¥0.00</div>
+      </div>
+    </div>
+    <div class="tech-stats-grid">
+      <div class="tech-stat-item">
+        <div class="tech-stat-value" id="todayIncome">¥0</div>
+        <div class="tech-stat-label">今日收入</div>
+      </div>
+      <div class="tech-stat-item">
+        <div class="tech-stat-value" id="todayOrders">0</div>
+        <div class="tech-stat-label">今日工单</div>
+      </div>
+      <div class="tech-stat-item">
+        <div class="tech-stat-value" id="todayCompleted">0</div>
+        <div class="tech-stat-label">今日完工</div>
+      </div>
+    </div>
+    <div class="busy-toggle">
+      <label for="busySwitch">忙碌状态</label>
+      <div class="switch" id="busySwitch" onclick="toggleBusy()"></div>
+    </div>
+  </div>
+
+  <!-- 工单Tab切换 -->
+  <div class="order-tabs" id="orderTabs">
+    <div class="order-tab active" data-tab="all" onclick="switchTab('all')">
+      全部 <span class="badge" id="badgeAll">0</span>
+    </div>
+    <div class="order-tab" data-tab="area" onclick="switchTab('area')">
+      区域单 <span class="badge" id="badgeArea">0</span>
+    </div>
+    <div class="order-tab" data-tab="pool" onclick="switchTab('pool')">
+      抢单池 <span class="badge" id="badgePool">0</span>
+    </div>
+    <div class="order-tab" data-tab="transfer" onclick="switchTab('transfer')">
+      转派 <span class="badge" id="badgeTransfer">0</span>
+    </div>
+  </div>
+
+  <!-- 工单列表 -->
+  <div id="orderList" class="order-list">
+    <div class="loading"><div class="loading-spinner"></div>加载中...</div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item active" onclick="Utils.go('/technician/index.html')">
+      <i>📋</i><span>工单</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/technician/ongoing.html')">
+      <i>⚡</i><span>进行中</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/technician/profile.html')">
+      <i>👤</i><span>我的</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新手引导弹窗 ===== -->
+<div id="guideOverlay" class="guide-overlay hidden">
+  <div class="guide-box">
+    <div class="guide-step active" data-step="0">
+      <div class="guide-icon">📋</div>
+      <div class="guide-title">欢迎来到佳乐家师傅端</div>
+      <div class="guide-desc">在这里您可以查看和处理所有工单，包括区域指派单、抢单池和转派单。</div>
+    </div>
+    <div class="guide-step" data-step="1">
+      <div class="guide-icon">⚡</div>
+      <div class="guide-title">进行中管理</div>
+      <div class="guide-desc">在"进行中"页面查看当前正在服务的订单，支持完工、转派、增项申请等操作。</div>
+    </div>
+    <div class="guide-step" data-step="2">
+      <div class="guide-icon">👤</div>
+      <div class="guide-title">个人中心</div>
+      <div class="guide-desc">在"我的"页面查看收入明细、历史订单和个人资料，随时联系客服获得帮助。</div>
+    </div>
+    <div class="guide-dots">
+      <div class="guide-dot active"></div>
+      <div class="guide-dot"></div>
+      <div class="guide-dot"></div>
+    </div>
+    <button class="guide-btn" onclick="nextGuideStep()">下一步</button>
+  </div>
+</div>
+
+<script src="../common.js"></script>
+<script>
+let currentTab = 'all';
+let ordersData = [];
+let guideStep = 0;
+let countdownTimers = {};
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', function() {
+  if (Utils.isLoggedIn()) {
+    showMainPage();
+  } else {
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainPage').classList.remove('active');
+  }
+});
+
+// ===== 登录 =====
+async function handleLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  if (!phone) return Utils.error('请输入手机号');
+  if (!Utils.validatePhone(phone)) return Utils.error('手机号格式不正确');
+  if (!password) return Utils.error('请输入密码');
+
+  Utils.loading(true);
+  const res = await API.techLogin(phone, password);
+  Utils.loading(false);
+  if (res.code === 0 && res.data) {
+    Utils.set('token', res.data.token);
+    Utils.set('userInfo', res.data.user || res.data.technician || res.data);
+    API.token = res.data.token;
+    showMainPage();
+    Utils.success('登录成功');
+  } else {
+    Utils.error(res.message || '登录失败');
+  }
+}
+
+// ===== 显示主页面 =====
+async function showMainPage() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('mainPage').classList.add('active');
+  await loadTechProfile();
+  await loadOrders();
+
+  // 新手引导
+  if (!Utils.get('guideDone')) {
+    document.getElementById('guideOverlay').classList.remove('hidden');
+  }
+}
+
+// ===== 加载师傅信息 =====
+async function loadTechProfile() {
+  const res = await API.techGetProfile();
+  if (res.code === 0 && res.data) {
+    const d = res.data;
+    const avatar = document.getElementById('techAvatar');
+    if (d.avatar) {
+      avatar.innerHTML = '<img src="' + d.avatar + '" alt="avatar">';
+    } else {
+      avatar.textContent = (d.name || '师傅').charAt(0);
+    }
+    document.getElementById('techName').textContent = d.name || '未知';
+    document.getElementById('techRegion').textContent = d.region_name || d.region || '-';
+    document.getElementById('techBalance').textContent = Utils.formatPrice(d.balance || 0);
+    document.getElementById('todayIncome').textContent = '¥' + (d.today_income || 0);
+    document.getElementById('todayOrders').textContent = d.today_orders || 0;
+    document.getElementById('todayCompleted').textContent = d.today_completed || 0;
+
+    // 忙碌状态
+    const busySwitch = document.getElementById('busySwitch');
+    if (d.is_busy) busySwitch.classList.add('active');
+    else busySwitch.classList.remove('active');
+  }
+}
+
+// ===== 切换忙碌状态 =====
+async function toggleBusy() {
+  const sw = document.getElementById('busySwitch');
+  const isBusy = !sw.classList.contains('active');
+  sw.classList.toggle('active');
+  await API.techUpdateProfile({ is_busy: isBusy });
+}
+
+// ===== Tab切换 =====
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.order-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  loadOrders();
+}
+
+// ===== 加载工单 =====
+async function loadOrders() {
+  const container = document.getElementById('orderList');
+  container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+
+  const res = await API.techGetOrders(currentTab);
+  if (res.code === 0 && res.data) {
+    ordersData = res.data.list || res.data.orders || res.data;
+    renderOrders(ordersData);
+    updateBadges(res.data.counts || res.data);
+  } else {
+    container.innerHTML = '<div class="empty-state"><i>📭</i><p>暂无数据</p></div>';
+  }
+}
+
+// ===== 更新角标 =====
+function updateBadge(id, count) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = count || 0;
+    el.style.display = (count > 0) ? 'inline-flex' : 'none';
+  }
+}
+
+function updateBadges(data) {
+  if (data.counts) data = data.counts;
+  updateBadge('badgeAll', data.all || data.total || 0);
+  updateBadge('badgeArea', data.area || data.area_count || 0);
+  updateBadge('badgePool', data.pool || data.pool_count || 0);
+  updateBadge('badgeTransfer', data.transfer || data.transfer_count || 0);
+}
+
+// ===== 渲染工单列表 =====
+function renderOrders(orders) {
+  const container = document.getElementById('orderList');
+  // 清除旧倒计时
+  Object.values(countdownTimers).forEach(t => clearInterval(t));
+  countdownTimers = {};
+
+  if (!orders || orders.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i>📭</i><p>暂无工单</p></div>';
+    return;
+  }
+
+  // 超期订单置顶
+  const sorted = [...orders].sort((a, b) => {
+    if (a.is_overdue && !b.is_overdue) return -1;
+    if (!a.is_overdue && b.is_overdue) return 1;
+    return 0;
+  });
+
+  let html = '';
+  sorted.forEach((order, idx) => {
+    const isOverdue = order.is_overdue;
+    const sourceLabel = getSourceLabel(order.source);
+    const sourceClass = getSourceClass(order.source);
+    const statusLabel = Utils.statusText(order.status);
+    const statusClass = Utils.statusClass(order.status);
+
+    html += '<div class="order-card' + (isOverdue ? ' overdue' : '') + '" data-idx="' + idx + '">';
+    html += '<div class="order-card-header">';
+    html += '<span class="service-category">' + Utils.sanitize(order.service_category || order.service_name || '通用服务') + '</span>';
+    html += '<div class="order-tags">';
+    if (order.source) html += '<span class="order-source-tag ' + sourceClass + '">' + sourceLabel + '</span>';
+    html += '<span class="tag ' + statusClass + '">' + statusLabel + '</span>';
+    if (isOverdue) html += '<span class="tag tag-overdue">超期</span>';
+    html += '</div></div>';
+
+    html += '<div class="order-card-body">';
+
+    // 地址
+    if (order.address) {
+      html += '<div class="order-info-row">';
+      html += '<span class="label">📍 地址</span>';
+      html += '<div class="order-address"><span class="addr-text">' + Utils.sanitize(order.address) + '</span>';
+      html += '<span class="copy-btn" onclick="copyText(\'' + Utils.sanitize(order.address).replace(/'/g, "\\'") + '\')">复制</span>';
+      html += '</div></div>';
+    }
+
+    // 电话
+    if (order.phone) {
+      html += '<div class="order-info-row">';
+      html += '<span class="label">📞 电话</span>';
+      html += '<span class="call-btn" onclick="callPhone(\'' + order.phone + '\')">📞 ' + order.phone + '</span>';
+      html += '</div>';
+    }
+
+    // 预约时间
+    if (order.appointment_time) {
+      html += '<div class="order-info-row">';
+      html += '<span class="label">🕐 预约</span>';
+      html += '<span class="value">' + Utils.formatTime(order.appointment_time) + '</span>';
+      if (order.countdown > 0) html += '<span class="order-countdown" id="cd-' + (order.order_no || idx) + '">剩余 ' + formatCountdown(order.countdown) + '</span>';
+      html += '</div>';
+    }
+
+    // 预估价格
+    if (order.estimated_price || order.price) {
+      html += '<div class="order-info-row">';
+      html += '<span class="label">💰 价格</span>';
+      html += '<span class="order-price">' + Utils.formatPrice(order.estimated_price || order.price) + '</span>';
+      html += '</div>';
+    }
+
+    // 备注
+    if (order.remark) {
+      html += '<div class="order-remark">📝 ' + Utils.sanitize(order.remark) + '</div>';
+    }
+
+    html += '</div>';
+
+    // 底部按钮
+    html += '<div class="order-actions">';
+    if (order.status === 'pending' || order.status === 'bidding') {
+      if (order.source === 'area') {
+        html += '<button class="btn btn-primary btn-sm" onclick="acceptOrder(\'' + order.order_no + '\')">接单</button>';
+      } else {
+        html += '<button class="btn btn-primary btn-sm" onclick="grabOrder(\'' + order.order_no + '\')">抢单</button>';
+      }
+    } else if (order.status === 'transfer' || order.source === 'transfer') {
+      html += '<button class="btn btn-primary btn-sm" onclick="acceptOrder(\'' + order.order_no + '\')">接受转派</button>';
+    }
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+
+  // 启动倒计时
+  sorted.forEach((order, idx) => {
+    if (order.countdown > 0) {
+      const id = 'cd-' + (order.order_no || idx);
+      startCountdown(id, order.countdown);
+    }
+  });
+}
+
+// ===== 获取来源标签 =====
+function getSourceLabel(source) {
+  const map = { area: '区域单', pool: '抢单池', transfer: '转派', self: '自建单' };
+  return map[source] || source;
+}
+function getSourceClass(source) {
+  const map = { area: 'area', pool: 'pool', transfer: 'transfer', self: 'area' };
+  return map[source] || '';
+}
+
+// ===== 倒计时 =====
+function formatCountdown(seconds) {
+  if (seconds <= 0) return '已超时';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return h + '时' + m + '分' + s + '秒';
+  if (m > 0) return m + '分' + s + '秒';
+  return s + '秒';
+}
+
+function startCountdown(id, seconds) {
+  let remaining = seconds;
+  const el = document.getElementById(id);
+  if (!el) return;
+  countdownTimers[id] = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownTimers[id]);
+      el.textContent = '已超时';
+      el.style.color = '#FF4D4F';
+    } else {
+      el.textContent = '剩余 ' + formatCountdown(remaining);
+    }
+  }, 1000);
+}
+
+// ===== 复制地址 =====
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => Utils.success('已复制'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    Utils.success('已复制');
+  }
+}
+
+// ===== 拨打电话 =====
+function callPhone(phone) {
+  window.location.href = 'tel:' + phone;
+}
+
+// ===== 接单/抢单 =====
+async function acceptOrder(orderNo) {
+  Utils.loading(true);
+  const res = await API.techAcceptOrder(orderNo);
+  Utils.loading(false);
+  if (res.code === 0) {
+    Utils.success('接单成功');
+    loadOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+async function grabOrder(orderNo) {
+  Utils.loading(true);
+  const res = await API.techAcceptOrder(orderNo);
+  Utils.loading(false);
+  if (res.code === 0) {
+    Utils.success('抢单成功');
+    loadOrders();
+  } else {
+    Utils.error(res.message || '操作失败');
+  }
+}
+
+// ===== 新手引导 =====
+function nextGuideStep() {
+  guideStep++;
+  const steps = document.querySelectorAll('.guide-step');
+  const dots = document.querySelectorAll('.guide-dot');
+  const btn = document.querySelector('.guide-btn');
+
+  if (guideStep >= steps.length) {
+    document.getElementById('guideOverlay').classList.add('hidden');
+    Utils.set('guideDone', true);
+    return;
+  }
+
+  steps.forEach((el, i) => el.classList.toggle('active', i === guideStep));
+  dots.forEach((el, i) => el.classList.toggle('active', i === guideStep));
+
+  if (guideStep === steps.length - 1) {
+    btn.textContent = '开始使用';
+  } else {
+    btn.textContent = '下一步';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 公告管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: #f0f2f5; display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #001529; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 20px 16px; font-size: 20px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+    .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar-menu .menu-item { display: flex; align-items: center; padding: 12px 24px; cursor: pointer; color: rgba(255,255,255,0.65); transition: all 0.2s; font-size: 14px; gap: 10px; }
+    .sidebar-menu .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .sidebar-menu .menu-item.active { color: #fff; background: var(--primary); }
+    .sidebar-menu .menu-item .menu-icon { font-size: 18px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer .menu-item { display: flex; align-items: center; gap: 10px; cursor: pointer; color: rgba(255,255,255,0.65); font-size: 14px; padding: 8px 0; }
+    .sidebar-footer .menu-item:hover { color: #fff; }
+    .main { margin-left: 220px; flex: 1; min-height: 100vh; }
+    .main-header { background: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
+    .main-header h2 { font-size: 18px; font-weight: 600; }
+    .main-content { padding: 24px; }
+    .toolbar { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; }
+    .toolbar .add-btn { padding: 10px 20px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .toolbar .add-btn:hover { background: var(--primary-dark); }
+    .table-card { background: #fff; border-radius: 12px; padding: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+    .table-card table { width: 100%; border-collapse: collapse; }
+    .table-card th { text-align: left; padding: 12px 14px; font-size: 13px; color: var(--text-light); font-weight: 500; border-bottom: 1px solid var(--border); background: #fafafa; }
+    .table-card td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .table-card tr:hover td { background: #fafafa; }
+    .table-card .action-link { color: var(--primary); cursor: pointer; margin-right: 8px; }
+    .table-card .action-link:hover { text-decoration: underline; }
+    .table-card .action-link.danger { color: var(--danger); }
+    .loading-state { text-align: center; padding: 40px; color: var(--text-light); }
+    @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar-logo span, .sidebar-menu .menu-item span, .sidebar-footer .menu-item span { display: none; } .main { margin-left: 60px; } }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo"><span style="font-size:24px;">🏠</span> <span>佳乐家管理</span></div>
+    <div class="sidebar-menu">
+      <div class="menu-item" data-page="dashboard"><span class="menu-icon">📊</span> <span>仪表盘</span></div>
+      <div class="menu-item" data-page="orders"><span class="menu-icon">📋</span> <span>订单管理</span></div>
+      <div class="menu-item" data-page="technicians"><span class="menu-icon">🔧</span> <span>师傅管理</span></div>
+      <div class="menu-item" data-page="merchants"><span class="menu-icon">🏪</span> <span>商家管理</span></div>
+      <div class="menu-item" data-page="services"><span class="menu-icon">🛠️</span> <span>服务管理</span></div>
+      <div class="menu-item active" data-page="announcements"><span class="menu-icon">📢</span> <span>公告管理</span></div>
+      <div class="menu-item" data-page="dataview"><span class="menu-icon">📈</span> <span>数据大屏</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="menu-item" data-page="settings"><span class="menu-icon">⚙️</span> <span>系统设置</span></div>
+      <div class="menu-item" id="logoutBtn"><span class="menu-icon">🚪</span> <span>退出</span></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="main-header"><h2>公告管理</h2><div class="user-info"><span id="userDisplay">管理员</span></div></div>
+    <div class="main-content">
+      <div class="toolbar">
+        <button class="add-btn" onclick="showAddModal()">📢 发布公告</button>
+        <span style="color:var(--text-light);font-size:13px;">管理所有推送公告</span>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>标题</th><th>推送端</th><th>置顶</th><th>发布时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="announceBody"></tbody>
+        </table>
+        <div class="loading-state" id="loadingState">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发布/编辑公告弹窗 -->
+  <div class="modal-overlay hidden" id="announceModal">
+    <div class="modal-box" style="max-width:520px;">
+      <div class="modal-title" id="announceModalTitle">发布公告</div>
+      <div class="form-group"><label class="form-label">标题</label><input class="form-input" id="annTitle" placeholder="请输入公告标题"></div>
+      <div class="form-group"><label class="form-label">内容</label><textarea class="form-textarea" id="annContent" rows="5" placeholder="请输入公告内容"></textarea></div>
+      <div class="form-group"><label class="form-label">推送端</label><select class="form-select" id="annTarget"><option value="all">全部</option><option value="user">用户端</option><option value="technician">师傅端</option><option value="merchant">商家端</option></select></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">置顶</label>
+        <input type="checkbox" id="annTop" style="width:18px;height:18px;accent-color:var(--primary);">
+      </div>
+      <div class="flex gap-8" style="justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmAnnounce()">发布</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    (function() {
+      if (!checkAuth('admin')) return;
+      let editId = null;
+
+      document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+        item.addEventListener('click', function() { Utils.go(this.dataset.page + '.html'); });
+      });
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (confirm('确定退出登录？')) { Utils.logout(); window.location.href = 'login.html'; }
+      });
+      const userInfo = Utils.get('userInfo');
+      if (userInfo) document.getElementById('userDisplay').textContent = userInfo.username || '管理员';
+
+      loadAnnouncements();
+
+      async function loadAnnouncements() {
+        document.getElementById('loadingState').style.display = 'block';
+        const res = await API.adminGetAnnouncements();
+        document.getElementById('loadingState').style.display = 'none';
+        if (res.code !== 200) return;
+        renderList(res.data || []);
+      }
+
+      function renderList(list) {
+        const tbody = document.getElementById('announceBody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-light);">暂无公告</td></tr>';
+          return;
+        }
+        tbody.innerHTML = list.map(a => `<tr>
+          <td><strong>${Utils.sanitize(a.title)}</strong></td>
+          <td><span class="tag tag-pending">${a.target === 'all' ? '全部' : a.target === 'user' ? '用户端' : a.target === 'technician' ? '师傅端' : '商家端'}</span></td>
+          <td>${a.is_top || a.is_pinned ? '📌 是' : '-'}</td>
+          <td style="font-size:12px;color:var(--text-light);">${Utils.formatTime(a.published_at || a.created_at)}</td>
+          <td><span class="tag ${a.status === 'published' ? 'tag-completed' : 'tag-cancelled'}">${a.status === 'published' ? '已发布' : '已下架'}</span></td>
+          <td>
+            <span class="action-link" onclick="editAnnounce('${a.id}')">编辑</span>
+            <span class="action-link ${a.status === 'published' ? 'danger' : ''}" onclick="toggleStatus('${a.id}','${a.status}')">${a.status === 'published' ? '下架' : '发布'}</span>
+          </td>
+        </tr>`).join('');
+      }
+
+      window.showAddModal = function() {
+        editId = null;
+        document.getElementById('announceModalTitle').textContent = '发布公告';
+        document.getElementById('annTitle').value = '';
+        document.getElementById('annContent').value = '';
+        document.getElementById('annTarget').value = 'all';
+        document.getElementById('annTop').checked = false;
+        document.getElementById('announceModal').classList.remove('hidden');
+      };
+
+      window.editAnnounce = function(id) {
+        editId = id;
+        document.getElementById('announceModalTitle').textContent = '编辑公告';
+        // 获取公告详情
+        API.get('/announcements/' + id).then(res => {
+          if (res.code === 200 && res.data) {
+            const a = res.data;
+            document.getElementById('annTitle').value = a.title || '';
+            document.getElementById('annContent').value = a.content || '';
+            document.getElementById('annTarget').value = a.target || 'all';
+            document.getElementById('annTop').checked = !!(a.is_top || a.is_pinned);
+            document.getElementById('announceModal').classList.remove('hidden');
+          }
+        });
+      };
+
+      window.closeModal = function() { document.getElementById('announceModal').classList.add('hidden'); };
+      window.confirmAnnounce = async function() {
+        const title = document.getElementById('annTitle').value.trim();
+        const content = document.getElementById('annContent').value.trim();
+        const target = document.getElementById('annTarget').value;
+        const is_top = document.getElementById('annTop').checked ? 1 : 0;
+        if (!title) return Utils.error('请输入公告标题');
+        if (!content) return Utils.error('请输入公告内容');
+        const data = { title, content, target, is_top };
+        let res;
+        if (editId) {
+          res = await API.adminUpdateAnnouncement(editId, data);
+        } else {
+          res = await API.adminCreateAnnouncement(data);
+        }
+        if (res.code === 200) { Utils.success(editId ? '更新成功' : '发布成功'); closeModal(); loadAnnouncements(); }
+        else Utils.error(res.message);
+      };
+
+      window.toggleStatus = async function(id, curStatus) {
+        const newStatus = curStatus === 'published' ? 'draft' : 'published';
+        const action = newStatus === 'published' ? '发布' : '下架';
+        if (!confirm(`确定${action}该公告？`)) return;
+        const res = await API.adminUpdateAnnouncement(id, { status: newStatus });
+        if (res.code === 200) { Utils.success(`${action}成功`); loadAnnouncements(); }
+        else Utils.error(res.message);
+      };
+
+      document.getElementById('announceModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+    })();
+  </script>
+</body>
+</html>
