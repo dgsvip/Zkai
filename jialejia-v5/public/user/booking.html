@@ -420,12 +420,18 @@
       }
 
       function renderServiceItems(items) {
-        serviceGrid.innerHTML = items.map(item =>
-          `<div class="service-item" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">
+        if (!items || items.length === 0) {
+          serviceGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#999;">暂无可选服务项目</div>';
+          return;
+        }
+        serviceGrid.innerHTML = items.map(item => {
+          const price = item.price_min || item.price || 0;
+          return `<div class="service-item" data-id="${item.id}" data-name="${item.name}" data-price="${price}">
             <div class="name">${item.name}</div>
-            <div class="price">¥${item.price}<small>起</small></div>
-            <div class="rating"><i class="fas fa-star" style="color:#FAAD14;font-size:10px;"></i> ${item.rating || '5.0'}</div>
-          </div>`
+            <div class="price">¥${price}<small>起</small></div>
+            <div class="rating"><i class="fas fa-star" style="color:#FAAD14;font-size:10px;"></i> ${item.rating_avg || '5.0'}</div>
+          </div>`;
+        })
         ).join('');
         serviceGrid.querySelectorAll('.service-item').forEach(el => {
           el.addEventListener('click', function() {
