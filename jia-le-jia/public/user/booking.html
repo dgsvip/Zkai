@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>预约服务 - 佳乐家</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f5f5; color: #333; font-size: 14px; padding-bottom: 56px; }
+  :root { --primary: #1677FF; --primary-light: #e6f4ff; --primary-bg: #1677FF; }
+
+  /* Header */
+  .header { background: var(--primary); color: #fff; padding: 12px 16px; text-align: center; font-size: 18px; font-weight: 600; position: sticky; top: 0; z-index: 100; }
+  .header .sub { font-size: 12px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+
+  /* Announcement scroll */
+  .announcement-bar { background: #fff8e1; padding: 8px 16px; display: flex; align-items: center; font-size: 13px; overflow: hidden; border-bottom: 1px solid #eee; cursor: pointer; }
+  .announcement-bar .label { color: #ff6f00; font-weight: 600; white-space: nowrap; margin-right: 8px; }
+  .announcement-bar .text { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #555; }
+  .announcement-bar .text marquee { display: block; }
+
+  /* Steps */
+  .step-section { background: #fff; margin: 10px 12px; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .step-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; }
+  .step-title .step-num { display: inline-flex; width: 22px; height: 22px; background: var(--primary); color: #fff; border-radius: 50%; align-items: center; justify-content: center; font-size: 13px; margin-right: 8px; flex-shrink: 0; }
+
+  /* Category tabs */
+  .category-tabs { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .category-tabs::-webkit-scrollbar { height: 0; }
+  .category-tab { white-space: nowrap; padding: 6px 16px; border-radius: 20px; border: 1px solid #ddd; font-size: 13px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+  .category-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Service items grid */
+  .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .service-item { border: 1px solid #eee; border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .service-item .icon { font-size: 28px; display: block; margin-bottom: 4px; }
+  .service-item .name { font-size: 13px; color: #333; }
+  .service-item .price { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+  .service-item.selected { border-color: var(--primary); background: var(--primary-light); }
+  .service-item.selected .name { color: var(--primary); }
+
+  /* Date & Time */
+  .date-scroll { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .date-scroll::-webkit-scrollbar { height: 0; }
+  .date-item { min-width: 60px; padding: 8px 4px; text-align: center; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+  .date-item .day { font-size: 16px; font-weight: 600; }
+  .date-item .weekday { font-size: 11px; color: #999; margin-top: 2px; }
+  .date-item.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+  .date-item.active .weekday { color: var(--primary); }
+
+  .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+  .time-item { padding: 8px 4px; text-align: center; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .time-item.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+  .time-item.disabled { background: #f5f5f5; color: #ccc; cursor: not-allowed; border-color: #eee; }
+  .time-item .label { font-size: 11px; color: #999; display: block; }
+
+  /* Address */
+  .address-display { padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; min-height: 42px; }
+  .address-display .placeholder { color: #999; }
+  .address-display .arrow { color: #999; font-size: 12px; }
+  .address-detail { margin-top: 10px; }
+  .address-detail input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+  .address-detail input:focus { border-color: var(--primary); }
+
+  /* Slide panel */
+  .slide-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; }
+  .slide-overlay.show { display: block; }
+  .slide-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 16px 16px 0 0; z-index: 201; transform: translateY(100%); transition: transform 0.3s ease; max-height: 70vh; overflow-y: auto; }
+  .slide-panel.show { transform: translateY(0); }
+  .slide-panel .handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto; }
+  .slide-panel .panel-title { text-align: center; font-size: 16px; font-weight: 600; padding: 0 16px 12px; border-bottom: 1px solid #eee; }
+  .area-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px 16px; }
+  .area-item { padding: 10px; text-align: center; border: 1px solid #eee; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .area-item.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+
+  /* Contact form */
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+  .form-group label .required { color: #ff4d4f; }
+  .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .form-group .error-msg { color: #ff4d4f; font-size: 12px; margin-top: 2px; display: none; }
+
+  /* Agreement */
+  .agreement-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .agreement-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+  .agreement-row label { font-size: 13px; }
+  .agreement-row a { color: var(--primary); text-decoration: none; }
+
+  /* Submit */
+  .submit-btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 85%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+  .modal-header { padding: 16px; text-align: center; font-size: 16px; font-weight: 600; border-bottom: 1px solid #eee; }
+  .modal-body { padding: 16px; font-size: 14px; line-height: 1.6; color: #555; white-space: pre-wrap; }
+  .modal-footer { padding: 12px 16px; text-align: center; border-top: 1px solid #eee; }
+  .modal-footer button { padding: 8px 32px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+
+  /* Success toast */
+  .success-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 400; display: none; align-items: center; justify-content: center; }
+  .success-overlay.show { display: flex; }
+  .success-card { background: #fff; border-radius: 16px; width: 80%; max-width: 320px; padding: 32px 24px; text-align: center; }
+  .success-card .icon { font-size: 48px; }
+  .success-card .order-no { font-size: 20px; font-weight: 700; color: var(--primary); margin: 12px 0; }
+  .success-card .verify-code { font-size: 14px; color: #666; margin-bottom: 8px; }
+  .success-card .verify-code span { font-size: 28px; font-weight: 700; color: #ff6f00; letter-spacing: 4px; }
+  .success-card .btn-done { margin-top: 20px; padding: 12px 40px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; border-top: 1px solid #eee; z-index: 100; }
+  .bottom-nav a { flex: 1; text-align: center; padding: 8px 0; text-decoration: none; color: #999; font-size: 11px; }
+  .bottom-nav a .nav-icon { display: block; font-size: 20px; margin-bottom: 2px; }
+  .bottom-nav a.active { color: var(--primary); }
+  .bottom-nav a.active .nav-icon { color: var(--primary); }
+
+  /* Loading */
+  .loading { text-align: center; padding: 20px; color: #999; }
+  .loading::after { content: '加载中...'; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 30px 20px; color: #999; font-size: 14px; }
+  .empty .empty-icon { font-size: 48px; margin-bottom: 8px; }
+
+  /* Utility */
+  .hidden { display: none !important; }
+  .mt-10 { margin-top: 10px; }
+  .mt-16 { margin-top: 16px; }
+  .text-primary { color: var(--primary); }
+  .text-danger { color: #ff4d4f; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  佳乐家 · 家电服务预约
+  <div class="sub">山东省菏泽市曹县 · 全区域覆盖</div>
+</div>
+
+<!-- Announcement -->
+<div class="announcement-bar" id="announcementBar">
+  <span class="label">📢 公告</span>
+  <span class="text" id="announcementText"><marquee>加载中...</marquee></span>
+</div>
+
+<!-- Step 1: 选择服务 -->
+<div class="step-section" id="step1">
+  <div class="step-title"><span class="step-num">1</span>选择服务类别</div>
+  <div class="category-tabs" id="categoryTabs"></div>
+  <div class="service-grid" id="serviceGrid"></div>
+</div>
+
+<!-- Step 2: 选择时间 -->
+<div class="step-section" id="step2">
+  <div class="step-title"><span class="step-num">2</span>选择预约时间</div>
+  <div class="date-scroll" id="dateScroll"></div>
+  <div class="time-grid" id="timeGrid"></div>
+</div>
+
+<!-- Step 3: 服务地址 -->
+<div class="step-section" id="step3">
+  <div class="step-title"><span class="step-num">3</span>服务地址</div>
+  <div class="address-display" id="addressDisplay" onclick="openAddressPanel()">
+    <span class="placeholder" id="addressPlaceholder">请选择所在区域</span>
+    <span class="arrow">⌵</span>
+  </div>
+  <div class="address-detail">
+    <input type="text" id="addressDetail" placeholder="请输入详细地址（选填）" maxlength="100">
+  </div>
+</div>
+
+<!-- Step 4: 联系方式 -->
+<div class="step-section" id="step4">
+  <div class="step-title"><span class="step-num">4</span>联系方式</div>
+  <div class="form-group">
+    <label>联系人 <span class="required">*</span></label>
+    <input type="text" id="contactName" placeholder="请输入姓名（2-20个字符）" maxlength="20">
+    <div class="error-msg" id="nameError">请输入2-20个字符的姓名</div>
+  </div>
+  <div class="form-group">
+    <label>联系电话 <span class="required">*</span></label>
+    <input type="tel" id="contactPhone" placeholder="请输入11位手机号" maxlength="11">
+    <div class="error-msg" id="phoneError">请输入正确的11位手机号</div>
+  </div>
+  <div class="form-group">
+    <label>备注</label>
+    <textarea id="contactRemark" placeholder="备注信息（选填，请勿输入敏感内容）" maxlength="200"></textarea>
+  </div>
+</div>
+
+<!-- Step 5: 服务协议 -->
+<div class="step-section" id="step5">
+  <div class="step-title"><span class="step-num">5</span>服务协议</div>
+  <div class="agreement-row">
+    <input type="checkbox" id="agreeProtocol" onchange="checkAgreements()">
+    <label for="agreeProtocol">我已阅读并同意 <a href="javascript:void(0)" onclick="showAgreement('appointment')">《预约协议》</a></label>
+  </div>
+  <div class="agreement-row">
+    <input type="checkbox" id="agreePlatform" onchange="checkAgreements()">
+    <label for="agreePlatform">我已阅读并同意 <a href="javascript:void(0)" onclick="showAgreement('platform')">《平台服务协议》</a></label>
+  </div>
+</div>
+
+<!-- Submit -->
+<div class="step-section" style="margin-bottom: 20px;">
+  <button class="submit-btn" id="submitBtn" disabled onclick="submitOrder()">提交预约</button>
+</div>
+
+<!-- Address Slide Panel -->
+<div class="slide-overlay" id="slideOverlay" onclick="closeAddressPanel()"></div>
+<div class="slide-panel" id="slidePanel">
+  <div class="handle"></div>
+  <div class="panel-title">选择所在区域</div>
+  <div class="area-grid" id="areaGrid"></div>
+</div>
+
+<!-- Agreement Modal -->
+<div class="modal-overlay" id="agreementModal">
+  <div class="modal">
+    <div class="modal-header" id="agreementTitle">服务协议</div>
+    <div class="modal-body" id="agreementBody">加载中...</div>
+    <div class="modal-footer"><button onclick="closeAgreement()">关闭</button></div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="icon">✅</div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:8px;">预约提交成功！</div>
+    <div class="order-no" id="successOrderNo">--</div>
+    <div class="verify-code">核销码：<span id="successVerifyCode">--</span></div>
+    <div style="font-size:12px;color:#999;margin-top:4px;">请妥善保管核销码</div>
+    <button class="btn-done" onclick="goToQuery()">查看订单</button>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <a href="booking.html" class="active">
+    <span class="nav-icon">📋</span>
+    预约
+  </a>
+  <a href="query.html">
+    <span class="nav-icon">🔍</span>
+    查单
+  </a>
+  <a href="my.html">
+    <span class="nav-icon">👤</span>
+    我的
+  </a>
+</div>
+
+<script>
+// ========== State ==========
+const state = {
+  categories: [],
+  categoryId: null,
+  services: [],
+  selectedService: null,
+  selectedDate: null,
+  selectedTime: null,
+  selectedArea: null,
+  areas: [
+    '曹城街道','磐石街道','青菏街道','郑庄街道','倪集街道',
+    '庄寨镇','普连集镇','青固集镇','桃源集镇','韩集镇',
+    '砖庙镇','古营集镇','魏湾镇','侯集回族镇','苏集镇',
+    '孙老家镇','阎店楼镇','梁堤头镇','安蔡楼镇','邵庄镇',
+    '王集镇','青岗集镇','常乐集镇','大集镇'
+  ],
+  agreements: {},
+  step: 1
+};
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  await Promise.all([loadAnnouncements(), loadCategories(), loadAgreements()]);
+  initDates();
+  initTimes();
+  renderAreas();
+}
+
+// ========== Announcements ==========
+async function loadAnnouncements() {
+  try {
+    const res = await fetch('/api/announcements');
+    const data = await res.json();
+    const list = data.data || data;
+    if (list && list.length > 0) {
+      const texts = list.map(a => a.title || a.content || '').join(' &nbsp;|&nbsp; ');
+      document.getElementById('announcementText').innerHTML = `<marquee>${texts}</marquee>`;
+      document.getElementById('announcementBar').onclick = () => {
+        const content = list.map(a => `【${a.title || '公告'}】${a.content || ''}`).join('\n\n');
+        showModal('历史公告', content);
+      };
+    }
+  } catch(e) {
+    document.getElementById('announcementText').innerHTML = '<marquee>暂无公告</marquee>';
+  }
+}
+
+// ========== Categories & Services ==========
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    state.categories = data.data || data || [];
+    renderCategories();
+    if (state.categories.length > 0) {
+      selectCategory(state.categories[0].id);
+    }
+  } catch(e) {
+    document.getElementById('categoryTabs').innerHTML = '<div class="empty">加载失败</div>';
+  }
+}
+
+function renderCategories() {
+  const container = document.getElementById('categoryTabs');
+  container.innerHTML = state.categories.map(c =>
+    `<div class="category-tab" data-id="${c.id}" onclick="selectCategory(${c.id})">${c.name || c.title}</div>`
+  ).join('');
+}
+
+function selectCategory(id) {
+  state.categoryId = id;
+  state.selectedService = null;
+  document.querySelectorAll('.category-tab').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.id) === id);
+  });
+  loadServices(id);
+}
+
+async function loadServices(categoryId) {
+  try {
+    const res = await fetch(`/api/service-items?category_id=${categoryId}`);
+    const data = await res.json();
+    state.services = data.data || data || [];
+    renderServices();
+  } catch(e) {
+    document.getElementById('serviceGrid').innerHTML = '<div class="empty">加载失败</div>';
+  }
+}
+
+function renderServices() {
+  const container = document.getElementById('serviceGrid');
+  if (!state.services.length) {
+    container.innerHTML = '<div class="empty">暂无服务项目</div>';
+    return;
+  }
+  container.innerHTML = state.services.map(s =>
+    `<div class="service-item${state.selectedService && state.selectedService.id === s.id ? ' selected' : ''}" onclick="selectService(${s.id})">
+      <span class="icon">${s.icon || '🔧'}</span>
+      <div class="name">${s.name}</div>
+      <div class="price">${s.price ? '¥' + s.price : ''}</div>
+    </div>`
+  ).join('');
+}
+
+function selectService(id) {
+  state.selectedService = state.services.find(s => s.id === id) || null;
+  renderServices();
+}
+
+// ========== Date & Time ==========
+function initDates() {
+  const container = document.getElementById('dateScroll');
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const today = new Date();
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateStr = formatDate(d);
+    const weekday = i === 0 ? '今天' : (i === 1 ? '明天' : '周' + weekdays[d.getDay()]);
+    const dayStr = `${d.getMonth()+1}月${d.getDate()}日`;
+    html += `<div class="date-item${i === 0 ? ' active' : ''}" data-date="${dateStr}" onclick="selectDate('${dateStr}')">
+      <div class="day">${dayStr}</div>
+      <div class="weekday">${weekday}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+  state.selectedDate = formatDate(today);
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function selectDate(dateStr) {
+  state.selectedDate = dateStr;
+  document.querySelectorAll('.date-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.date === dateStr);
+  });
+  state.selectedTime = null;
+  initTimes();
+}
+
+function initTimes() {
+  const container = document.getElementById('timeGrid');
+  const now = new Date();
+  const today = formatDate(now);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  let html = '';
+  for (let h = 8; h <= 17; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const nextTime = `${h === 17 ? '18' : String(h+1).padStart(2,'0')}:${String(m === 0 ? 30 : 0).padStart(2,'0')}`;
+      const timeMinutes = h * 60 + m;
+      const isPast = state.selectedDate === today && timeMinutes < currentMinutes;
+      const cls = isPast ? 'time-item disabled' : (state.selectedTime === timeStr ? 'time-item active' : 'time-item');
+      const onclick = isPast ? '' : `selectTime('${timeStr}')`;
+      html += `<div class="${cls}" data-time="${timeStr}" onclick="${onclick}">
+        ${timeStr}${isPast ? '<span class="label">已过期</span>' : ''}
+      </div>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
+function selectTime(timeStr) {
+  state.selectedTime = timeStr;
+  document.querySelectorAll('.time-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.time === timeStr);
+  });
+}
+
+// ========== Address ==========
+function renderAreas() {
+  const container = document.getElementById('areaGrid');
+  container.innerHTML = state.areas.map(a =>
+    `<div class="area-item${state.selectedArea === a ? ' active' : ''}" onclick="selectArea('${a}')">${a}</div>`
+  ).join('');
+}
+
+function selectArea(area) {
+  state.selectedArea = area;
+  document.getElementById('addressPlaceholder').textContent = area;
+  document.getElementById('addressPlaceholder').className = '';
+  renderAreas();
+  closeAddressPanel();
+}
+
+function openAddressPanel() {
+  document.getElementById('slideOverlay').classList.add('show');
+  document.getElementById('slidePanel').classList.add('show');
+}
+
+function closeAddressPanel() {
+  document.getElementById('slideOverlay').classList.remove('show');
+  document.getElementById('slidePanel').classList.remove('show');
+}
+
+// ========== Agreements ==========
+async function loadAgreements() {
+  try {
+    const res = await fetch('/api/agreements');
+    const data = await res.json();
+    const list = data.data || data || [];
+    list.forEach(a => {
+      state.agreements[a.key || a.type] = a.content || a.body || '';
+    });
+  } catch(e) {
+    console.error('load agreements error', e);
+  }
+}
+
+function showAgreement(type) {
+  const key = type === 'platform' ? 'platform' : 'appointment';
+  const title = type === 'platform' ? '《平台服务协议》' : '《预约协议》';
+  const content = state.agreements[key] || state.agreements[type] || '暂无内容';
+  document.getElementById('agreementTitle').textContent = title;
+  document.getElementById('agreementBody').textContent = content;
+  document.getElementById('agreementModal').classList.add('show');
+}
+
+function closeAgreement() {
+  document.getElementById('agreementModal').classList.remove('show');
+}
+
+function checkAgreements() {
+  const checked = document.getElementById('agreeProtocol').checked && document.getElementById('agreePlatform').checked;
+  document.getElementById('submitBtn').disabled = !checked;
+}
+
+function showModal(title, content) {
+  document.getElementById('agreementTitle').textContent = title;
+  document.getElementById('agreementBody').textContent = content;
+  document.getElementById('agreementModal').classList.add('show');
+}
+
+// ========== XSS/Sensitive Filter ==========
+function sanitizeInput(str) {
+  if (!str) return '';
+  // Basic XSS filter
+  str = str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Remove common sensitive patterns
+  const sensitivePatterns = [
+    /javascript:/gi, /onclick/gi, /onerror/gi, /onload/gi,
+    /alert\(/gi, /prompt\(/gi, /confirm\(/gi,
+    /<script[\s\S]*?>/gi, /<\/script>/gi
+  ];
+  sensitivePatterns.forEach(p => { str = str.replace(p, ''); });
+  return str;
+}
+
+// ========== Validate ==========
+function validate() {
+  let valid = true;
+
+  // Service
+  if (!state.selectedService) {
+    alert('请选择服务项目');
+    return false;
+  }
+
+  // Date & Time
+  if (!state.selectedDate || !state.selectedTime) {
+    alert('请选择预约时间');
+    return false;
+  }
+
+  // Address
+  if (!state.selectedArea) {
+    alert('请选择所在区域');
+    return false;
+  }
+
+  // Name
+  const name = document.getElementById('contactName').value.trim();
+  if (name.length < 2 || name.length > 20) {
+    document.getElementById('nameError').style.display = 'block';
+    valid = false;
+  } else {
+    document.getElementById('nameError').style.display = 'none';
+  }
+
+  // Phone
+  const phone = document.getElementById('contactPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    document.getElementById('phoneError').style.display = 'block';
+    valid = false;
+  } else {
+    document.getElementById('phoneError').style.display = 'none';
+  }
+
+  // Agreements
+  if (!document.getElementById('agreeProtocol').checked || !document.getElementById('agreePlatform').checked) {
+    alert('请阅读并同意服务协议');
+    return false;
+  }
+
+  return valid;
+}
+
+// ========== Submit ==========
+async function submitOrder() {
+  if (!validate()) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  const remark = sanitizeInput(document.getElementById('contactRemark').value.trim());
+  const name = sanitizeInput(document.getElementById('contactName').value.trim());
+  const phone = document.getElementById('contactPhone').value.trim();
+  const detail = sanitizeInput(document.getElementById('addressDetail').value.trim());
+
+  const payload = {
+    service_item_id: state.selectedService.id,
+    service_name: state.selectedService.name,
+    booking_date: state.selectedDate,
+    booking_time: state.selectedTime,
+    area: state.selectedArea,
+    address_detail: detail,
+    contact_name: name,
+    contact_phone: phone,
+    remark: remark
+  };
+
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.code === 0 || result.code === 200 || res.ok) {
+      const orderNo = result.data?.order_no || result.data?.order_no || '--';
+      const verifyCode = result.data?.verify_code || result.data?.verifyCode || '--';
+      document.getElementById('successOrderNo').textContent = orderNo;
+      document.getElementById('successVerifyCode').textContent = verifyCode;
+      document.getElementById('successOverlay').classList.add('show');
+      // Save phone for query page
+      localStorage.setItem('jlj_phone', phone);
+    } else {
+      alert(result.message || '提交失败，请重试');
+    }
+  } catch(e) {
+    alert('网络错误，请重试');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '提交预约';
+  }
+}
+
+function goToQuery() {
+  const phone = document.getElementById('contactPhone').value.trim();
+  window.location.href = 'query.html?phone=' + encodeURIComponent(phone);
+}
+</script>
+</body>
+</html>

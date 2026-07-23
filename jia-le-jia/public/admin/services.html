@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 服务管理</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f2f5; display:flex; min-height:100vh; }
+:root { --primary:#1677FF; --primary-hover:#0958d9; --sidebar-w:220px; --header-h:56px; }
+.sidebar { width:var(--sidebar-w); background:#001529; color:#fff; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; }
+.sidebar-logo { height:var(--header-h); display:flex; align-items:center; padding:0 20px; font-size:18px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left:10px; }
+.sidebar-menu { flex:1; padding:12px 0; overflow-y:auto; }
+.menu-item { display:flex; align-items:center; padding:12px 24px; color:rgba(255,255,255,0.65); text-decoration:none; font-size:14px; transition:all .2s; cursor:pointer; }
+.menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.menu-item.active { color:#fff; background:var(--primary); }
+.menu-item .icon { margin-right:10px; font-size:16px; }
+.main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+.header { height:var(--header-h); background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:50; }
+.header h2 { font-size:18px; color:#1a1a1a; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.logout-btn { padding:6px 16px; background:#fff; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:13px; color:#666; }
+.logout-btn:hover { color:var(--primary); border-color:var(--primary); }
+.content { padding:20px; }
+.tabs { display:flex; gap:0; margin-bottom:16px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.tab { padding:12px 24px; cursor:pointer; font-size:14px; color:#666; border-bottom:2px solid transparent; transition:all .2s; }
+.tab:hover { color:var(--primary); }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:500; }
+.filter-row { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.filter-row select, .filter-row input { height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.filter-row select:focus, .filter-row input:focus { border-color:var(--primary); }
+.filter-btn { padding:0 16px; height:34px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+.filter-btn:hover { background:var(--primary-hover); }
+.filter-btn.outline { background:#fff; color:var(--primary); border:1px solid var(--primary); }
+.filter-btn.outline:hover { background:#f0f7ff; }
+.filter-btn.green { background:#52c41a; }
+.filter-btn.green:hover { background:#73d13d; }
+.filter-btn.danger { background:#ff4d4f; }
+.table-container { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+table { width:100%; border-collapse:collapse; }
+table th, table td { padding:10px 12px; text-align:left; border-bottom:1px solid #f0f0f0; font-size:13px; }
+table th { color:#8c8c8c; font-weight:500; background:#fafafa; white-space:nowrap; }
+table td { color:#333; }
+table tr:hover td { background:#fafafa; }
+.action-link { color:var(--primary); cursor:pointer; font-size:12px; margin-right:8px; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:#ff4d4f; }
+.modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:1000; justify-content:center; align-items:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:8px; width:640px; max-height:80vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
+.modal-sm { width:480px; }
+.modal-header { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:16px; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:#999; }
+.modal-body { padding:24px; }
+.modal-footer { padding:12px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+.modal-footer button { padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; }
+.btn-primary { background:var(--primary); color:#fff; border:none; }
+.btn-primary:hover { background:var(--primary-hover); }
+.btn-default { background:#fff; border:1px solid #d9d9d9; color:#333; }
+.btn-default:hover { border-color:var(--primary); color:var(--primary); }
+.btn-danger { background:#ff4d4f; color:#fff; border:none; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:#333; margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea { width:100%; height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.form-group input:focus, .form-group select:focus { border-color:var(--primary); }
+.form-group textarea { height:80px; padding:8px 10px; resize:vertical; }
+.form-row { display:flex; gap:12px; }
+.form-row .form-group { flex:1; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item active" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>服务管理</h2>
+    <div class="header-right">
+      <span style="font-size:14px;color:#666;">管理员</span>
+      <button class="logout-btn" onclick="localStorage.removeItem('admin_token');window.location.href='login.html'">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchServiceTab(this,'category')">分类管理</div>
+      <div class="tab" onclick="switchServiceTab(this,'items')">服务项目</div>
+    </div>
+    <div id="categorySection">
+      <div class="filter-row">
+        <button class="filter-btn green" onclick="openCategoryModal()">+ 添加分类</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>ID</th><th>分类名称</th><th>排序</th><th>操作</th></tr></thead>
+          <tbody id="categoryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="itemsSection" style="display:none;">
+      <div class="filter-row">
+        <select id="filterCategory"><option value="">全部分类</option></select>
+        <button class="filter-btn" onclick="loadItems()">筛选</button>
+        <button class="filter-btn green" onclick="openItemModal()">+ 添加服务</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>名称</th><th>分类</th><th>价格</th><th>价格区间</th><th>时长(分)</th><th>平台比例</th><th>师傅比例</th><th>商家比例</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="itemTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="catModalTitle">添加分类</h3><button class="modal-close" onclick="closeModal('categoryModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>分类名称</label><input id="cat_name"></div>
+      <div class="form-group"><label>排序</label><input id="cat_sort" type="number" value="0"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('categoryModal')">取消</button><button class="btn-primary" onclick="saveCategory()">保存</button></div>
+  </div>
+</div>
+
+<!-- Item Modal -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="itemModalTitle">添加服务</h3><button class="modal-close" onclick="closeModal('itemModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>服务名称</label><input id="i_name"></div>
+      <div class="form-group"><label>所属分类</label><select id="i_category"></select></div>
+      <div class="form-group"><label>价格</label><input id="i_price" type="number" step="0.01"></div>
+      <div class="form-group"><label>价格区间</label><input id="i_price_range" placeholder="如: 100-500"></div>
+      <div class="form-group"><label>服务时长（分钟）</label><input id="i_duration" type="number"></div>
+      <div class="form-row">
+        <div class="form-group"><label>平台比例 (%)</label><input id="i_platform_rate" type="number" step="0.1"></div>
+        <div class="form-group"><label>师傅比例 (%)</label><input id="i_technician_rate" type="number" step="0.1"></div>
+        <div class="form-group"><label>商家比例 (%)</label><input id="i_merchant_rate" type="number" step="0.1"></div>
+      </div>
+      <div class="form-group"><label>状态</label><select id="i_status"><option value="active">启用</option><option value="disabled">禁用</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('itemModal')">取消</button><button class="btn-primary" onclick="saveItem()">保存</button></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+let editCatId = null, editItemId = null;
+
+function switchServiceTab(el, tab) {
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('categorySection').style.display = tab === 'category' ? 'block' : 'none';
+  document.getElementById('itemsSection').style.display = tab === 'items' ? 'block' : 'none';
+  if (tab === 'category') loadCategories();
+  if (tab === 'items') { loadCategoriesFilter(); loadItems(); }
+}
+
+// Categories
+function loadCategories() {
+  fetch('/api/admin/service-categories', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.categories || data.list || data.data || [];
+    const tbody = document.getElementById('categoryTableBody');
+    if (list.length) {
+      tbody.innerHTML = list.map(c => `<tr>
+        <td>${c.id}</td>
+        <td>${c.name||'-'}</td>
+        <td>${c.sort||c.sort_order||0}</td>
+        <td><span class="action-link" onclick="openCategoryEdit(${c.id})">编辑</span><span class="action-link danger" onclick="deleteCategory(${c.id})">删除</span></td>
+      </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">暂无分类</td></tr>';
+    }
+  }).catch(()=>{});
+}
+
+function openCategoryModal() {
+  editCatId = null;
+  document.getElementById('catModalTitle').textContent = '添加分类';
+  document.getElementById('cat_name').value = '';
+  document.getElementById('cat_sort').value = '0';
+  document.getElementById('categoryModal').classList.add('show');
+}
+
+function openCategoryEdit(id) {
+  editCatId = id;
+  document.getElementById('catModalTitle').textContent = '编辑分类';
+  fetch('/api/admin/service-categories', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.categories || data.list || data.data || [];
+    const c = list.find(x => x.id == id);
+    if (c) {
+      document.getElementById('cat_name').value = c.name || '';
+      document.getElementById('cat_sort').value = c.sort || c.sort_order || 0;
+    }
+    document.getElementById('categoryModal').classList.add('show');
+  }).catch(()=>{});
+}
+
+function saveCategory() {
+  const body = { name: document.getElementById('cat_name').value, sort: parseInt(document.getElementById('cat_sort').value) || 0 };
+  const url = editCatId ? '/api/admin/service-categories/' + editCatId : '/api/admin/service-categories';
+  const method = editCatId ? 'PUT' : 'POST';
+  fetch(url, { method, headers: getHeaders(), body: JSON.stringify(body) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('categoryModal'); loadCategories(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function deleteCategory(id) {
+  if (!confirm('确定要删除此分类吗？')) return;
+  fetch('/api/admin/service-categories/' + id, { method: 'DELETE', headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) loadCategories(); else alert(res.message||'删除失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+// Items
+function loadCategoriesFilter() {
+  fetch('/api/admin/service-categories', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.categories || data.list || data.data || [];
+    const sel = document.getElementById('filterCategory');
+    sel.innerHTML = '<option value="">全部分类</option>';
+    list.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+    // Also populate item modal
+    const sel2 = document.getElementById('i_category');
+    sel2.innerHTML = '<option value="">请选择分类</option>';
+    list.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel2.appendChild(o); });
+  }).catch(()=>{});
+}
+
+function loadItems() {
+  const cat = document.getElementById('filterCategory').value;
+  let url = '/api/admin/service-items';
+  if (cat) url += '?category_id=' + cat;
+  fetch(url, { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.items || data.list || data.data || [];
+    const tbody = document.getElementById('itemTableBody');
+    if (list.length) {
+      tbody.innerHTML = list.map(i => `<tr>
+        <td>${i.name||'-'}</td>
+        <td>${i.category_name||i.category||'-'}</td>
+        <td>¥${(i.price||0).toFixed(2)}</td>
+        <td>${i.price_range||'-'}</td>
+        <td>${i.duration||0}</td>
+        <td>${i.platform_rate||0}%</td>
+        <td>${i.technician_rate||0}%</td>
+        <td>${i.merchant_rate||0}%</td>
+        <td><span class="status-badge" style="background:${i.status==='active'?'#f6ffed':'#f5f5f5'};color:${i.status==='active'?'#52c41a':'#999'}">${i.status==='active'?'启用':'禁用'}</span></td>
+        <td><span class="action-link" onclick="openItemEdit(${i.id})">编辑</span><span class="action-link danger" onclick="deleteItem(${i.id})">删除</span></td>
+      </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px;">暂无服务项目</td></tr>';
+    }
+  }).catch(()=>{});
+}
+
+function openItemModal() {
+  editItemId = null;
+  document.getElementById('itemModalTitle').textContent = '添加服务';
+  ['i_name','i_price','i_price_range','i_duration','i_platform_rate','i_technician_rate','i_merchant_rate'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('i_status').value = 'active';
+  document.getElementById('itemModal').classList.add('show');
+}
+
+function openItemEdit(id) {
+  editItemId = id;
+  document.getElementById('itemModalTitle').textContent = '编辑服务';
+  fetch('/api/admin/service-items', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.items || data.list || data.data || [];
+    const i = list.find(x => x.id == id);
+    if (i) {
+      document.getElementById('i_name').value = i.name || '';
+      document.getElementById('i_category').value = i.category_id || '';
+      document.getElementById('i_price').value = i.price || '';
+      document.getElementById('i_price_range').value = i.price_range || '';
+      document.getElementById('i_duration').value = i.duration || '';
+      document.getElementById('i_platform_rate').value = i.platform_rate || '';
+      document.getElementById('i_technician_rate').value = i.technician_rate || '';
+      document.getElementById('i_merchant_rate').value = i.merchant_rate || '';
+      document.getElementById('i_status').value = i.status || 'active';
+    }
+    document.getElementById('itemModal').classList.add('show');
+  }).catch(()=>{});
+}
+
+function saveItem() {
+  const body = {
+    name: document.getElementById('i_name').value,
+    category_id: document.getElementById('i_category').value,
+    price: parseFloat(document.getElementById('i_price').value) || 0,
+    price_range: document.getElementById('i_price_range').value,
+    duration: parseInt(document.getElementById('i_duration').value) || 0,
+    platform_rate: parseFloat(document.getElementById('i_platform_rate').value) || 0,
+    technician_rate: parseFloat(document.getElementById('i_technician_rate').value) || 0,
+    merchant_rate: parseFloat(document.getElementById('i_merchant_rate').value) || 0,
+    status: document.getElementById('i_status').value
+  };
+  const url = editItemId ? '/api/admin/service-items/' + editItemId : '/api/admin/service-items';
+  const method = editItemId ? 'PUT' : 'POST';
+  fetch(url, { method, headers: getHeaders(), body: JSON.stringify(body) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('itemModal'); loadItems(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function deleteItem(id) {
+  if (!confirm('确定要删除此服务项目吗？')) return;
+  fetch('/api/admin/service-items/' + id, { method: 'DELETE', headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) loadItems(); else alert(res.message||'删除失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+loadCategories();
+</script>
+</body>
+</html>

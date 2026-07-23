@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 订单管理</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; display: flex; min-height: 100vh; }
+:root { --primary: #1677FF; --primary-hover: #0958d9; --sidebar-w: 220px; --header-h: 56px; }
+.sidebar { width: var(--sidebar-w); background: #001529; color: #fff; position: fixed; top: 0; left: 0; bottom: 0; display: flex; flex-direction: column; z-index: 100; }
+.sidebar-logo { height: var(--header-h); display: flex; align-items: center; padding: 0 20px; font-size: 18px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left: 10px; }
+.sidebar-menu { flex: 1; padding: 12px 0; overflow-y: auto; }
+.menu-item { display: flex; align-items: center; padding: 12px 24px; color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px; transition: all 0.2s; cursor: pointer; }
+.menu-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.menu-item.active { color: #fff; background: var(--primary); }
+.menu-item .icon { margin-right: 10px; font-size: 16px; }
+.main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+.header { height: var(--header-h); background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 50; }
+.header h2 { font-size: 18px; color: #1a1a1a; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.logout-btn { padding: 6px 16px; background: #fff; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+.logout-btn:hover { color: var(--primary); border-color: var(--primary); }
+.content { padding: 20px; }
+.tabs { display: flex; gap: 0; margin-bottom: 16px; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.tab { padding: 12px 24px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab:hover { color: var(--primary); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+.tab .count { display: inline-block; background: #f5f5f5; color: #666; border-radius: 10px; padding: 0 8px; font-size: 12px; margin-left: 4px; }
+.tab.active .count { background: #e6f7ff; color: var(--primary); }
+.filter-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-row select, .filter-row input { height: 34px; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 10px; font-size: 13px; outline: none; }
+.filter-row select:focus, .filter-row input:focus { border-color: var(--primary); }
+.filter-btn { padding: 0 16px; height: 34px; background: var(--primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.filter-btn:hover { background: var(--primary-hover); }
+.filter-btn.outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+.filter-btn.outline:hover { background: #f0f7ff; }
+.filter-btn.danger { background: #ff4d4f; }
+.filter-btn.danger:hover { background: #ff7875; }
+.table-container { background: #fff; border-radius: 8px; padding: 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+table { width: 100%; border-collapse: collapse; }
+table th, table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+table th { color: #8c8c8c; font-weight: 500; background: #fafafa; white-space: nowrap; }
+table td { color: #333; }
+table tr:hover td { background: #fafafa; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status-badge.pending { background: #fff7e6; color: #fa8c16; }
+.status-badge.ongoing { background: #e6f7ff; color: #1890ff; }
+.status-badge.done { background: #f6ffed; color: #52c41a; }
+.status-badge.cancelled { background: #fff2f0; color: #ff4d4f; }
+.status-badge.overdue { background: #fff2f0; color: #ff4d4f; }
+.action-link { color: var(--primary); cursor: pointer; font-size: 12px; margin-right: 8px; text-decoration: none; }
+.action-link:hover { text-decoration: underline; }
+.action-link.danger { color: #ff4d4f; }
+.checkbox { width: 16px; height: 16px; cursor: pointer; }
+.pagination { display: flex; justify-content: flex-end; align-items: center; padding: 16px 20px; gap: 8px; }
+.pagination button { padding: 4px 12px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.pagination button:hover { border-color: var(--primary); color: var(--primary); }
+.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination .page-info { font-size: 13px; color: #666; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 1000; justify-content: center; align-items: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 8px; width: 640px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.12); }
+.modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 16px; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #999; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+.modal-footer button { padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.btn-primary { background: var(--primary); color: #fff; border: none; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-default { background: #fff; border: 1px solid #d9d9d9; color: #333; }
+.btn-default:hover { border-color: var(--primary); color: var(--primary); }
+.detail-section { margin-bottom: 16px; }
+.detail-section h4 { font-size: 14px; color: #1a1a1a; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f0f0f0; }
+.detail-row { display: flex; padding: 4px 0; font-size: 13px; }
+.detail-row .label { width: 120px; color: #8c8c8c; flex-shrink: 0; }
+.detail-row .value { color: #333; }
+.timeline { padding-left: 20px; border-left: 2px solid #e8e8e8; }
+.timeline-item { position: relative; padding: 0 0 16px 16px; }
+.timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.timeline-item .time { font-size: 12px; color: #999; }
+.timeline-item .desc { font-size: 13px; color: #333; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item active" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>订单管理</h2>
+    <div class="header-right">
+      <span id="adminName" style="font-size:14px;color:#666;">管理员</span>
+      <button class="logout-btn" onclick="handleLogout()">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="tabs" id="orderTabs">
+      <div class="tab active" data-status="" onclick="switchTab(this)">全部 <span class="count" id="countAll">0</span></div>
+      <div class="tab" data-status="pending" onclick="switchTab(this)">待接单 <span class="count" id="countPending">0</span></div>
+      <div class="tab" data-status="ongoing" onclick="switchTab(this)">进行中 <span class="count" id="countOngoing">0</span></div>
+      <div class="tab" data-status="done" onclick="switchTab(this)">已完成 <span class="count" id="countDone">0</span></div>
+      <div class="tab" data-status="cancelled" onclick="switchTab(this)">已取消 <span class="count" id="countCancelled">0</span></div>
+      <div class="tab" data-status="overdue" onclick="switchTab(this)">超期 <span class="count" id="countOverdue">0</span></div>
+      <div class="tab" data-status="trash" onclick="switchTab(this)">🗑️ 回收站</div>
+    </div>
+    <div class="filter-row">
+      <select id="filterStatus"><option value="">全部状态</option><option value="pending">待接单</option><option value="ongoing">进行中</option><option value="done">已完成</option><option value="cancelled">已取消</option><option value="overdue">超期</option></select>
+      <select id="filterArea"><option value="">全部区域</option></select>
+      <input type="date" id="dateStart">
+      <input type="date" id="dateEnd">
+      <button class="filter-btn" onclick="loadOrders()">筛选</button>
+      <button class="filter-btn outline" onclick="exportOrders()">导出Excel</button>
+      <button class="filter-btn outline" onclick="batchDelete()" id="batchDelBtn" style="display:none">批量删除</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr><th style="width:36px"><input type="checkbox" class="checkbox" id="checkAll" onchange="toggleAll()"></th><th>订单号</th><th>服务项目</th><th>用户</th><th>电话</th><th>区域</th><th>来源</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="width:720px">
+    <div class="modal-header"><h3>订单详情</h3><button class="modal-close" onclick="closeModal('detailModal')">&times;</button></div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('detailModal')">关闭</button></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }; }
+function handleLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
+
+const statusMap = { pending:'待接单', ongoing:'进行中', done:'已完成', cancelled:'已取消', overdue:'超期' };
+const statusClass = { pending:'pending', ongoing:'ongoing', done:'done', cancelled:'cancelled', overdue:'overdue' };
+
+let currentPage = 1, currentStatus = '', allOrders = [];
+
+function formatDate(d) { if(!d) return '-'; const dt=new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); }
+function maskPhone(p) { return p ? p.slice(0,3)+'****'+p.slice(-4) : '-'; }
+function formatMoney(n) { return '¥' + (Number(n||0).toFixed(2)); }
+
+function switchTab(el) {
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentStatus = el.dataset.status;
+  currentPage = 1;
+  document.getElementById('filterStatus').value = '';
+  if (currentStatus === 'trash') {
+    loadTrash();
+  } else {
+    document.getElementById('filterStatus').value = currentStatus;
+    loadOrders();
+  }
+}
+
+function loadAreas() {
+  fetch('/api/admin/settings', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const areas = data.areas || [];
+    const sel = document.getElementById('filterArea');
+    areas.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o); });
+  }).catch(()=>{});
+}
+
+function loadOrders() {
+  const status = document.getElementById('filterStatus').value;
+  const area = document.getElementById('filterArea').value;
+  const ds = document.getElementById('dateStart').value;
+  const de = document.getElementById('dateEnd').value;
+  let url = '/api/admin/orders?page=' + currentPage;
+  if (status) url += '&status=' + status;
+  if (area) url += '&area=' + area;
+  if (ds) url += '&date_start=' + ds;
+  if (de) url += '&date_end=' + de;
+
+  fetch(url, { headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      const data = res.data || res;
+      const orders = data.orders || data.list || data.data || [];
+      const total = data.total || data.count || orders.length;
+      allOrders = orders;
+      renderOrders(orders);
+      renderPagination(total);
+      updateCounts(data.counts || data.status_counts || {});
+    })
+    .catch(() => {});
+}
+
+function loadTrash() {
+  fetch('/api/admin/trash', { headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      const data = res.data || res;
+      const orders = data.orders || data.list || data.data || [];
+      allOrders = orders;
+      const tbody = document.getElementById('orderTableBody');
+      if (orders.length) {
+        tbody.innerHTML = orders.map(o => `<tr>
+          <td><input type="checkbox" class="checkbox" data-id="${o.id}"></td>
+          <td>${o.order_no||o.id||'-'}</td>
+          <td>${o.service_name||o.service||'-'}</td>
+          <td>${o.user_name||'-'}</td>
+          <td>${maskPhone(o.phone)}</td>
+          <td>${o.area||'-'}</td>
+          <td>${o.source||'-'}</td>
+          <td>${formatMoney(o.amount)}</td>
+          <td><span class="status-badge" style="background:#f5f5f5;color:#999;">已删除</span></td>
+          <td><span class="action-link" onclick="restoreOrder(${o.id})">恢复</span><span class="action-link danger" onclick="deleteOrder(${o.id},true)">永久删除</span></td>
+        </tr>`).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px;">回收站为空</td></tr>';
+      }
+      document.getElementById('pagination').innerHTML = '';
+    })
+    .catch(() => {});
+}
+
+function renderOrders(orders) {
+  const tbody = document.getElementById('orderTableBody');
+  if (orders.length) {
+    tbody.innerHTML = orders.map(o => `<tr>
+      <td><input type="checkbox" class="checkbox" data-id="${o.id}"></td>
+      <td>${o.order_no||o.id||'-'}</td>
+      <td>${o.service_name||o.service||'-'}</td>
+      <td>${o.user_name||'-'}</td>
+      <td>${maskPhone(o.phone)}</td>
+      <td>${o.area||'-'}</td>
+      <td>${o.source||'-'}</td>
+      <td>${formatMoney(o.amount)}</td>
+      <td><span class="status-badge ${statusClass[o.status]||''}">${statusMap[o.status]||o.status||'-'}</span></td>
+      <td>
+        <span class="action-link" onclick="showDetail(${o.id})">详情</span>
+        <span class="action-link" onclick="reassignOrder(${o.id})">强制转派</span>
+        <span class="action-link" onclick="printOrder(${o.id})">打印工单</span>
+        <span class="action-link danger" onclick="deleteOrder(${o.id})">删除</span>
+      </td>
+    </tr>`).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;padding:30px;">暂无订单</td></tr>';
+  }
+}
+
+function renderPagination(total) {
+  const el = document.getElementById('pagination');
+  const pages = Math.ceil(total / 20) || 1;
+  el.innerHTML = `<span class="page-info">共 ${total} 条</span>
+    <button onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>上一页</button>
+    <span class="page-info">第 ${currentPage}/${pages} 页</span>
+    <button onclick="goPage(${currentPage+1})" ${currentPage>=pages?'disabled':''}>下一页</button>`;
+}
+
+function goPage(p) { if(p<1) return; currentPage=p; loadOrders(); }
+
+function updateCounts(counts) {
+  if (!counts) return;
+  const map = { '':'countAll', 'pending':'countPending', 'ongoing':'countOngoing', 'done':'countDone', 'cancelled':'countCancelled', 'overdue':'countOverdue' };
+  Object.keys(map).forEach(k => {
+    const el = document.getElementById(map[k]);
+    if (el) el.textContent = counts[k] || counts[k]===0 ? counts[k] : '0';
+  });
+}
+
+function toggleAll() {
+  const checked = document.getElementById('checkAll').checked;
+  document.querySelectorAll('#orderTableBody .checkbox').forEach(c => c.checked = checked);
+  document.getElementById('batchDelBtn').style.display = checked ? 'inline-block' : 'none';
+}
+
+function showDetail(id) {
+  // Fetch from the orders list or via API
+  const order = allOrders.find(o => o.id == id) || {};
+  fetch('/api/admin/orders?page=1&limit=1000', { headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      const data = res.data || res;
+      const orders = data.orders || data.list || data.data || [];
+      const o = orders.find(x => x.id == id) || order;
+      const body = document.getElementById('detailBody');
+      body.innerHTML = `
+        <div class="detail-section">
+          <h4>基本信息</h4>
+          <div class="detail-row"><span class="label">订单编号</span><span class="value">${o.order_no||o.id||'-'}</span></div>
+          <div class="detail-row"><span class="label">服务项目</span><span class="value">${o.service_name||o.service||'-'}</span></div>
+          <div class="detail-row"><span class="label">用户姓名</span><span class="value">${o.user_name||'-'}</span></div>
+          <div class="detail-row"><span class="label">联系电话</span><span class="value">${maskPhone(o.phone)}</span></div>
+          <div class="detail-row"><span class="label">服务区域</span><span class="value">${o.area||'-'}</span></div>
+          <div class="detail-row"><span class="label">详细地址</span><span class="value">${o.address||'-'}</span></div>
+          <div class="detail-row"><span class="label">订单金额</span><span class="value">${formatMoney(o.amount)}</span></div>
+          <div class="detail-row"><span class="label">订单状态</span><span class="value"><span class="status-badge ${statusClass[o.status]||''}">${statusMap[o.status]||o.status||'-'}</span></span></div>
+          <div class="detail-row"><span class="label">创建时间</span><span class="value">${formatDate(o.created_at)}</span></div>
+        </div>
+        <div class="detail-section">
+          <h4>订单备注</h4>
+          <p style="font-size:13px;color:#666;padding:8px 0;">${o.remark||o.remarks||'暂无备注'}</p>
+        </div>
+        <div class="detail-section">
+          <h4>评价信息</h4>
+          <p style="font-size:13px;color:#666;padding:8px 0;">${o.evaluation||o.evaluate||'暂无评价'}</p>
+        </div>
+        <div class="detail-section">
+          <h4>订单时间线</h4>
+          <div class="timeline" id="timeline">
+            ${(o.timeline||o.logs||[]).length ? (o.timeline||o.logs||[]).map(t => `<div class="timeline-item"><div class="time">${formatDate(t.time||t.created_at)}</div><div class="desc">${t.content||t.action||t.desc||'-'}</div></div>`).join('') : '<div style="font-size:13px;color:#999;padding:8px 0;">暂无时间线记录</div>'}
+          </div>
+        </div>
+      `;
+      document.getElementById('detailModal').classList.add('show');
+    })
+    .catch(() => {});
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function deleteOrder(id, permanent) {
+  if (!confirm('确定要删除此订单吗？')) return;
+  const url = '/api/admin/orders/' + id + '/delete';
+  fetch(url, { method: 'POST', headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      if (res.code === 0 || res.success) { loadOrders(); } else { alert(res.message || '删除失败'); }
+    })
+    .catch(() => alert('网络错误'));
+}
+
+function restoreOrder(id) {
+  fetch('/api/admin/orders/' + id + '/restore', { method: 'POST', headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      if (res.code === 0 || res.success) { loadTrash(); } else { alert(res.message || '恢复失败'); }
+    })
+    .catch(() => alert('网络错误'));
+}
+
+function reassignOrder(id) {
+  const techId = prompt('请输入要转派的师傅ID:');
+  if (!techId) return;
+  fetch('/api/admin/orders/' + id + '/reassign', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ technician_id: techId }) })
+    .then(r => r.json())
+    .then(res => { alert(res.message || (res.code===0?'转派成功':'转派失败')); if(res.code===0) loadOrders(); })
+    .catch(() => alert('网络错误'));
+}
+
+function printOrder(id) {
+  window.open('/api/admin/orders/' + id + '/print?token=' + token, '_blank');
+}
+
+function exportOrders() {
+  const status = document.getElementById('filterStatus').value;
+  const area = document.getElementById('filterArea').value;
+  let url = '/api/admin/export-orders?token=' + token;
+  if (status) url += '&status=' + status;
+  if (area) url += '&area=' + area;
+  window.open(url, '_blank');
+}
+
+function batchDelete() {
+  const ids = [];
+  document.querySelectorAll('#orderTableBody .checkbox:checked').forEach(c => {
+    if (c.dataset.id) ids.push(c.dataset.id);
+  });
+  if (!ids.length) { alert('请选择要删除的订单'); return; }
+  if (!confirm('确定要删除选中的 ' + ids.length + ' 个订单吗？')) return;
+  Promise.all(ids.map(id => fetch('/api/admin/orders/' + id + '/delete', { method: 'POST', headers: getHeaders() })))
+    .then(() => { loadOrders(); document.getElementById('checkAll').checked = false; })
+    .catch(() => alert('批量删除失败'));
+}
+
+loadAreas();
+loadOrders();
+</script>
+</body>
+</html>

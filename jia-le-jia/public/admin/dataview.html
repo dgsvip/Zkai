@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 数据大屏</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0a1628; color:#fff; min-height:100vh; overflow-x:hidden; }
+:root { --primary:#1677FF; --primary-hover:#0958d9; }
+.header-bar { height:60px; background:linear-gradient(90deg,#0a1628 0%,#1a2a4a 50%,#0a1628 100%); display:flex; align-items:center; justify-content:center; border-bottom:1px solid rgba(22,119,255,0.3); position:relative; }
+.header-bar h1 { font-size:24px; font-weight:600; background:linear-gradient(90deg,#1677FF,#69b1ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:4px; }
+.header-bar .status-indicator { position:absolute; right:30px; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:6px; font-size:13px; }
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.status-dot.green { background:#52c41a; box-shadow:0 0 8px #52c41a; }
+.status-dot.red { background:#ff4d4f; box-shadow:0 0 8px #ff4d4f; animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.content { padding:16px; max-width:1920px; margin:0 auto; }
+.stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:16px; }
+.stat-card { background:linear-gradient(135deg,rgba(22,119,255,0.12) 0%,rgba(22,119,255,0.04) 100%); border:1px solid rgba(22,119,255,0.2); border-radius:8px; padding:20px; text-align:center; }
+.stat-card .label { font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:8px; }
+.stat-card .value { font-size:36px; font-weight:700; background:linear-gradient(90deg,#1677FF,#69b1ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-box { background:rgba(22,119,255,0.06); border:1px solid rgba(22,119,255,0.15); border-radius:8px; padding:16px; }
+.chart-box h3 { font-size:14px; color:rgba(255,255,255,0.8); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.chart-box canvas { width:100% !important; height:260px !important; }
+.data-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.data-box { background:rgba(22,119,255,0.06); border:1px solid rgba(22,119,255,0.15); border-radius:8px; padding:16px; }
+.data-box h3 { font-size:14px; color:rgba(255,255,255,0.8); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.alert-box { background:rgba(255,77,79,0.08); border:1px solid rgba(255,77,79,0.3); border-radius:8px; padding:16px; margin-bottom:16px; }
+.alert-box h3 { font-size:14px; color:#ff4d4f; margin-bottom:12px; }
+.alert-item { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.alert-item .num { color:#ff4d4f; font-weight:600; animation:blink 1.5s infinite; }
+.scroll-bar { background:rgba(22,119,255,0.06); border:1px solid rgba(22,119,255,0.15); border-radius:8px; padding:12px 16px; margin-bottom:16px; overflow:hidden; }
+.scroll-bar .scroll-text { white-space:nowrap; animation:scrollText 30s linear infinite; font-size:13px; color:rgba(255,255,255,0.7); }
+@keyframes scrollText { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+.ranking-table { width:100%; border-collapse:collapse; font-size:12px; }
+.ranking-table th { color:rgba(255,255,255,0.5); padding:6px 8px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.06); }
+.ranking-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.ranking-table .rank { width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; }
+.rank-1 { background:linear-gradient(135deg,#ffd700,#ff8c00); color:#fff; }
+.rank-2 { background:linear-gradient(135deg,#c0c0c0,#a0a0a0); color:#fff; }
+.rank-3 { background:linear-gradient(135deg,#cd7f32,#b8860b); color:#fff; }
+.rank-other { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); }
+.area-list { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.area-item { display:flex; justify-content:space-between; padding:4px 8px; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.area-item .name { color:rgba(255,255,255,0.7); }
+.area-item .val { color:#1677FF; }
+</style>
+</head>
+<body>
+<div class="header-bar">
+  <h1>📊 佳乐家 · 数据大屏</h1>
+  <div class="status-indicator">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">连接中...</span>
+  </div>
+</div>
+<div class="content">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="charts-row">
+    <div class="chart-box"><h3>近30日订单趋势</h3><canvas id="trendChart30"></canvas></div>
+    <div class="chart-box"><h3>服务类型分布</h3><canvas id="serviceDistChart"></canvas></div>
+  </div>
+  <div class="data-row">
+    <div class="data-box"><h3>区域订单分布</h3><div class="area-list" id="areaList"></div></div>
+    <div class="data-box"><h3>师傅排行榜 TOP 10</h3><table class="ranking-table" id="rankTable"><thead><tr><th>#</th><th>姓名</th><th>完成单数</th></tr></thead><tbody id="rankBody"></tbody></table></div>
+    <div class="data-box"><h3>待办告警</h3><div id="alertItems"></div></div>
+  </div>
+  <div class="scroll-bar" id="scrollBar"><div class="scroll-text" id="scrollText">加载中...</div></div>
+</div>
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+function formatDate(d) { if(!d) return '-'; const dt=new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+
+function drawBarChart(canvasId, labels, values, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width - 32;
+  const H = 260;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  const pad = { top:20, bottom:36, left:50, right:16 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const maxVal = Math.max(...values, 1);
+  const gap = chartW / Math.max(labels.length, 1);
+  const barW = Math.min(20, gap * 0.5);
+  ctx.clearRect(0,0,W,H);
+  for (let i=0;i<=4;i++) { const y=pad.top+chartH*(1-i/4); ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.fillText(Math.round(maxVal*i/4),pad.left-6,y+3); }
+  labels.forEach((l,i)=>{
+    const x = pad.left + gap*i + (gap-barW)/2;
+    const h = (values[i]/maxVal)*chartH;
+    const y = pad.top + chartH - h;
+    const grad = ctx.createLinearGradient(x, y, x, pad.top+chartH);
+    grad.addColorStop(0, color||'#1677FF');
+    grad.addColorStop(1, (color||'#1677FF')+'22');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, h, [2,2,0,0]);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(l.length>4?l.slice(0,4):l, pad.left+gap*i+gap/2, pad.top+chartH+14);
+  });
+}
+
+function drawHorizBar(canvasId, labels, values, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width - 32;
+  const H = 260;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  const pad = { top:10, bottom:10, left:100, right:40 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const maxVal = Math.max(...values, 1);
+  const barH = Math.min(24, chartH / Math.max(labels.length, 1) * 0.6);
+  const gap = chartH / Math.max(labels.length, 1);
+  ctx.clearRect(0,0,W,H);
+  labels.forEach((l,i)=>{
+    const y = pad.top + gap*i + (gap-barH)/2;
+    const w = (values[i]/maxVal)*(chartW);
+    const grad = ctx.createLinearGradient(pad.left, y, pad.left+w, y);
+    grad.addColorStop(0, color||'#1677FF');
+    grad.addColorStop(1, (color||'#1677FF')+'44');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(pad.left, y, w, barH, [0,3,3,0]);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(l, pad.left-8, y+barH/2+4);
+    ctx.fillStyle = '#1677FF';
+    ctx.textAlign = 'left';
+    ctx.fillText(values[i], pad.left+w+6, y+barH/2+4);
+  });
+}
+
+let ws = null;
+let reconnectTimer = null;
+let pollTimer = null;
+
+function updateStatus(connected) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'status-dot ' + (connected ? 'green' : 'red');
+  text.textContent = connected ? '已连接' : '已断开';
+}
+
+function connectWS() {
+  try {
+    ws = new WebSocket('ws://localhost:3000/ws');
+    ws.onopen = () => { updateStatus(true); if(pollTimer){clearInterval(pollTimer);pollTimer=null;} };
+    ws.onmessage = (e) => {
+      try { const d = JSON.parse(e.data); updateData(d); } catch(e) {}
+    };
+    ws.onclose = () => { updateStatus(false); scheduleReconnect(); startPolling(); };
+    ws.onerror = () => { ws && ws.close(); };
+  } catch(e) { updateStatus(false); scheduleReconnect(); startPolling(); }
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(() => { connectWS(); }, 5000);
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(() => { fetchData(); }, 30000);
+}
+
+function fetchData() {
+  fetch('/api/admin/dataview', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const d = res.data || res;
+    updateData(d);
+  }).catch(()=>{});
+}
+
+function fetchAnnouncements() {
+  fetch('/api/announcements', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.announcements || data.list || data.data || [];
+    const text = document.getElementById('scrollText');
+    if (list.length) {
+      text.textContent = '📢 ' + list.slice(0,3).map(a => '【'+(a.title||'')+'】').join('    ');
+    } else {
+      text.textContent = '暂无公告';
+    }
+  }).catch(()=>{});
+}
+
+function updateData(d) {
+  if (!d) return;
+  // Stats
+  const stats = [
+    { label:'今日订单', value:d.today_orders??0 },
+    { label:'今日金额', value:'¥'+(d.today_amount??d.today_fee??0).toFixed(0) },
+    { label:'在线师傅', value:d.online_technicians??d.online_techs??0 },
+    { label:'活跃订单', value:d.active_orders??0 },
+    { label:'今日收入', value:'¥'+(d.today_fee??0).toFixed(0) },
+  ];
+  document.getElementById('statsGrid').innerHTML = stats.map(s => `<div class="stat-card"><div class="label">${s.label}</div><div class="value">${s.value}</div></div>`).join('');
+
+  // 30-day trend
+  const trend = d.trend_30 || d.thirty_day_trend || d.trend || [];
+  if (trend.length) {
+    const labels = trend.map(t => { const dt=new Date(t.date||t.day); return (dt.getMonth()+1)+'/'+dt.getDate(); });
+    const values = trend.map(t => t.count||t.orders||0);
+    drawBarChart('trendChart30', labels, values, '#1677FF');
+  }
+
+  // Service distribution
+  const dist = d.service_distribution || d.service_types || [];
+  if (dist.length) {
+    const labels = dist.map(t => t.name||t.type||'-');
+    const values = dist.map(t => t.count||t.orders||0);
+    drawHorizBar('serviceDistChart', labels, values, '#1677FF');
+  }
+
+  // Area distribution
+  const areas = d.area_distribution || d.areas || [];
+  const areaList = document.getElementById('areaList');
+  if (areas.length) {
+    areaList.innerHTML = areas.map(a => `<div class="area-item"><span class="name">${a.name||a.area||'-'}</span><span class="val">${a.count||a.orders||0}单</span></div>`).join('');
+  } else {
+    areaList.innerHTML = '<div style="font-size:12px;color:rgba(255,255,255,0.4);">暂无数据</div>';
+  }
+
+  // Ranking
+  const ranking = d.technician_ranking || d.ranking || [];
+  const rankBody = document.getElementById('rankBody');
+  if (ranking.length) {
+    rankBody.innerHTML = ranking.slice(0,10).map((t,i) => `<tr><td><span class="rank ${i<3?'rank-'+(i+1):'rank-other'}">${i+1}</span></td><td>${t.name||'-'}</td><td>${t.completed_orders||t.count||0}</td></tr>`).join('');
+  } else {
+    rankBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,0.4);">暂无数据</td></tr>';
+  }
+
+  // Alerts
+  const alerts = [
+    { label:'超期订单', count:d.overdue_orders??0 },
+    { label:'待处理纠纷', count:d.pending_disputes??0 },
+    { label:'待处理投诉', count:d.pending_complaints??0 },
+    { label:'待处理信用申诉', count:d.pending_credit_appeals??0 },
+  ];
+  document.getElementById('alertItems').innerHTML = alerts.map(a => `<div class="alert-item"><span>${a.label}</span><span class="num">${a.count}</span></div>`).join('');
+}
+
+connectWS();
+fetchData();
+fetchAnnouncements();
+</script>
+</body>
+</html>

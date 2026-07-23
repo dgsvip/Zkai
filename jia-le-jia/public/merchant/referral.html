@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>代报 - 佳乐家商家端</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f5f5; color: #333; padding-bottom: 70px; min-height: 100vh; }
+:root { --primary: #1677FF; --primary-light: #e6f4ff; --primary-dark: #0958d9; --text-secondary: #666; --text-muted: #999; --border: #eee; --card-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.hidden { display: none !important; }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 24px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; transition: all .2s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dark); }
+.btn-block { width: 100%; }
+.btn-outline { background: #fff; border: 1px solid var(--primary); color: var(--primary); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.input { width: 100%; padding: 10px 14px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 15px; outline: none; transition: border .2s; }
+.input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.15); }
+textarea.input { resize: vertical; min-height: 60px; font-family: inherit; }
+.card { background: #fff; border-radius: 10px; padding: 16px; margin: 12px 16px; box-shadow: var(--card-shadow); }
+.section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #333; }
+
+/* Login Modal */
+.login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.login-modal { background: #fff; border-radius: 12px; padding: 28px 24px; width: 100%; max-width: 380px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+.login-modal h2 { text-align: center; font-size: 20px; margin-bottom: 6px; }
+.login-modal .subtitle { text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.login-modal .form-group { margin-bottom: 14px; }
+.login-modal .form-group label { display: block; font-size: 14px; margin-bottom: 4px; color: var(--text-secondary); }
+.login-modal .error-msg { color: #ff4d4f; font-size: 13px; text-align: center; margin-top: 8px; min-height: 20px; }
+.login-modal .test-hint { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 8px; background: #fafafa; border-radius: 6px; }
+
+/* Header */
+.header { background: var(--primary); color: #fff; padding: 16px; text-align: center; }
+.header h1 { font-size: 18px; font-weight: 600; }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 14px; margin-bottom: 4px; color: var(--text-secondary); }
+.form-group label .required { color: #ff4d4f; }
+.form-group select { width: 100%; padding: 10px 14px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 15px; outline: none; background: #fff; transition: border .2s; }
+.form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.15); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.submit-bar { padding: 8px 0; }
+
+/* Order Tabs */
+.order-tabs { display: flex; gap: 0; margin-bottom: 12px; background: #f5f5f5; border-radius: 6px; padding: 2px; }
+.order-tab { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; color: var(--text-secondary); border-radius: 5px; cursor: pointer; transition: all .2s; }
+.order-tab.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+/* Order List */
+.order-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.order-item:last-child { border-bottom: none; }
+.order-item .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.order-item .order-header .order-id { font-size: 12px; color: var(--text-muted); }
+.order-item .order-header .order-status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--primary-light); color: var(--primary); }
+.order-item .order-status.pending { background: #fff7e6; color: #fa8c16; }
+.order-item .order-status.completed { background: #f6ffed; color: #52c41a; }
+.order-item .order-status.cancelled { background: #fff2f0; color: #ff4d4f; }
+.order-item .order-body { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.order-item .order-body .row { display: flex; }
+.order-item .order-body .row .label { width: 70px; color: var(--text-muted); flex-shrink: 0; }
+.order-item .order-body .row .val { flex: 1; }
+.order-item .order-footer { margin-top: 6px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; }
+.load-more { display: block; width: 100%; padding: 10px; text-align: center; color: var(--primary); font-size: 14px; background: none; border: none; cursor: pointer; }
+.load-more:active { opacity: .6; }
+.empty-state { text-align: center; padding: 30px 0; color: var(--text-muted); font-size: 14px; }
+
+/* Bottom Tab */
+.bottom-tab { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; border-top: 1px solid var(--border); z-index: 100; }
+.tab-item { flex: 1; text-align: center; padding: 8px 0 6px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: color .2s; }
+.tab-item .tab-icon { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+.tab-item.active { color: var(--primary); }
+.tab-item:active { opacity: .6; }
+
+/* Toast */
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 2000; pointer-events: none; animation: fadeInOut 2s ease; }
+@keyframes fadeInOut { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-modal">
+    <h2>商家登录</h2>
+    <p class="subtitle">佳乐家家电服务预约平台</p>
+    <div class="form-group">
+      <label>手机号</label>
+      <input class="input" id="loginPhone" type="tel" placeholder="请输入手机号" maxlength="11">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input class="input" id="loginPassword" type="password" placeholder="请输入密码">
+    </div>
+    <div id="loginError" class="error-msg"></div>
+    <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">登 录</button>
+    <div class="test-hint">测试账号：13900001111 / 13900002222，密码：123456</div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <h1>代报订单</h1>
+</div>
+
+<!-- Content (shown after login) -->
+<div id="pageContent" class="hidden">
+
+  <!-- Create Order Form -->
+  <div class="card">
+    <div class="section-title">创建代报订单</div>
+    <form id="orderForm" onsubmit="return false;">
+      <div class="form-group">
+        <label>服务类型 <span class="required">*</span></label>
+        <select id="formServiceType" required>
+          <option value="">请选择服务类型</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>客户姓名 <span class="required">*</span></label>
+        <input class="input" id="formCustomerName" placeholder="请输入客户姓名" required>
+      </div>
+      <div class="form-group">
+        <label>客户手机号 <span class="required">*</span></label>
+        <input class="input" id="formCustomerPhone" type="tel" placeholder="请输入客户手机号" maxlength="11" required>
+      </div>
+      <div class="form-group">
+        <label>客户地址 <span class="required">*</span></label>
+        <input class="input" id="formAddress" placeholder="请输入详细地址" required>
+      </div>
+      <div class="form-group">
+        <label>所在区域 <span class="required">*</span></label>
+        <select id="formArea" required>
+          <option value="">请选择区域</option>
+          <option value="cy">朝阳区</option>
+          <option value="hd">海淀区</option>
+          <option value="dc">东城区</option>
+          <option value="xc">西城区</option>
+          <option value="ft">丰台区</option>
+          <option value="sj">石景山区</option>
+          <option value="tz">通州区</option>
+          <option value="dx">大兴区</option>
+          <option value="cp">昌平区</option>
+          <option value="ft2">房山区</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>预约日期 <span class="required">*</span></label>
+          <input class="input" id="formDate" type="date" required>
+        </div>
+        <div class="form-group">
+          <label>预约时间 <span class="required">*</span></label>
+          <input class="input" id="formTime" type="time" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <textarea class="input" id="formRemark" placeholder="客户备注信息（可选）" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>商家备注</label>
+        <textarea class="input" id="formMerchantRemark" placeholder="内部备注，仅技师和管理员可见（可选）" rows="2"></textarea>
+      </div>
+      <div class="submit-bar">
+        <button class="btn btn-primary btn-block" id="submitBtn" onclick="submitOrder()">提交订单</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Order History -->
+  <div class="card">
+    <div class="section-title">代报记录</div>
+    <div class="order-tabs">
+      <div class="order-tab active" data-status="" onclick="switchOrderTab(this)">全部</div>
+      <div class="order-tab" data-status="pending" onclick="switchOrderTab(this)">待处理</div>
+      <div class="order-tab" data-status="processing" onclick="switchOrderTab(this)">进行中</div>
+      <div class="order-tab" data-status="completed" onclick="switchOrderTab(this)">已完成</div>
+    </div>
+    <div id="orderList"></div>
+    <button id="loadMoreOrdersBtn" class="load-more hidden" onclick="loadMoreOrders()">加载更多</button>
+  </div>
+</div>
+
+<!-- Bottom Tab -->
+<div class="bottom-tab">
+  <div class="tab-item" onclick="navigate('promotion')">
+    <div class="tab-icon">📢</div>
+    <div>推广</div>
+  </div>
+  <div class="tab-item active" onclick="navigate('referral')">
+    <div class="tab-icon">📝</div>
+    <div>代报</div>
+  </div>
+  <div class="tab-item" onclick="navigate('my')">
+    <div class="tab-icon">👤</div>
+    <div>我的</div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '';
+const TOKEN_KEY = 'jl_merchant_token';
+const MERCHANT_KEY = 'jl_merchant_info';
+
+let merchantId = null;
+let merchantInfo = null;
+let ordersPage = 1;
+let ordersTotal = 0;
+let orderStatusFilter = '';
+const PAGE_SIZE = 20;
+
+// ---- Auth ----
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function getMerchantInfo() {
+  try { return JSON.parse(localStorage.getItem(MERCHANT_KEY)); } catch { return null; }
+}
+
+function checkLogin() {
+  const token = getToken();
+  const info = getMerchantInfo();
+  if (token && info && info.id) {
+    merchantId = info.id;
+    merchantInfo = info;
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('pageContent').classList.remove('hidden');
+    loadServiceItems();
+    loadOrders();
+    setDefaultDate();
+    return true;
+  }
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  return false;
+}
+
+function setDefaultDate() {
+  const d = new Date();
+  document.getElementById('formDate').value = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+  document.getElementById('formTime').value = '09:00';
+}
+
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errorEl = document.getElementById('loginError');
+  errorEl.textContent = '';
+  if (!phone || !password) { errorEl.textContent = '请输入手机号和密码'; return; }
+  if (!/^1\d{10}$/.test(phone)) { errorEl.textContent = '请输入正确的手机号'; return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  try {
+    const res = await fetch(API_BASE + '/api/merchant/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(MERCHANT_KEY, JSON.stringify(data.merchant || data));
+      checkLogin();
+    } else {
+      errorEl.textContent = data.message || '登录失败，请检查账号密码';
+    }
+  } catch (e) {
+    errorEl.textContent = '网络错误，请稍后重试';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登 录';
+  }
+}
+
+// ---- Service Items ----
+async function loadServiceItems() {
+  const sel = document.getElementById('formServiceType');
+  try {
+    const res = await fetch(API_BASE + '/api/service-items', {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.data || data.list || data.records || [];
+    list.forEach(function(item) {
+      const opt = document.createElement('option');
+      opt.value = item.id || item.service_id;
+      opt.textContent = item.name || item.service_name || ('服务 #' + (item.id || ''));
+      sel.appendChild(opt);
+    });
+  } catch (e) { /* ignore */ }
+}
+
+// ---- Submit Order ----
+async function submitOrder() {
+  const serviceType = document.getElementById('formServiceType').value;
+  const customerName = document.getElementById('formCustomerName').value.trim();
+  const customerPhone = document.getElementById('formCustomerPhone').value.trim();
+  const address = document.getElementById('formAddress').value.trim();
+  const area = document.getElementById('formArea').value;
+  const date = document.getElementById('formDate').value;
+  const time = document.getElementById('formTime').value;
+  const remark = document.getElementById('formRemark').value.trim();
+  const merchantRemark = document.getElementById('formMerchantRemark').value.trim();
+
+  if (!serviceType) { showToast('请选择服务类型'); return; }
+  if (!customerName) { showToast('请输入客户姓名'); return; }
+  if (!customerPhone || !/^1\d{10}$/.test(customerPhone)) { showToast('请输入正确的客户手机号'); return; }
+  if (!address) { showToast('请输入客户地址'); return; }
+  if (!area) { showToast('请选择区域'); return; }
+  if (!date || !time) { showToast('请选择预约日期和时间'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  try {
+    const res = await fetch(API_BASE + '/api/merchant/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
+      body: JSON.stringify({
+        merchant_id: merchantId,
+        service_type_id: serviceType,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        address: address,
+        area: area,
+        booking_date: date,
+        booking_time: time,
+        remark: remark || undefined,
+        merchant_remark: merchantRemark || undefined
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('订单提交成功');
+      document.getElementById('orderForm').reset();
+      setDefaultDate();
+      ordersPage = 1;
+      loadOrders();
+    } else {
+      showToast(data.message || '提交失败，请重试');
+    }
+  } catch (e) {
+    showToast('网络错误，请稍后重试');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '提交订单';
+  }
+}
+
+// ---- Orders ----
+function switchOrderTab(el) {
+  document.querySelectorAll('.order-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  orderStatusFilter = el.getAttribute('data-status') || '';
+  ordersPage = 1;
+  loadOrders();
+}
+
+async function loadOrders(reset) {
+  if (reset !== false) { ordersPage = 1; }
+  if (!merchantId) return;
+  const container = document.getElementById('orderList');
+  const loadMoreBtn = document.getElementById('loadMoreOrdersBtn');
+  try {
+    let url = API_BASE + '/api/merchant/orders?merchant_id=' + merchantId + '&page=' + ordersPage + '&page_size=' + PAGE_SIZE;
+    if (orderStatusFilter) url += '&status=' + encodeURIComponent(orderStatusFilter);
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    if (!res.ok) { container.innerHTML = '<div class="empty-state">加载失败</div>'; return; }
+    const data = await res.json();
+    const list = data.data || data.list || data.records || [];
+    ordersTotal = data.total || data.total_count || 0;
+    if (reset !== false) container.innerHTML = '';
+    if (!list || list.length === 0) {
+      if (reset !== false) container.innerHTML = '<div class="empty-state">暂无代报记录</div>';
+      loadMoreBtn.classList.add('hidden');
+      return;
+    }
+    list.forEach(function(item) {
+      const div = document.createElement('div');
+      div.className = 'order-item';
+      const statusMap = { 'pending': '待处理', 'processing': '进行中', 'completed': '已完成', 'cancelled': '已取消' };
+      const statusText = item.status_label || statusMap[item.status] || item.status || '-';
+      div.innerHTML =
+        '<div class="order-header"><span class="order-id">#' + (item.order_no || item.id || '') + '</span><span class="order-status ' + (item.status || '') + '">' + statusText + '</span></div>' +
+        '<div class="order-body">' +
+          '<div class="row"><span class="label">服务</span><span class="val">' + (item.service_name || item.service_type || '-') + '</span></div>' +
+          '<div class="row"><span class="label">客户</span><span class="val">' + (item.customer_name || '-') + ' ' + (item.customer_phone || '') + '</span></div>' +
+          '<div class="row"><span class="label">地址</span><span class="val">' + (item.address || '-') + '</span></div>' +
+          '<div class="row"><span class="label">预约</span><span class="val">' + formatTime(item.booking_date || item.booking_time) + (item.booking_time ? ' ' + item.booking_time : '') + '</span></div>' +
+        '</div>' +
+        '<div class="order-footer"><span>' + (item.remark || '') + '</span><span>' + formatTime(item.created_at || item.create_time) + '</span></div>';
+      container.appendChild(div);
+    });
+    if (list.length >= PAGE_SIZE) {
+      loadMoreBtn.classList.remove('hidden');
+    } else {
+      loadMoreBtn.classList.add('hidden');
+    }
+  } catch (e) {
+    if (reset !== false) container.innerHTML = '<div class="empty-state">加载失败</div>';
+  }
+}
+
+function loadMoreOrders() {
+  ordersPage++;
+  loadOrders(false);
+}
+
+function formatTime(t) {
+  if (!t) return '-';
+  try {
+    const d = new Date(t);
+    if (isNaN(d.getTime())) return t;
+    const pad = function(n) { return n < 10 ? '0' + n : n; };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  } catch { return t; }
+}
+
+// ---- Toast ----
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 2000);
+}
+
+// ---- Navigation ----
+function navigate(page) {
+  if (page === 'promotion') window.location.href = 'promotion.html';
+  if (page === 'referral') return;
+  if (page === 'my') window.location.href = 'my.html';
+}
+
+// ---- Init ----
+checkLogin();
+</script>
+</body>
+</html>

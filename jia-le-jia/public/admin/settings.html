@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 系统设置</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f2f5; display:flex; min-height:100vh; }
+:root { --primary:#1677FF; --primary-hover:#0958d9; --sidebar-w:220px; --header-h:56px; }
+.sidebar { width:var(--sidebar-w); background:#001529; color:#fff; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; }
+.sidebar-logo { height:var(--header-h); display:flex; align-items:center; padding:0 20px; font-size:18px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left:10px; }
+.sidebar-menu { flex:1; padding:12px 0; overflow-y:auto; }
+.menu-item { display:flex; align-items:center; padding:12px 24px; color:rgba(255,255,255,0.65); text-decoration:none; font-size:14px; transition:all .2s; cursor:pointer; }
+.menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.menu-item.active { color:#fff; background:var(--primary); }
+.menu-item .icon { margin-right:10px; font-size:16px; }
+.main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+.header { height:var(--header-h); background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:50; }
+.header h2 { font-size:18px; color:#1a1a1a; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.logout-btn { padding:6px 16px; background:#fff; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:13px; color:#666; }
+.logout-btn:hover { color:var(--primary); border-color:var(--primary); }
+.content { padding:20px; }
+.settings-tabs { display:flex; gap:0; margin-bottom:16px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); flex-wrap:wrap; }
+.settings-tab { padding:10px 18px; cursor:pointer; font-size:13px; color:#666; border-bottom:2px solid transparent; transition:all .2s; }
+.settings-tab:hover { color:var(--primary); }
+.settings-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:500; }
+.settings-panel { background:#fff; border-radius:8px; padding:24px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.settings-panel h3 { font-size:16px; color:#1a1a1a; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #f0f0f0; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:13px; color:#333; margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea { width:100%; max-width:480px; height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); }
+.form-group textarea { height:120px; padding:8px 10px; resize:vertical; max-width:640px; }
+.form-row { display:flex; gap:12px; flex-wrap:wrap; }
+.form-row .form-group { flex:1; min-width:200px; }
+.form-group .hint { font-size:12px; color:#999; margin-top:2px; }
+.save-bar { margin-top:24px; padding-top:16px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; }
+.save-btn { padding:8px 32px; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+.save-btn:hover { background:var(--primary-hover); }
+.save-btn:disabled { background:#a0c5ff; cursor:not-allowed; }
+.area-tags { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.area-tag { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; background:#f5f5f5; border:1px solid #d9d9d9; border-radius:4px; font-size:13px; color:#333; }
+.area-tag .remove { cursor:pointer; color:#999; font-size:15px; line-height:1; }
+.area-tag .remove:hover { color:#ff4d4f; }
+.add-area-row { display:flex; gap:8px; align-items:center; }
+.add-area-row input { height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; width:200px; }
+.add-area-row input:focus { border-color:var(--primary); }
+.add-area-row button { height:34px; padding:0 16px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+.add-area-row button:hover { background:var(--primary-hover); }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item active" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>系统设置</h2>
+    <div class="header-right">
+      <span style="font-size:14px;color:#666;">管理员</span>
+      <button class="logout-btn" onclick="localStorage.removeItem('admin_token');window.location.href='login.html'">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="settings-tabs" id="settingsTabs">
+      <div class="settings-tab active" data-panel="basic" onclick="switchSettingsTab(this)">基础配置</div>
+      <div class="settings-tab" data-panel="agreement" onclick="switchSettingsTab(this)">协议管理</div>
+      <div class="settings-tab" data-panel="area" onclick="switchSettingsTab(this)">区域管理</div>
+      <div class="settings-tab" data-panel="overtime" onclick="switchSettingsTab(this)">超期阈值</div>
+      <div class="settings-tab" data-panel="rates" onclick="switchSettingsTab(this)">全局比例</div>
+      <div class="settings-tab" data-panel="cancel" onclick="switchSettingsTab(this)">取消规则</div>
+      <div class="settings-tab" data-panel="security" onclick="switchSettingsTab(this)">安全配置</div>
+      <div class="settings-tab" data-panel="antifraud" onclick="switchSettingsTab(this)">防刷规则</div>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+      <div id="panelBasic" class="panel-content">
+        <h3>基础配置</h3>
+        <div class="form-group"><label>站点名称</label><input id="s_site_name" placeholder="佳乐家"></div>
+        <div class="form-group"><label>客服电话</label><input id="s_service_phone" placeholder="400-xxx-xxxx"></div>
+        <div class="form-group"><label>Logo 上传</label><input id="s_logo" placeholder="Logo URL 占位" style="max-width:480px;"></div>
+      </div>
+      <div id="panelAgreement" class="panel-content" style="display:none;">
+        <h3>协议管理</h3>
+        <div class="form-group"><label>预约协议</label><textarea id="s_booking_agreement" rows="5" placeholder="请输入预约协议内容..."></textarea></div>
+        <div class="form-group"><label>平台服务协议</label><textarea id="s_service_agreement" rows="5" placeholder="请输入平台服务协议内容..."></textarea></div>
+        <div class="form-group"><label>当前版本</label><input id="s_agreement_version" readonly style="background:#f5f5f5;max-width:200px;" placeholder="自动生成"></div>
+      </div>
+      <div id="panelArea" class="panel-content" style="display:none;">
+        <h3>区域管理（曹县 24 个区域）</h3>
+        <div class="area-tags" id="areaTags"></div>
+        <div class="add-area-row">
+          <input id="newAreaInput" placeholder="输入区域名称">
+          <button onclick="addArea()">添加</button>
+        </div>
+      </div>
+      <div id="panelOvertime" class="panel-content" style="display:none;">
+        <h3>超期阈值</h3>
+        <div class="form-row">
+          <div class="form-group"><label>超期天数</label><input id="s_overtime_days" type="number" placeholder="如: 7"><div class="hint">订单超过此天数未完成标记为超期</div></div>
+          <div class="form-group"><label>接单池超时（分钟）</label><input id="s_pool_timeout" type="number" placeholder="如: 30"><div class="hint">订单在接单池中超过此时间自动流转</div></div>
+        </div>
+      </div>
+      <div id="panelRates" class="panel-content" style="display:none;">
+        <h3>全局比例</h3>
+        <div class="form-row">
+          <div class="form-group"><label>平台比例 (%)</label><input id="s_platform_rate" type="number" step="0.1" placeholder="如: 10"></div>
+          <div class="form-group"><label>师傅比例 (%)</label><input id="s_technician_rate" type="number" step="0.1" placeholder="如: 70"></div>
+          <div class="form-group"><label>商家比例 (%)</label><input id="s_merchant_rate" type="number" step="0.1" placeholder="如: 20"></div>
+        </div>
+      </div>
+      <div id="panelCancel" class="panel-content" style="display:none;">
+        <h3>取消规则</h3>
+        <div class="form-group"><label>取消手续费 (元)</label><input id="s_cancel_fee" type="number" step="0.01" placeholder="如: 5.00"></div>
+      </div>
+      <div id="panelSecurity" class="panel-content" style="display:none;">
+        <h3>安全配置</h3>
+        <div class="form-row">
+          <div class="form-group"><label>登录最大尝试次数</label><input id="s_login_attempts" type="number" placeholder="如: 5"></div>
+          <div class="form-group"><label>验证码有效期（秒）</label><input id="s_verify_code_ttl" type="number" placeholder="如: 300"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>接口限流（次/分钟）</label><input id="s_rate_limit" type="number" placeholder="如: 60"></div>
+          <div class="form-group"><label>日志保留天数</label><input id="s_log_retention" type="number" placeholder="如: 30"></div>
+        </div>
+      </div>
+      <div id="panelAntifraud" class="panel-content" style="display:none;">
+        <h3>防刷规则</h3>
+        <div class="form-row">
+          <div class="form-group"><label>取消阈值（次/天）</label><input id="s_cancel_threshold" type="number" placeholder="如: 3"></div>
+          <div class="form-group"><label>限制小时数</label><input id="s_limit_hours" type="number" placeholder="如: 24"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>取消率限制</label><input id="s_cancel_rate" type="number" step="0.01" placeholder="如: 0.3"><div class="hint">超过此比例触发限制</div></div>
+          <div class="form-group"><label>每小时最大订单数</label><input id="s_max_orders_per_hour" type="number" placeholder="如: 10"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>每天最大订单数</label><input id="s_max_orders_per_day" type="number" placeholder="如: 50"></div>
+          <div class="form-group"><label>每IP最大订单数</label><input id="s_max_ip_orders" type="number" placeholder="如: 20"></div>
+        </div>
+      </div>
+      <div class="save-bar"><button class="save-btn" onclick="saveSettings()">保存设置</button></div>
+    </div>
+  </div>
+</div>
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+const areas24 = [
+  '曹城街道', '青菏街道', '郑庄街道', '倪集街道', '庄寨镇', '普连集镇',
+  '青固集镇', '桃源集镇', '韩集镇', '砖庙镇', '古营集镇', '魏湾镇',
+  '侯集回族镇', '苏集镇', '孙老家镇', '阎店楼镇', '梁堤头镇', '安蔡楼镇',
+  '邵庄镇', '王集镇', '青岗集镇', '常乐集镇', '大集镇', '仵楼镇'
+];
+
+function switchSettingsTab(el) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel-content').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('panel' + el.dataset.panel.charAt(0).toUpperCase() + el.dataset.panel.slice(1));
+  if (panel) panel.style.display = 'block';
+}
+
+function loadSettings() {
+  fetch('/api/admin/settings', { headers: getHeaders() }).then(r => r.json()).then(res => {
+    const s = res.data || res;
+    // Basic
+    if (s.site_name !== undefined) document.getElementById('s_site_name').value = s.site_name;
+    if (s.service_phone !== undefined) document.getElementById('s_service_phone').value = s.service_phone;
+    if (s.logo !== undefined) document.getElementById('s_logo').value = s.logo;
+    // Agreement
+    if (s.booking_agreement !== undefined) document.getElementById('s_booking_agreement').value = s.booking_agreement;
+    if (s.service_agreement !== undefined) document.getElementById('s_service_agreement').value = s.service_agreement;
+    if (s.agreement_version !== undefined) document.getElementById('s_agreement_version').value = s.agreement_version;
+    // Areas
+    const areas = s.areas || areas24;
+    renderAreas(areas);
+    // Overtime
+    if (s.overtime_days !== undefined) document.getElementById('s_overtime_days').value = s.overtime_days;
+    if (s.pool_timeout !== undefined) document.getElementById('s_pool_timeout').value = s.pool_timeout;
+    // Rates
+    if (s.platform_rate !== undefined) document.getElementById('s_platform_rate').value = s.platform_rate;
+    if (s.technician_rate !== undefined) document.getElementById('s_technician_rate').value = s.technician_rate;
+    if (s.merchant_rate !== undefined) document.getElementById('s_merchant_rate').value = s.merchant_rate;
+    // Cancel
+    if (s.cancel_fee !== undefined) document.getElementById('s_cancel_fee').value = s.cancel_fee;
+    // Security
+    if (s.login_attempts !== undefined) document.getElementById('s_login_attempts').value = s.login_attempts;
+    if (s.verify_code_ttl !== undefined) document.getElementById('s_verify_code_ttl').value = s.verify_code_ttl;
+    if (s.rate_limit !== undefined) document.getElementById('s_rate_limit').value = s.rate_limit;
+    if (s.log_retention !== undefined) document.getElementById('s_log_retention').value = s.log_retention;
+    // Anti-fraud
+    if (s.cancel_threshold !== undefined) document.getElementById('s_cancel_threshold').value = s.cancel_threshold;
+    if (s.limit_hours !== undefined) document.getElementById('s_limit_hours').value = s.limit_hours;
+    if (s.cancel_rate !== undefined) document.getElementById('s_cancel_rate').value = s.cancel_rate;
+    if (s.max_orders_per_hour !== undefined) document.getElementById('s_max_orders_per_hour').value = s.max_orders_per_hour;
+    if (s.max_orders_per_day !== undefined) document.getElementById('s_max_orders_per_day').value = s.max_orders_per_day;
+    if (s.max_ip_orders !== undefined) document.getElementById('s_max_ip_orders').value = s.max_ip_orders;
+  }).catch(() => {
+    // Load defaults
+    renderAreas(areas24);
+  });
+}
+
+function renderAreas(areas) {
+  const container = document.getElementById('areaTags');
+  container.innerHTML = areas.map(a => `<span class="area-tag">${a}<span class="remove" onclick="removeArea('${a}')">&times;</span></span>`).join('');
+}
+
+function addArea() {
+  const input = document.getElementById('newAreaInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const container = document.getElementById('areaTags');
+  const existing = Array.from(container.querySelectorAll('.area-tag')).map(el => el.textContent.replace('×','').trim());
+  if (existing.includes(name)) { alert('区域已存在'); return; }
+  const tag = document.createElement('span');
+  tag.className = 'area-tag';
+  tag.innerHTML = name + '<span class="remove" onclick="this.parentElement.remove()">&times;</span>';
+  container.appendChild(tag);
+  input.value = '';
+}
+
+function removeArea(name) {
+  const container = document.getElementById('areaTags');
+  const tags = container.querySelectorAll('.area-tag');
+  tags.forEach(t => { if (t.textContent.replace('×','').trim() === name) t.remove(); });
+}
+
+function getAreas() {
+  const container = document.getElementById('areaTags');
+  return Array.from(container.querySelectorAll('.area-tag')).map(el => el.textContent.replace('×','').trim());
+}
+
+function saveSettings() {
+  const btn = document.querySelector('.save-btn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  const body = {
+    site_name: document.getElementById('s_site_name').value,
+    service_phone: document.getElementById('s_service_phone').value,
+    logo: document.getElementById('s_logo').value,
+    booking_agreement: document.getElementById('s_booking_agreement').value,
+    service_agreement: document.getElementById('s_service_agreement').value,
+    areas: getAreas(),
+    overtime_days: parseInt(document.getElementById('s_overtime_days').value) || 7,
+    pool_timeout: parseInt(document.getElementById('s_pool_timeout').value) || 30,
+    platform_rate: parseFloat(document.getElementById('s_platform_rate').value) || 0,
+    technician_rate: parseFloat(document.getElementById('s_technician_rate').value) || 0,
+    merchant_rate: parseFloat(document.getElementById('s_merchant_rate').value) || 0,
+    cancel_fee: parseFloat(document.getElementById('s_cancel_fee').value) || 0,
+    login_attempts: parseInt(document.getElementById('s_login_attempts').value) || 5,
+    verify_code_ttl: parseInt(document.getElementById('s_verify_code_ttl').value) || 300,
+    rate_limit: parseInt(document.getElementById('s_rate_limit').value) || 60,
+    log_retention: parseInt(document.getElementById('s_log_retention').value) || 30,
+    cancel_threshold: parseInt(document.getElementById('s_cancel_threshold').value) || 3,
+    limit_hours: parseInt(document.getElementById('s_limit_hours').value) || 24,
+    cancel_rate: parseFloat(document.getElementById('s_cancel_rate').value) || 0.3,
+    max_orders_per_hour: parseInt(document.getElementById('s_max_orders_per_hour').value) || 10,
+    max_orders_per_day: parseInt(document.getElementById('s_max_orders_per_day').value) || 50,
+    max_ip_orders: parseInt(document.getElementById('s_max_ip_orders').value) || 20
+  };
+
+  fetch('/api/admin/settings', { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(res => {
+      alert(res.code === 0 || res.success ? '保存成功' : (res.message || '保存失败'));
+    })
+    .catch(() => alert('网络错误'))
+    .finally(() => { btn.disabled = false; btn.textContent = '保存设置'; });
+}
+
+loadSettings();
+</script>
+</body>
+</html>

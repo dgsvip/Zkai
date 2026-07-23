@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>查询订单 - 佳乐家</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f5f5; color: #333; font-size: 14px; padding-bottom: 56px; }
+  :root { --primary: #1677FF; --primary-light: #e6f4ff; --primary-bg: #1677FF; }
+
+  .header { background: var(--primary); color: #fff; padding: 12px 16px; text-align: center; font-size: 18px; font-weight: 600; position: sticky; top: 0; z-index: 100; }
+
+  /* Login Section */
+  .login-section { background: #fff; margin: 10px 12px; border-radius: 10px; padding: 24px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .login-title { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 20px; }
+  .login-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .login-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+  .login-row input:focus { border-color: var(--primary); }
+  .login-row input.code-input { letter-spacing: 8px; text-align: center; font-size: 20px; }
+  .login-row button { padding: 12px 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .login-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 600; cursor: pointer; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Code Display Box */
+  .code-box { background: var(--primary-light); border: 2px dashed var(--primary); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 16px; display: none; }
+  .code-box .code-label { font-size: 13px; color: #666; margin-bottom: 4px; }
+  .code-box .code-value { font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 8px; font-family: 'Courier New', monospace; }
+  .code-box .code-timer { font-size: 12px; color: #999; margin-top: 4px; }
+
+  /* Status Tabs */
+  .status-tabs { display: flex; background: #fff; margin: 0 12px; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .status-tabs::-webkit-scrollbar { height: 0; }
+  .status-tab { flex: 1; min-width: 60px; text-align: center; padding: 12px 8px; font-size: 13px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .status-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+  /* Order List */
+  .order-list { margin: 10px 12px; }
+  .order-card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; }
+  .order-card .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .order-card .order-no { font-size: 13px; color: #999; }
+  .order-card .order-status { font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .order-status.pending { color: #fa8c16; background: #fff7e6; }
+  .order-status.in_progress { color: var(--primary); background: var(--primary-light); }
+  .order-status.completed { color: #52c41a; background: #f6ffed; }
+  .order-status.cancelled { color: #999; background: #f5f5f5; }
+  .order-card .order-body { font-size: 14px; line-height: 1.8; }
+  .order-card .order-body .row { display: flex; }
+  .order-card .order-body .row-label { color: #999; width: 70px; flex-shrink: 0; }
+  .order-card .order-body .row-value { flex: 1; }
+  .order-card .order-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+  .order-card .order-footer button { padding: 6px 16px; border-radius: 6px; border: 1px solid #ddd; background: #fff; font-size: 13px; cursor: pointer; }
+  .order-card .order-footer button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .order-card .order-footer button.danger { color: #ff4d4f; border-color: #ff4d4f; }
+
+  /* Load More */
+  .load-more { text-align: center; padding: 16px; color: #999; cursor: pointer; }
+  .load-more:active { opacity: 0.7; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; }
+  .modal-header { padding: 16px; text-align: center; font-size: 16px; font-weight: 600; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; text-align: center; border-top: 1px solid #eee; }
+  .modal-footer button { padding: 8px 32px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+
+  /* Timeline */
+  .timeline { padding: 0; }
+  .timeline-item { display: flex; padding: 8px 0; position: relative; }
+  .timeline-item::before { content: ''; position: absolute; left: 11px; top: 28px; bottom: 0; width: 2px; background: #eee; }
+  .timeline-item:last-child::before { display: none; }
+  .timeline-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; flex-shrink: 0; margin-right: 10px; }
+  .timeline-dot.grey { background: #ddd; }
+  .timeline-content { flex: 1; }
+  .timeline-content .tl-title { font-size: 14px; color: #333; }
+  .timeline-content .tl-time { font-size: 12px; color: #999; margin-top: 2px; }
+
+  /* Evaluation Stars */
+  .eval-section { margin-bottom: 16px; }
+  .eval-section .eval-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .stars { display: flex; gap: 8px; }
+  .stars .star { font-size: 28px; color: #ddd; cursor: pointer; transition: color 0.2s; }
+  .stars .star.active { color: #ffb400; }
+  .eval-textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 60px; margin-top: 8px; outline: none; }
+  .eval-textarea:focus { border-color: var(--primary); }
+  .eval-submit { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; border-top: 1px solid #eee; z-index: 100; }
+  .bottom-nav a { flex: 1; text-align: center; padding: 8px 0; text-decoration: none; color: #999; font-size: 11px; }
+  .bottom-nav a .nav-icon { display: block; font-size: 20px; margin-bottom: 2px; }
+  .bottom-nav a.active { color: var(--primary); }
+  .bottom-nav a.active .nav-icon { color: var(--primary); }
+
+  .hidden { display: none !important; }
+  .loading { text-align: center; padding: 20px; color: #999; }
+  .empty { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+  .empty .empty-icon { font-size: 48px; margin-bottom: 8px; }
+  .mt-10 { margin-top: 10px; }
+  .text-center { text-align: center; }
+  .text-tip { color: #999; font-size: 12px; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">查询订单</div>
+
+<!-- Login Section -->
+<div class="login-section" id="loginSection">
+  <div class="login-title">请输入手机号查询订单</div>
+  <div class="login-row">
+    <input type="tel" id="loginPhone" placeholder="手机号" maxlength="11" oninput="onPhoneInput()">
+    <button id="sendCodeBtn" onclick="sendCode()" disabled>获取验证码</button>
+  </div>
+  <!-- Code Display Box -->
+  <div class="code-box" id="codeBox">
+    <div class="code-label">您的验证码（5分钟内有效）</div>
+    <div class="code-value" id="codeValue">----</div>
+    <div class="code-timer" id="codeTimer"></div>
+  </div>
+  <div class="login-row">
+    <input type="text" id="loginCode" class="code-input" placeholder="验证码" maxlength="4" inputmode="numeric">
+  </div>
+  <button class="login-btn" id="verifyBtn" onclick="verifyCode()" disabled>查 询</button>
+  <div class="text-tip">验证码有效期为5分钟，请及时使用</div>
+</div>
+
+<!-- Order Content (hidden until login) -->
+<div id="orderContent" class="hidden">
+  <!-- Status Tabs -->
+  <div class="status-tabs" id="statusTabs">
+    <div class="status-tab active" data-status="all" onclick="setStatus('all')">全部</div>
+    <div class="status-tab" data-status="pending" onclick="setStatus('pending')">待接单</div>
+    <div class="status-tab" data-status="in_progress" onclick="setStatus('in_progress')">进行中</div>
+    <div class="status-tab" data-status="completed" onclick="setStatus('completed')">已完成</div>
+    <div class="status-tab" data-status="cancelled" onclick="setStatus('cancelled')">已取消</div>
+  </div>
+
+  <!-- Order List -->
+  <div class="order-list" id="orderList"></div>
+  <div class="load-more" id="loadMore" onclick="loadMore()">加载更多</div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">订单详情</div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer"><button onclick="closeDetail()">关闭</button></div>
+  </div>
+</div>
+
+<!-- Evaluation Modal -->
+<div class="modal-overlay" id="evalModal">
+  <div class="modal">
+    <div class="modal-header">评价服务</div>
+    <div class="modal-body" id="evalBody">
+      <div class="eval-section">
+        <div class="eval-label">服务态度</div>
+        <div class="stars" id="starAttitude">
+          <span class="star" data-val="1" onclick="rate('attitude',1)">★</span>
+          <span class="star" data-val="2" onclick="rate('attitude',2)">★</span>
+          <span class="star" data-val="3" onclick="rate('attitude',3)">★</span>
+          <span class="star" data-val="4" onclick="rate('attitude',4)">★</span>
+          <span class="star" data-val="5" onclick="rate('attitude',5)">★</span>
+        </div>
+      </div>
+      <div class="eval-section">
+        <div class="eval-label">技术水平</div>
+        <div class="stars" id="starSkill">
+          <span class="star" data-val="1" onclick="rate('skill',1)">★</span>
+          <span class="star" data-val="2" onclick="rate('skill',2)">★</span>
+          <span class="star" data-val="3" onclick="rate('skill',3)">★</span>
+          <span class="star" data-val="4" onclick="rate('skill',4)">★</span>
+          <span class="star" data-val="5" onclick="rate('skill',5)">★</span>
+        </div>
+      </div>
+      <div class="eval-section">
+        <div class="eval-label">准时程度</div>
+        <div class="stars" id="starPunctual">
+          <span class="star" data-val="1" onclick="rate('punctual',1)">★</span>
+          <span class="star" data-val="2" onclick="rate('punctual',2)">★</span>
+          <span class="star" data-val="3" onclick="rate('punctual',3)">★</span>
+          <span class="star" data-val="4" onclick="rate('punctual',4)">★</span>
+          <span class="star" data-val="5" onclick="rate('punctual',5)">★</span>
+        </div>
+      </div>
+      <div class="eval-section">
+        <div class="eval-label">评价内容</div>
+        <textarea class="eval-textarea" id="evalComment" placeholder="请描述您的服务体验（选填）" maxlength="200"></textarea>
+      </div>
+      <button class="eval-submit" onclick="submitEval()">提交评价</button>
+    </div>
+    <div class="modal-footer"><button onclick="closeEval()">关闭</button></div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <a href="booking.html">
+    <span class="nav-icon">📋</span>
+    预约
+  </a>
+  <a href="query.html" class="active">
+    <span class="nav-icon">🔍</span>
+    查单
+  </a>
+  <a href="my.html">
+    <span class="nav-icon">👤</span>
+    我的
+  </a>
+</div>
+
+<script>
+// ========== State ==========
+const state = {
+  phone: '',
+  token: '',
+  status: 'all',
+  orders: [],
+  page: 1,
+  hasMore: true,
+  loading: false,
+  evalOrderId: null,
+  evalRating: { attitude: 0, skill: 0, punctual: 0 },
+  codeTimer: null,
+  codeCooldown: 0
+};
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', () => {
+  // Check if phone passed via URL
+  const params = new URLSearchParams(window.location.search);
+  const phoneParam = params.get('phone');
+  if (phoneParam) {
+    document.getElementById('loginPhone').value = phoneParam;
+    state.phone = phoneParam;
+    // Auto-login attempt
+    const savedToken = localStorage.getItem('jlj_token_' + phoneParam);
+    const savedPhone = localStorage.getItem('jlj_phone');
+    if (savedToken && savedPhone === phoneParam) {
+      state.token = savedToken;
+      state.phone = phoneParam;
+      showOrderList();
+    }
+  }
+});
+
+// ========== Phone Input ==========
+function onPhoneInput() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const btn = document.getElementById('sendCodeBtn');
+  btn.disabled = !/^1\d{9,10}$/.test(phone);
+}
+
+// ========== Send Code ==========
+async function sendCode() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    alert('请输入正确的手机号');
+    return;
+  }
+
+  const btn = document.getElementById('sendCodeBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    // Display code in blue box
+    const code = data.data?.code || data.code || data.data || '----';
+    document.getElementById('codeValue').textContent = code;
+    document.getElementById('codeBox').style.display = 'block';
+
+    state.phone = phone;
+    state.codeCooldown = 60;
+    startCooldown();
+    document.getElementById('verifyBtn').disabled = false;
+  } catch(e) {
+    alert('发送验证码失败，请重试');
+    btn.disabled = false;
+  }
+}
+
+function startCooldown() {
+  const btn = document.getElementById('sendCodeBtn');
+  const timerEl = document.getElementById('codeTimer');
+
+  if (state.codeTimer) clearInterval(state.codeTimer);
+
+  state.codeTimer = setInterval(() => {
+    state.codeCooldown--;
+    if (state.codeCooldown <= 0) {
+      clearInterval(state.codeTimer);
+      state.codeTimer = null;
+      btn.disabled = false;
+      btn.textContent = '重新获取';
+      timerEl.textContent = '';
+    } else {
+      btn.disabled = true;
+      btn.textContent = `${state.codeCooldown}s`;
+      timerEl.textContent = `验证码有效期剩余：${state.codeCooldown > 0 ? Math.min(state.codeCooldown, 300) : 0}s`;
+    }
+  }, 1000);
+}
+
+// ========== Verify Code ==========
+async function verifyCode() {
+  const code = document.getElementById('loginCode').value.trim();
+  if (!code || code.length !== 4) {
+    alert('请输入4位验证码');
+    return;
+  }
+
+  const btn = document.getElementById('verifyBtn');
+  btn.disabled = true;
+  btn.textContent = '验证中...';
+
+  try {
+    const res = await fetch('/api/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone, code })
+    });
+    const data = await res.json();
+    if (data.code === 0 || data.code === 200 || res.ok) {
+      state.token = data.data?.token || data.token || 'token_' + state.phone;
+      localStorage.setItem('jlj_phone', state.phone);
+      localStorage.setItem('jlj_token_' + state.phone, state.token);
+      showOrderList();
+    } else {
+      alert(data.message || '验证码错误');
+      btn.disabled = false;
+      btn.textContent = '查 询';
+    }
+  } catch(e) {
+    alert('网络错误');
+    btn.disabled = false;
+    btn.textContent = '查 询';
+  }
+}
+
+// ========== Show Order List ==========
+function showOrderList() {
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('orderContent').classList.remove('hidden');
+  state.page = 1;
+  state.orders = [];
+  state.hasMore = true;
+  loadOrders();
+}
+
+// ========== Status Tabs ==========
+function setStatus(status) {
+  state.status = status;
+  state.page = 1;
+  state.orders = [];
+  state.hasMore = true;
+  document.querySelectorAll('.status-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.status === status);
+  });
+  loadOrders();
+}
+
+// ========== Load Orders ==========
+async function loadOrders() {
+  if (state.loading || !state.hasMore) return;
+  state.loading = true;
+  document.getElementById('loadMore').textContent = '加载中...';
+
+  try {
+    const url = `/api/orders?phone=${encodeURIComponent(state.phone)}&status=${state.status}&page=${state.page}`;
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const list = data.data?.list || data.data || data || [];
+    const total = data.data?.total || data.total || list.length;
+
+    if (state.page === 1) {
+      state.orders = Array.isArray(list) ? list : [];
+    } else {
+      if (Array.isArray(list)) state.orders = state.orders.concat(list);
+    }
+
+    state.hasMore = state.orders.length < total;
+    state.page++;
+    renderOrders();
+  } catch(e) {
+    document.getElementById('loadMore').textContent = '加载失败，点击重试';
+  } finally {
+    state.loading = false;
+  }
+}
+
+function loadMore() {
+  if (!state.hasMore) return;
+  loadOrders();
+}
+
+// ========== Render Orders ==========
+function renderOrders() {
+  const container = document.getElementById('orderList');
+  if (state.orders.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>暂无订单</div>';
+    document.getElementById('loadMore').textContent = '';
+    return;
+  }
+
+  const statusMap = {
+    pending: '待接单',
+    in_progress: '进行中',
+    completed: '已完成',
+    cancelled: '已取消'
+  };
+
+  container.innerHTML = state.orders.map(o => {
+    const statusText = statusMap[o.status] || o.status || '未知';
+    const statusClass = o.status || 'pending';
+    const techInfo = o.technician_name ? `技术人员：${o.technician_name}${o.technician_phone ? ' (' + o.technician_phone + ')' : ''}` : '';
+    return `<div class="order-card" onclick="showDetail('${o.order_no || o.id}')">
+      <div class="order-header">
+        <span class="order-no">${o.order_no || '--'}</span>
+        <span class="order-status ${statusClass}">${statusText}</span>
+      </div>
+      <div class="order-body">
+        <div class="row"><span class="row-label">服务项目</span><span class="row-value">${o.service_name || '--'}</span></div>
+        <div class="row"><span class="row-label">预约时间</span><span class="row-value">${o.booking_date || ''} ${o.booking_time || ''}</span></div>
+        <div class="row"><span class="row-label">服务地址</span><span class="row-value">${o.area || ''} ${o.address_detail || ''}</span></div>
+        ${techInfo ? `<div class="row"><span class="row-label">技术人员</span><span class="row-value">${techInfo}</span></div>` : ''}
+      </div>
+      <div class="order-footer">
+        ${o.status === 'pending' ? `<button class="danger" onclick="event.stopPropagation();cancelOrder('${o.order_no || o.id}')">取消预约</button>` : ''}
+        ${o.status === 'completed' && !o.evaluated ? `<button class="primary" onclick="event.stopPropagation();openEval('${o.order_no || o.id}')">去评价</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('loadMore').textContent = state.hasMore ? '加载更多' : '没有更多了';
+}
+
+// ========== Order Detail ==========
+async function showDetail(orderNo) {
+  try {
+    const res = await fetch(`/api/orders/${orderNo}?phone=${encodeURIComponent(state.phone)}`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const order = data.data || data;
+    const statusMap = {
+      pending: '待接单',
+      in_progress: '进行中',
+      completed: '已完成',
+      cancelled: '已取消'
+    };
+    const statusText = statusMap[order.status] || order.status || '未知';
+
+    // Build timeline
+    const timeline = order.timeline || order.logs || [];
+    let timelineHtml = '';
+    if (timeline.length > 0) {
+      timelineHtml = '<div class="timeline">' + timeline.map((t, i) => `
+        <div class="timeline-item">
+          <div class="timeline-dot">${i === 0 ? '✓' : ''}</div>
+          <div class="timeline-content">
+            <div class="tl-title">${t.content || t.action || t.status || '--'}</div>
+            <div class="tl-time">${t.created_at || t.time || '--'}</div>
+          </div>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    document.getElementById('detailBody').innerHTML = `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="color:#999;font-size:13px;">订单号：${order.order_no || '--'}</span>
+          <span class="order-status ${order.status || 'pending'}">${statusText}</span>
+        </div>
+        <div style="font-size:14px;line-height:1.8;">
+          <div>服务项目：${order.service_name || '--'}</div>
+          <div>预约时间：${order.booking_date || ''} ${order.booking_time || ''}</div>
+          <div>服务地址：${order.area || ''} ${order.address_detail || ''}</div>
+          <div>联系人：${order.contact_name || '--'} ${order.contact_phone || ''}</div>
+          ${order.technician_name ? `<div>技术人员：${order.technician_name} ${order.technician_phone || ''}</div>` : ''}
+          ${order.verify_code ? `<div style="color:#ff6f00;font-weight:600;">核销码：${order.verify_code}</div>` : ''}
+          ${order.remark ? `<div>备注：${order.remark}</div>` : ''}
+        </div>
+      </div>
+      ${timelineHtml ? `<div style="border-top:1px solid #eee;padding-top:12px;margin-top:12px;"><div style="font-size:14px;font-weight:600;margin-bottom:8px;">订单动态</div>${timelineHtml}</div>` : ''}
+      ${order.evaluation ? `<div style="border-top:1px solid #eee;padding-top:12px;margin-top:12px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;">我的评价</div>
+        <div style="font-size:13px;color:#666;">态度：${'★'.repeat(order.evaluation.attitude || 0)}${'☆'.repeat(5-(order.evaluation.attitude || 0))}</div>
+        <div style="font-size:13px;color:#666;">技术：${'★'.repeat(order.evaluation.skill || 0)}${'☆'.repeat(5-(order.evaluation.skill || 0))}</div>
+        <div style="font-size:13px;color:#666;">准时：${'★'.repeat(order.evaluation.punctual || 0)}${'☆'.repeat(5-(order.evaluation.punctual || 0))}</div>
+        ${order.evaluation.comment ? `<div style="font-size:13px;color:#999;margin-top:4px;">${order.evaluation.comment}</div>` : ''}
+      </div>` : ''}
+    `;
+    document.getElementById('detailModal').classList.add('show');
+  } catch(e) {
+    alert('获取订单详情失败');
+  }
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+// ========== Cancel Order ==========
+async function cancelOrder(orderNo) {
+  if (!confirm('确定要取消此预约吗？')) return;
+
+  try {
+    const res = await fetch(`/api/orders/${orderNo}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.token
+      },
+      body: JSON.stringify({ phone: state.phone })
+    });
+    const data = await res.json();
+    if (data.code === 0 || data.code === 200 || res.ok) {
+      alert('已取消');
+      // Reload
+      state.page = 1;
+      state.orders = [];
+      state.hasMore = true;
+      loadOrders();
+    } else {
+      alert(data.message || '取消失败');
+    }
+  } catch(e) {
+    alert('网络错误');
+  }
+}
+
+// ========== Evaluation ==========
+function openEval(orderId) {
+  state.evalOrderId = orderId;
+  state.evalRating = { attitude: 0, skill: 0, punctual: 0 };
+  document.getElementById('evalComment').value = '';
+  // Reset stars
+  document.querySelectorAll('#starAttitude .star, #starSkill .star, #starPunctual .star').forEach(el => {
+    el.classList.remove('active');
+  });
+  document.getElementById('evalModal').classList.add('show');
+}
+
+function closeEval() {
+  document.getElementById('evalModal').classList.remove('show');
+}
+
+function rate(dim, val) {
+  state.evalRating[dim] = val;
+  const containerMap = { attitude: 'starAttitude', skill: 'starSkill', punctual: 'starPunctual' };
+  const container = document.getElementById(containerMap[dim]);
+  container.querySelectorAll('.star').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.val) <= val);
+  });
+}
+
+function sanitizeInput(str) {
+  if (!str) return '';
+  str = str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const sensitivePatterns = [
+    /javascript:/gi, /onclick/gi, /onerror/gi, /onload/gi,
+    /alert\(/gi, /prompt\(/gi, /confirm\(/gi,
+    /<script[\s\S]*?>/gi, /<\/script>/gi
+  ];
+  sensitivePatterns.forEach(p => { str = str.replace(p, ''); });
+  return str;
+}
+
+async function submitEval() {
+  if (!state.evalRating.attitude || !state.evalRating.skill || !state.evalRating.punctual) {
+    alert('请完成所有维度的评分');
+    return;
+  }
+
+  const comment = sanitizeInput(document.getElementById('evalComment').value.trim());
+
+  try {
+    const res = await fetch(`/api/orders/${state.evalOrderId}/evaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.token
+      },
+      body: JSON.stringify({
+        phone: state.phone,
+        attitude: state.evalRating.attitude,
+        skill: state.evalRating.skill,
+        punctual: state.evalRating.punctual,
+        comment: comment
+      })
+    });
+    const data = await res.json();
+    if (data.code === 0 || data.code === 200 || res.ok) {
+      alert('评价成功！');
+      closeEval();
+      // Reload list
+      state.page = 1;
+      state.orders = [];
+      state.hasMore = true;
+      loadOrders();
+    } else {
+      alert(data.message || '评价失败');
+    }
+  } catch(e) {
+    alert('网络错误');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 仪表盘</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; display: flex; min-height: 100vh; }
+:root { --primary: #1677FF; --primary-hover: #0958d9; --sidebar-w: 220px; --header-h: 56px; }
+.sidebar { width: var(--sidebar-w); background: #001529; color: #fff; position: fixed; top: 0; left: 0; bottom: 0; display: flex; flex-direction: column; z-index: 100; }
+.sidebar-logo { height: var(--header-h); display: flex; align-items: center; padding: 0 20px; font-size: 18px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left: 10px; }
+.sidebar-menu { flex: 1; padding: 12px 0; overflow-y: auto; }
+.menu-item { display: flex; align-items: center; padding: 12px 24px; color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px; transition: all 0.2s; cursor: pointer; }
+.menu-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.menu-item.active { color: #fff; background: var(--primary); }
+.menu-item .icon { margin-right: 10px; font-size: 16px; }
+.main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+.header { height: var(--header-h); background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 50; }
+.header h2 { font-size: 18px; color: #1a1a1a; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.header-right .admin-name { font-size: 14px; color: #666; }
+.logout-btn { padding: 6px 16px; background: #fff; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+.logout-btn:hover { color: var(--primary); border-color: var(--primary); }
+.content { padding: 20px; }
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 8px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.stat-card .label { font-size: 13px; color: #8c8c8c; margin-bottom: 6px; }
+.stat-card .value { font-size: 26px; font-weight: 600; color: #1a1a1a; }
+.stat-card .value.overdue { color: #ff4d4f; }
+.stat-card.overdue-card { border-left: 3px solid #ff4d4f; }
+.action-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.action-btn { padding: 8px 20px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+.action-btn:hover { background: var(--primary-hover); }
+.action-btn.outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+.action-btn.outline:hover { background: #f0f7ff; }
+.chart-container { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.chart-container h3 { font-size: 15px; color: #1a1a1a; margin-bottom: 16px; }
+.chart-container canvas { width: 100% !important; height: 280px !important; }
+.table-container { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.table-container h3 { font-size: 15px; color: #1a1a1a; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; }
+table th, table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+table th { color: #8c8c8c; font-weight: 500; background: #fafafa; }
+table td { color: #333; }
+table tr:hover td { background: #fafafa; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status-badge.pending { background: #fff7e6; color: #fa8c16; }
+.status-badge.ongoing { background: #e6f7ff; color: #1890ff; }
+.status-badge.done { background: #f6ffed; color: #52c41a; }
+.status-badge.cancelled { background: #fff2f0; color: #ff4d4f; }
+.status-badge.overdue { background: #fff2f0; color: #ff4d4f; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item active" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>仪表盘</h2>
+    <div class="header-right">
+      <span class="admin-name" id="adminName">管理员</span>
+      <button class="logout-btn" onclick="handleLogout()">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="action-row">
+      <button class="action-btn" onclick="location.href='announcements.html'">📢 发布公告</button>
+      <button class="action-btn outline" onclick="location.href='technicians.html'">➕ 添加师傅</button>
+      <button class="action-btn outline" onclick="exportReport()">📄 导出报表</button>
+    </div>
+    <div class="chart-container">
+      <h3>近7日订单趋势</h3>
+      <canvas id="trendChart"></canvas>
+    </div>
+    <div class="table-container">
+      <h3>最新订单</h3>
+      <table>
+        <thead><tr><th>订单号</th><th>服务项目</th><th>用户</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) { window.location.href = 'login.html'; }
+
+function getHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('admin_token') }; }
+
+function handleLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
+
+function formatDate(d) { const dt = new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); }
+
+function formatMoney(n) { return '¥' + (Number(n||0).toFixed(2)); }
+
+const statusMap = { pending:'待接单', ongoing:'进行中', done:'已完成', cancelled:'已取消', overdue:'超期' };
+const statusClass = { pending:'pending', ongoing:'ongoing', done:'done', cancelled:'cancelled', overdue:'overdue' };
+
+function drawBarChart(canvasId, labels, values, color) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width - 40;
+  const H = 280;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 20, bottom: 40, left: 50, right: 20 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const maxVal = Math.max(...values, 1);
+  const barW = Math.min(40, chartW / labels.length * 0.6);
+  const gap = chartW / labels.length;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Y axis
+  ctx.strokeStyle = '#f0f0f0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.stroke();
+
+  // grid lines
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + chartH * (1 - i/4);
+    ctx.strokeStyle = '#f5f5f5';
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+    ctx.fillStyle = '#999';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal * i/4), pad.left - 8, y + 4);
+  }
+
+  // bars
+  labels.forEach((l, i) => {
+    const x = pad.left + gap * i + (gap - barW) / 2;
+    const h = (values[i] / maxVal) * chartH;
+    const y = pad.top + chartH - h;
+
+    const grad = ctx.createLinearGradient(x, y, x, pad.top + chartH);
+    grad.addColorStop(0, color || '#1677FF');
+    grad.addColorStop(1, (color || '#1677FF') + '44');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, h, [3,3,0,0]);
+    ctx.fill();
+
+    // label
+    ctx.fillStyle = '#666';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(l, pad.left + gap * i + gap/2, pad.top + chartH + 18);
+
+    // value on top
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(values[i], pad.left + gap * i + gap/2, y - 6);
+  });
+}
+
+function loadDashboard() {
+  fetch('/api/admin/dashboard', { headers: getHeaders() })
+    .then(r => r.json())
+    .then(res => {
+      const d = res.data || res;
+      // stats
+      const stats = [
+        { label: '总订单数', value: d.total_orders ?? 0 },
+        { label: '今日订单', value: d.today_orders ?? 0 },
+        { label: '今日收入', value: '¥' + (d.today_fee ?? 0).toFixed(2) },
+        { label: '在线师傅', value: d.online_technicians ?? 0 },
+        { label: '待接单', value: d.pending_orders ?? 0 },
+        { label: '超期订单', value: d.overdue_orders ?? 0, overdue: true },
+      ];
+      const grid = document.getElementById('statsGrid');
+      grid.innerHTML = stats.map(s => `<div class="stat-card${s.overdue?' overdue-card':''}"><div class="label">${s.label}</div><div class="value${s.overdue?' overdue':''}">${s.value}</div></div>`).join('');
+
+      // chart
+      const trend = d.trend || d.seven_day_trend || [];
+      const labels = trend.map(t => t.date || t.day || '');
+      const values = trend.map(t => t.count || t.orders || 0);
+      if (labels.length) drawBarChart('trendChart', labels, values, '#1677FF');
+
+      // orders
+      const orders = d.latest_orders || d.orders || [];
+      const tbody = document.getElementById('orderTableBody');
+      if (orders.length) {
+        tbody.innerHTML = orders.map(o => `<tr><td>${o.order_no||o.id||'-'}</td><td>${o.service_name||o.service||'-'}</td><td>${o.user_name||'-'}</td><td>${formatMoney(o.amount)}</td><td><span class="status-badge ${statusClass[o.status]||''}">${statusMap[o.status]||o.status}</span></td><td>${o.created_at?formatDate(o.created_at):'-'}</td></tr>`).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:30px;">暂无数据</td></tr>';
+      }
+    })
+    .catch(() => {});
+}
+
+function exportReport() {
+  window.open('/api/admin/export-orders?token=' + localStorage.getItem('admin_token'), '_blank');
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

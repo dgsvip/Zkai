@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 师傅管理</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f2f5; display:flex; min-height:100vh; }
+:root { --primary:#1677FF; --primary-hover:#0958d9; --sidebar-w:220px; --header-h:56px; }
+.sidebar { width:var(--sidebar-w); background:#001529; color:#fff; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; }
+.sidebar-logo { height:var(--header-h); display:flex; align-items:center; padding:0 20px; font-size:18px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left:10px; }
+.sidebar-menu { flex:1; padding:12px 0; overflow-y:auto; }
+.menu-item { display:flex; align-items:center; padding:12px 24px; color:rgba(255,255,255,0.65); text-decoration:none; font-size:14px; transition:all .2s; cursor:pointer; }
+.menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.menu-item.active { color:#fff; background:var(--primary); }
+.menu-item .icon { margin-right:10px; font-size:16px; }
+.main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+.header { height:var(--header-h); background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:50; }
+.header h2 { font-size:18px; color:#1a1a1a; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.logout-btn { padding:6px 16px; background:#fff; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:13px; color:#666; }
+.logout-btn:hover { color:var(--primary); border-color:var(--primary); }
+.content { padding:20px; }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:#fff; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.stat-card .label { font-size:13px; color:#8c8c8c; margin-bottom:6px; }
+.stat-card .value { font-size:26px; font-weight:600; color:#1a1a1a; }
+.filter-row { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.filter-row select, .filter-row input { height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.filter-row select:focus, .filter-row input:focus { border-color:var(--primary); }
+.filter-btn { padding:0 16px; height:34px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+.filter-btn:hover { background:var(--primary-hover); }
+.filter-btn.outline { background:#fff; color:var(--primary); border:1px solid var(--primary); }
+.filter-btn.outline:hover { background:#f0f7ff; }
+.filter-btn.green { background:#52c41a; }
+.filter-btn.green:hover { background:#73d13d; }
+.table-container { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+table { width:100%; border-collapse:collapse; }
+table th, table td { padding:10px 12px; text-align:left; border-bottom:1px solid #f0f0f0; font-size:13px; }
+table th { color:#8c8c8c; font-weight:500; background:#fafafa; white-space:nowrap; }
+table td { color:#333; }
+table tr:hover td { background:#fafafa; }
+.status-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; }
+.status-badge.online { background:#f6ffed; color:#52c41a; }
+.status-badge.offline { background:#f5f5f5; color:#999; }
+.status-badge.busy { background:#fff7e6; color:#fa8c16; }
+.status-badge.disabled { background:#fff2f0; color:#ff4d4f; }
+.action-link { color:var(--primary); cursor:pointer; font-size:12px; margin-right:8px; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:#ff4d4f; }
+.modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:1000; justify-content:center; align-items:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:8px; width:640px; max-height:80vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
+.modal-sm { width:480px; }
+.modal-header { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:16px; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:#999; }
+.modal-body { padding:24px; }
+.modal-footer { padding:12px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+.modal-footer button { padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; }
+.btn-primary { background:var(--primary); color:#fff; border:none; }
+.btn-primary:hover { background:var(--primary-hover); }
+.btn-default { background:#fff; border:1px solid #d9d9d9; color:#333; }
+.btn-default:hover { border-color:var(--primary); color:var(--primary); }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:#333; margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea { width:100%; height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.form-group input:focus, .form-group select:focus { border-color:var(--primary); }
+.form-group textarea { height:80px; padding:8px 10px; resize:vertical; }
+.form-row { display:flex; gap:12px; }
+.form-row .form-group { flex:1; }
+.detail-section { margin-bottom:16px; }
+.detail-section h4 { font-size:14px; color:#1a1a1a; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #f0f0f0; }
+.detail-row { display:flex; padding:4px 0; font-size:13px; }
+.detail-row .label { width:120px; color:#8c8c8c; flex-shrink:0; }
+.detail-row .value { color:#333; }
+.sub-tabs { display:flex; gap:0; margin-bottom:12px; border-bottom:1px solid #f0f0f0; }
+.sub-tab { padding:8px 16px; cursor:pointer; font-size:13px; color:#666; border-bottom:2px solid transparent; }
+.sub-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item active" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>师傅管理</h2>
+    <div class="header-right">
+      <span style="font-size:14px;color:#666;">管理员</span>
+      <button class="logout-btn" onclick="localStorage.removeItem('admin_token');window.location.href='login.html'">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="filter-row">
+      <select id="filterArea"><option value="">全部区域</option></select>
+      <select id="filterStatus"><option value="">全部状态</option><option value="online">在线</option><option value="offline">离线</option><option value="busy">忙碌</option><option value="disabled">已禁用</option></select>
+      <input type="text" id="searchInput" placeholder="搜索姓名/电话" style="width:200px;">
+      <button class="filter-btn" onclick="loadTechs()">搜索</button>
+      <button class="filter-btn green" onclick="openAddModal()">+ 添加师傅</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>姓名</th><th>电话</th><th>区域</th><th>余额</th><th>信用分</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="techTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="formTitle">添加师傅</h3><button class="modal-close" onclick="closeModal('formModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>姓名</label><input id="f_name"></div>
+      <div class="form-group"><label>电话</label><input id="f_phone"></div>
+      <div class="form-group"><label>区域</label><input id="f_area"></div>
+      <div class="form-group"><label>密码（留空不修改）</label><input id="f_password" type="password"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('formModal')">取消</button><button class="btn-primary" onclick="saveTech()">保存</button></div>
+  </div>
+</div>
+
+<!-- Balance Modal -->
+<div class="modal-overlay" id="balanceModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>调整余额</h3><button class="modal-close" onclick="closeModal('balanceModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>当前余额</label><input id="b_current" readonly style="background:#f5f5f5;"></div>
+      <div class="form-group"><label>调整金额（正数增加，负数减少）</label><input id="b_amount" type="number" step="0.01"></div>
+      <div class="form-group"><label>备注</label><input id="b_remark"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('balanceModal')">取消</button><button class="btn-primary" onclick="saveBalance()">确认</button></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="width:720px">
+    <div class="modal-header"><h3>师傅详情</h3><button class="modal-close" onclick="closeModal('detailModal')">&times;</button></div>
+    <div class="modal-body" id="detailBody">
+      <div class="sub-tabs">
+        <div class="sub-tab active" data-tab="credit" onclick="switchDetailTab(this)">信用记录</div>
+        <div class="sub-tab" data-tab="complaints" onclick="switchDetailTab(this)">投诉</div>
+        <div class="sub-tab" data-tab="disputes" onclick="switchDetailTab(this)">纠纷</div>
+        <div class="sub-tab" data-tab="appeals" onclick="switchDetailTab(this)">投诉申诉</div>
+        <div class="sub-tab" data-tab="credit-appeals" onclick="switchDetailTab(this)">信用申诉</div>
+        <div class="sub-tab" data-tab="work" onclick="switchDetailTab(this)">工作记录</div>
+        <div class="sub-tab" data-tab="transactions" onclick="switchDetailTab(this)">交易记录</div>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('detailModal')">关闭</button></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+let editId = null;
+let detailTechId = null;
+
+const statusLabel = { online:'在线', offline:'离线', busy:'忙碌', disabled:'已禁用' };
+const statusCls = { online:'online', offline:'offline', busy:'busy', disabled:'disabled' };
+
+function formatDate(d) { if(!d) return '-'; const dt=new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); }
+
+function loadStats() {
+  fetch('/api/admin/technicians', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.technicians || data.list || data.data || [];
+    const total = list.length;
+    const online = list.filter(t => t.status === 'online').length;
+    const active = list.filter(t => t.status === 'online' || t.status === 'busy').length;
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">师傅总数</div><div class="value">${total}</div></div>
+      <div class="stat-card"><div class="label">在线师傅</div><div class="value">${online}</div></div>
+      <div class="stat-card"><div class="label">活跃师傅</div><div class="value">${active}</div></div>
+    `;
+  }).catch(()=>{});
+}
+
+function loadAreas() {
+  fetch('/api/admin/settings', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const areas = data.areas || [];
+    const sel = document.getElementById('filterArea');
+    areas.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
+  }).catch(()=>{});
+}
+
+function loadTechs() {
+  const area = document.getElementById('filterArea').value;
+  const status = document.getElementById('filterStatus').value;
+  const search = document.getElementById('searchInput').value;
+  let url = '/api/admin/technicians?';
+  if (area) url += 'area=' + area + '&';
+  if (status) url += 'status=' + status + '&';
+  if (search) url += 'search=' + search;
+
+  fetch(url, { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.technicians || data.list || data.data || [];
+    const tbody = document.getElementById('techTableBody');
+    if (list.length) {
+      tbody.innerHTML = list.map(t => `<tr>
+        <td>${t.name||'-'}</td>
+        <td>${t.phone||'-'}</td>
+        <td>${t.area||'-'}</td>
+        <td>¥${(t.balance||0).toFixed(2)}</td>
+        <td>${t.credit_score||t.credit||0}</td>
+        <td><span class="status-badge ${statusCls[t.status]||'offline'}">${statusLabel[t.status]||'离线'}</span></td>
+        <td>
+          <span class="action-link" onclick="openEditModal(${t.id})">编辑</span>
+          <span class="action-link" onclick="openBalanceModal(${t.id},${t.balance||0})">调整余额</span>
+          <span class="action-link" onclick="resetPwd(${t.id})">重置密码</span>
+          <span class="action-link ${t.status==='disabled'?'':'danger'}" onclick="toggleStatus(${t.id},'${t.status}')">${t.status==='disabled'?'启用':'禁用'}</span>
+          <span class="action-link" onclick="openDetail(${t.id})">详情</span>
+        </td>
+      </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:30px;">暂无师傅</td></tr>';
+    }
+  }).catch(()=>{});
+}
+
+function openAddModal() { editId=null; document.getElementById('formTitle').textContent='添加师傅'; ['f_name','f_phone','f_area','f_password'].forEach(id=>document.getElementById(id).value=''); document.getElementById('formModal').classList.add('show'); }
+
+function openEditModal(id) {
+  editId = id;
+  document.getElementById('formTitle').textContent = '编辑师傅';
+  fetch('/api/admin/technicians', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.technicians || data.list || data.data || [];
+    const t = list.find(x => x.id == id);
+    if (t) {
+      document.getElementById('f_name').value = t.name || '';
+      document.getElementById('f_phone').value = t.phone || '';
+      document.getElementById('f_area').value = t.area || '';
+      document.getElementById('f_password').value = '';
+    }
+    document.getElementById('formModal').classList.add('show');
+  }).catch(()=>{});
+}
+
+function saveTech() {
+  const body = { name: document.getElementById('f_name').value, phone: document.getElementById('f_phone').value, area: document.getElementById('f_area').value };
+  const pwd = document.getElementById('f_password').value;
+  if (pwd) body.password = pwd;
+  const url = editId ? '/api/admin/technicians/' + editId : '/api/admin/technicians';
+  const method = editId ? 'PUT' : 'POST';
+  // Use POST for both (auto-detect)
+  fetch(url, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('formModal'); loadTechs(); loadStats(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function openBalanceModal(id, bal) {
+  document.getElementById('b_current').value = '¥' + (bal||0).toFixed(2);
+  document.getElementById('b_amount').value = '';
+  document.getElementById('b_remark').value = '';
+  document.getElementById('balanceModal').dataset.id = id;
+  document.getElementById('balanceModal').classList.add('show');
+}
+
+function saveBalance() {
+  const id = document.getElementById('balanceModal').dataset.id;
+  const amount = document.getElementById('b_amount').value;
+  const remark = document.getElementById('b_remark').value;
+  fetch('/api/admin/technicians/' + id + '/balance', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ amount: parseFloat(amount), remark }) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('balanceModal'); loadTechs(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function resetPwd(id) {
+  if (!confirm('确定要重置密码为 123456 吗？')) return;
+  fetch('/api/admin/technicians/' + id, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ password: '123456' }) }).then(r=>r.json()).then(res=>{
+    alert(res.code===0||res.success?'密码已重置为 123456':(res.message||'操作失败'));
+  }).catch(()=>alert('网络错误'));
+}
+
+function toggleStatus(id, status) {
+  const action = status === 'disabled' ? 'enable' : 'disable';
+  if (!confirm(`确定要${action==='disable'?'禁用':'启用'}此师傅吗？`)) return;
+  fetch('/api/admin/technicians/' + id, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ action }) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) loadTechs(); else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function openDetail(id) {
+  detailTechId = id;
+  document.getElementById('detailModal').classList.add('show');
+  switchDetailTab(document.querySelector('.sub-tab.active') || document.querySelector('.sub-tab'));
+}
+
+function switchDetailTab(el) {
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const tab = el.dataset.tab;
+  if (!detailTechId) return;
+  const content = document.getElementById('detailContent');
+  content.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">加载中...</div>';
+
+  const urlMap = {
+    'credit': '/api/technician/' + detailTechId + '/credit-records',
+    'complaints': '/api/admin/complaints?technician_id=' + detailTechId,
+    'disputes': '/api/admin/disputes?technician_id=' + detailTechId,
+    'appeals': '/api/admin/complaints?technician_id=' + detailTechId + '&type=appeal',
+    'credit-appeals': '/api/admin/credit-appeals?technician_id=' + detailTechId,
+    'work': '/api/admin/technicians/' + detailTechId + '/work-history',
+    'transactions': '/api/admin/technicians/' + detailTechId + '/transactions'
+  };
+
+  fetch(urlMap[tab], { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.list || data.records || data.data || [];
+    if (list.length) {
+      content.innerHTML = '<table style="font-size:12px;"><thead><tr>'+Object.keys(list[0]).map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+list.map(item=>'<tr>'+Object.values(item).map(v=>'<td>'+(v||'-')+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    } else {
+      content.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">暂无数据</div>';
+    }
+  }).catch(()=>{ content.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">加载失败</div>'; });
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+loadAreas();
+loadStats();
+loadTechs();
+</script>
+</body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的 - 佳乐家</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; color: #333; font-size: 14px; }
+    :root { --primary: #1677FF; --primary-light: #e6f4ff; --danger: #ff4d4f; --success: #52c41a; --warning: #faad14; --border: #e8e8e8; --bg: #f5f5f5; }
+    .hidden { display: none !important; }
+
+    /* Login Page */
+    #loginPage { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    #loginPage .logo { width: 80px; height: 80px; background: var(--primary); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 36px; font-weight: bold; margin-bottom: 16px; }
+    #loginPage h1 { font-size: 22px; margin-bottom: 4px; }
+    #loginPage .subtitle { color: #999; margin-bottom: 32px; }
+    #loginPage .form-group { width: 100%; max-width: 360px; margin-bottom: 16px; }
+    #loginPage .form-group label { display: block; margin-bottom: 6px; color: #666; font-size: 13px; }
+    #loginPage .form-group input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    #loginPage .form-group input:focus { border-color: var(--primary); }
+    #loginPage .login-btn { width: 100%; max-width: 360px; padding: 13px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    #loginPage .login-btn:disabled { opacity: 0.6; }
+    #loginPage .login-error { color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; }
+    #loginPage .test-hint { margin-top: 16px; color: #999; font-size: 12px; text-align: center; }
+
+    /* Main Layout */
+    #app { display: none; flex-direction: column; height: 100vh; }
+    #app.show { display: flex; }
+
+    /* Scrollable Content */
+    .scroll-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Profile Card */
+    .profile-card { background: linear-gradient(135deg, var(--primary), #4096ff); color: #fff; padding: 24px 16px; text-align: center; }
+    .profile-card .avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .profile-card .name { font-size: 18px; font-weight: 600; }
+    .profile-card .phone { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+    .profile-card .detail-row { display: flex; justify-content: center; gap: 24px; margin-top: 12px; }
+    .profile-card .detail-item { text-align: center; }
+    .profile-card .detail-item .num { font-size: 16px; font-weight: 600; }
+    .profile-card .detail-item .label { font-size: 11px; opacity: 0.85; }
+    .profile-card .detail-item .num.danger { color: #ffccc7; }
+
+    /* Menu Section */
+    .menu-section { background: #fff; margin: 10px 12px; border-radius: 10px; overflow: hidden; }
+    .menu-section .section-title { padding: 12px 14px 6px; font-size: 13px; color: #999; font-weight: 500; }
+    .menu-item { display: flex; align-items: center; padding: 13px 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item .item-icon { width: 24px; text-align: center; margin-right: 12px; font-size: 16px; }
+    .menu-item .item-text { flex: 1; font-size: 14px; }
+    .menu-item .item-arrow { color: #ccc; font-size: 14px; }
+    .menu-item .item-badge { background: var(--danger); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-right: 8px; }
+
+    /* Sub-page */
+    .sub-page { position: fixed; inset: 0; background: #f5f5f5; z-index: 800; display: none; flex-direction: column; }
+    .sub-page.show { display: flex; }
+    .sub-page .sub-header { background: var(--primary); color: #fff; padding: 14px 16px; display: flex; align-items: center; flex-shrink: 0; }
+    .sub-page .sub-header .back-btn { font-size: 18px; margin-right: 12px; cursor: pointer; }
+    .sub-page .sub-header .sub-title { font-size: 17px; font-weight: 500; }
+    .sub-page .sub-body { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+
+    /* History Filters */
+    .filter-tabs { display: flex; background: #fff; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+    .filter-tab { flex: 1; text-align: center; padding: 10px 0; font-size: 13px; color: #666; cursor: pointer; }
+    .filter-tab.active { background: var(--primary); color: #fff; }
+
+    /* Order Cards */
+    .order-card { background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .order-card .card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+    .order-card .card-row .label { color: #999; }
+    .order-card .card-row .value { color: #333; }
+
+    /* Photo Grid */
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .photo-grid .photo-item { aspect-ratio: 1; background: #eee; border-radius: 6px; overflow: hidden; }
+    .photo-grid .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Income */
+    .income-total { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; text-align: center; }
+    .income-total .total-amount { font-size: 28px; font-weight: bold; color: var(--primary); }
+    .income-total .total-label { font-size: 12px; color: #999; }
+    .income-item { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .income-item .left .desc { font-size: 14px; }
+    .income-item .left .time { font-size: 11px; color: #999; margin-top: 2px; }
+    .income-item .right .amount { font-size: 15px; font-weight: 600; color: var(--success); }
+    .income-item .right .amount.out { color: var(--danger); }
+
+    /* Credit Record */
+    .credit-record { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+    .credit-record .cr-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+    .credit-record .cr-row .cr-label { color: #999; }
+    .credit-record .cr-row .cr-value { font-weight: 500; }
+    .credit-record .cr-row .cr-value.danger { color: var(--danger); }
+    .credit-record .cr-row .cr-value.success { color: var(--success); }
+    .credit-record .appeal-btn { display: inline-block; padding: 4px 12px; background: var(--primary); color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+
+    /* Blacklist */
+    .bl-item { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .bl-item .bl-info .bl-name { font-size: 14px; }
+    .bl-item .bl-info .bl-reason { font-size: 12px; color: #999; margin-top: 2px; }
+    .bl-item .bl-remove { padding: 4px 12px; background: #fff; color: var(--danger); border: 1px solid var(--danger); border-radius: 4px; font-size: 12px; cursor: pointer; }
+
+    /* Range Slider */
+    .range-slider { padding: 16px 0; }
+    .range-slider .range-val { text-align: center; font-size: 24px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+    .range-slider .range-unit { font-size: 14px; color: #666; }
+    .range-slider input[type="range"] { width: 100%; -webkit-appearance: none; height: 6px; background: var(--border); border-radius: 3px; outline: none; }
+    .range-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 900; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
+    .modal h3 { font-size: 17px; margin-bottom: 16px; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal .form-group label { display: block; margin-bottom: 4px; color: #666; font-size: 13px; }
+    .modal .form-group input, .modal .form-group select, .modal .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; font-family: inherit; }
+    .modal .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal .form-group input:focus, .modal .form-group select:focus, .modal .form-group textarea:focus { border-color: var(--primary); }
+    .modal .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .modal .modal-actions .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+    .modal .modal-actions .btn-cancel { background: #f5f5f5; color: #666; }
+    .modal .modal-actions .btn-confirm { background: var(--primary); color: #fff; }
+    .modal .modal-actions .btn-danger { background: var(--danger); color: #fff; }
+
+    /* Toast */
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 2000; font-size: 14px; pointer-events: none; transition: opacity 0.3s; }
+    .toast.hidden { opacity: 0; }
+
+    .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; }
+    .loading-spinner::after { content: ''; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Bottom Tab */
+    .bottom-tab { display: flex; background: #fff; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
+    .tab-item { flex: 1; text-align: center; padding: 8px 0 6px; color: #999; cursor: pointer; }
+    .tab-item .tab-icon { font-size: 20px; display: block; }
+    .tab-item .tab-label { font-size: 11px; margin-top: 2px; }
+    .tab-item.active { color: var(--primary); }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; }
+
+    .rules-list { background: #fff; border-radius: 8px; padding: 14px; }
+    .rules-list li { padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; color: #555; list-style: none; }
+    .rules-list li:last-child { border-bottom: none; }
+    .rules-list li::before { content: '• '; color: var(--primary); font-weight: bold; }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="loginPage">
+    <div class="logo">佳</div>
+    <h1>佳乐家师傅端</h1>
+    <p class="subtitle">家电维修服务接单平台</p>
+    <div class="form-group">
+      <label>手机号</label>
+      <input type="tel" id="loginPhone" placeholder="请输入手机号" maxlength="11">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入密码">
+    </div>
+    <button class="login-btn" id="loginBtn">登 录</button>
+    <div id="loginError" class="login-error"></div>
+    <p class="test-hint">测试账号: 13800000001~13800000010<br>密码: 123456</p>
+  </div>
+
+  <!-- Main App -->
+  <div id="app">
+    <div class="scroll-content" id="mainContent">
+      <!-- Profile Card -->
+      <div class="profile-card">
+        <div class="avatar">👤</div>
+        <div class="name" id="profileName">--</div>
+        <div class="phone" id="profilePhone">--</div>
+        <div class="detail-row">
+          <div class="detail-item"><div class="num" id="profileBalance">¥0</div><div class="label">余额</div></div>
+          <div class="detail-item"><div class="num" id="profileCredit">0</div><div class="label">信用分</div></div>
+          <div class="detail-item"><div class="num" id="profileRating">0.0</div><div class="label">评分</div></div>
+        </div>
+      </div>
+
+      <!-- Menu Section 1 -->
+      <div class="menu-section">
+        <div class="menu-item" onclick="showCreditRules()"><span class="item-icon">📊</span><span class="item-text">信用分规则</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showHistory()"><span class="item-icon">📋</span><span class="item-text">历史订单</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showGallery()"><span class="item-icon">🖼️</span><span class="item-text">我的图库</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showIncome()"><span class="item-icon">💰</span><span class="item-text">收入明细</span><span class="item-arrow">›</span></div>
+      </div>
+
+      <!-- Menu Section 2 -->
+      <div class="menu-section">
+        <div class="menu-item" onclick="showDispute()"><span class="item-icon">⚖️</span><span class="item-text">争议申诉</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showBadReviewAppeal()"><span class="item-icon">😞</span><span class="item-text">差评申诉</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showCreditAppeal()"><span class="item-icon">📈</span><span class="item-text">信用分申诉</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showBlacklist()"><span class="item-icon">🚫</span><span class="item-text">我的黑名单</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showRangeSetting()"><span class="item-icon">📍</span><span class="item-text">接单范围设置</span><span class="item-arrow">›</span></div>
+      </div>
+
+      <!-- Menu Section 3 -->
+      <div class="menu-section">
+        <div class="menu-item" onclick="showAnnouncements()"><span class="item-icon">📢</span><span class="item-text">历史公告</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showAgreement()"><span class="item-icon">📄</span><span class="item-text">平台服务协议</span><span class="item-arrow">›</span></div>
+        <div class="menu-item" onclick="showContact()"><span class="item-icon">📞</span><span class="item-text">联系客服</span><span class="item-arrow">›</span></div>
+      </div>
+
+      <div style="padding: 20px; text-align: center;">
+        <button onclick="logout()" style="padding: 10px 30px; background: #fff; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; font-size: 14px; cursor: pointer;">退出登录</button>
+      </div>
+    </div>
+
+    <div class="bottom-tab">
+      <div class="tab-item" data-page="orders"><span class="tab-icon">📋</span><span class="tab-label">工单</span></div>
+      <div class="tab-item" data-page="active"><span class="tab-icon">🔧</span><span class="tab-label">进行中</span></div>
+      <div class="tab-item active" data-page="my"><span class="tab-icon">👤</span><span class="tab-label">我的</span></div>
+    </div>
+  </div>
+
+  <!-- Sub Page -->
+  <div class="sub-page" id="subPage">
+    <div class="sub-header">
+      <span class="back-btn" onclick="closeSubPage()">‹</span>
+      <span class="sub-title" id="subTitle">详情</span>
+    </div>
+    <div class="sub-body" id="subBody"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'jljt_tech_token';
+    const TECH_ID_KEY = 'jljt_tech_id';
+    const TECH_INFO_KEY = 'jljt_tech_info';
+
+    let techInfo = null;
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2000);
+    }
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+    function getTechId() { return localStorage.getItem(TECH_ID_KEY); }
+
+    function showModal(html) {
+      document.getElementById('modalContent').innerHTML = html;
+      document.getElementById('modalOverlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    function showSubPage(title, html) {
+      document.getElementById('subTitle').textContent = title;
+      document.getElementById('subBody').innerHTML = html;
+      document.getElementById('subPage').classList.add('show');
+    }
+
+    function closeSubPage() {
+      document.getElementById('subPage').classList.remove('show');
+    }
+
+    function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function api(path, options = {}) {
+      const token = getToken();
+      const headers = { ...options.headers };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return fetch(path, { ...options, headers }).then(r => {
+        if (r.status === 401) { logout(); return Promise.reject('未登录'); }
+        return r.json().then(d => { if (d.error) throw new Error(d.error); return d; });
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TECH_ID_KEY);
+      localStorage.removeItem(TECH_INFO_KEY);
+      document.getElementById('app').classList.remove('show');
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    // ===== Login =====
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('loginPhone').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+    function doLogin() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const errEl = document.getElementById('loginError');
+      if (!phone || !password) { errEl.textContent = '请输入手机号和密码'; return; }
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('loginBtn').textContent = '登录中...';
+      errEl.textContent = '';
+
+      fetch('/api/technician/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      }).then(r => r.json()).then(d => {
+        if (d.error) { errEl.textContent = d.error; return; }
+        localStorage.setItem(TOKEN_KEY, d.token);
+        localStorage.setItem(TECH_ID_KEY, d.technician_id);
+        localStorage.setItem(TECH_INFO_KEY, JSON.stringify(d.technician || {}));
+        techInfo = d.technician || {};
+        enterApp();
+      }).catch(e => {
+        errEl.textContent = '登录失败: ' + (e.message || '网络错误');
+      }).finally(() => {
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '登 录';
+      });
+    }
+
+    function enterApp() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').classList.add('show');
+      loadProfile();
+    }
+
+    function loadProfile() {
+      const id = getTechId();
+      if (!id) return;
+      api('/api/technician/' + id).then(d => {
+        techInfo = d.technician || d;
+        localStorage.setItem(TECH_INFO_KEY, JSON.stringify(techInfo));
+        renderProfile();
+      }).catch(() => {});
+    }
+
+    function renderProfile() {
+      if (!techInfo) return;
+      document.getElementById('profileName').textContent = techInfo.name || '--';
+      document.getElementById('profilePhone').textContent = techInfo.phone || '--';
+      const bal = techInfo.balance || 0;
+      const balEl = document.getElementById('profileBalance');
+      balEl.textContent = '¥' + bal;
+      if (bal < 50) balEl.style.color = '#ffccc7'; else balEl.style.color = '';
+      document.getElementById('profileCredit').textContent = techInfo.credit_score || techInfo.credit || 0;
+      document.getElementById('profileRating').textContent = techInfo.rating_avg || techInfo.rating || '0.0';
+    }
+
+    // ===== Menu Functions =====
+
+    // 1. 信用分规则
+    function showCreditRules() {
+      showSubPage('信用分规则', '' +
+        '<div class="rules-list">' +
+          '<li>初始信用分为100分</li>' +
+          '<li>按时完成订单每次加1分</li>' +
+          '<li>获得用户好评每次加2分</li>' +
+          '<li>取消订单每次扣5分</li>' +
+          '<li>被用户投诉每次扣10分</li>' +
+          '<li>超时未完工每次扣3分</li>' +
+          '<li>信用分低于60分将限制接单</li>' +
+          '<li>信用分每月1日自动恢复上限5分</li>' +
+        '</div>'
+      );
+    }
+
+    // 2. 历史订单
+    let historyFilter = 'all';
+    function showHistory() {
+      const html = '' +
+        '<div class="filter-tabs">' +
+          '<div class="filter-tab' + (historyFilter === 'all' ? ' active' : '') + '" data-filter="all" onclick="setHistoryFilter(\'all\')">全部</div>' +
+          '<div class="filter-tab' + (historyFilter === 'completed' ? ' active' : '') + '" data-filter="completed" onclick="setHistoryFilter(\'completed\')">已完成</div>' +
+          '<div class="filter-tab' + (historyFilter === 'cancelled' ? ' active' : '') + '" data-filter="cancelled" onclick="setHistoryFilter(\'cancelled\')">已取消</div>' +
+        '</div>' +
+        '<div id="historyList"><div class="loading-spinner"></div></div>';
+      showSubPage('历史订单', html);
+      loadHistory();
+    }
+
+    function setHistoryFilter(filter) {
+      historyFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.filter === filter);
+      });
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const id = getTechId();
+      if (!id) return;
+      const list = document.getElementById('historyList');
+      if (!list) return;
+      list.innerHTML = '<div class="loading-spinner"></div>';
+      api('/api/technician/' + id + '/history?status=' + historyFilter).then(d => {
+        const orders = d.orders || d.data || d || [];
+        if (!orders || orders.length === 0) {
+          list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无订单</p></div>';
+          return;
+        }
+        list.innerHTML = orders.map(o => '' +
+          '<div class="order-card" onclick="showOrderDetail(' + o.id + ')">' +
+            '<div class="card-row"><span class="label">服务</span><span class="value">' + esc(o.service_category || o.category || '维修') + '</span></div>' +
+            '<div class="card-row"><span class="label">地址</span><span class="value">' + esc(o.address || '') + '</span></div>' +
+            '<div class="card-row"><span class="label">金额</span><span class="value">¥' + (o.actual_price || o.estimated_price || 0) + '</span></div>' +
+            '<div class="card-row"><span class="label">状态</span><span class="value" style="color:var(--primary)">' + esc(o.status || '') + '</span></div>' +
+          '</div>'
+        ).join('');
+      }).catch(e => {
+        if (list) list.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    function showOrderDetail(orderId) {
+      const id = getTechId();
+      api('/api/technician/' + id + '/history?order_id=' + orderId).then(d => {
+        const o = d.order || d;
+        if (!o || !o.id) { toast('未找到订单详情'); return; }
+        showModal('' +
+          '<h3>订单详情 #' + o.id + '</h3>' +
+          '<div class="form-group"><label>服务类别</label><div>' + esc(o.service_category || o.category || '') + '</div></div>' +
+          '<div class="form-group"><label>地址</label><div>' + esc(o.address || '') + '</div></div>' +
+          '<div class="form-group"><label>客户</label><div>' + esc(o.customer_name || '') + ' ' + esc(o.phone || o.customer_phone || '') + '</div></div>' +
+          '<div class="form-group"><label>预约时间</label><div>' + esc(o.booking_time || o.time || '') + '</div></div>' +
+          '<div class="form-group"><label>预估金额</label><div>¥' + (o.estimated_price || 0) + '</div></div>' +
+          (o.actual_price ? '<div class="form-group"><label>实际金额</label><div>¥' + o.actual_price + '</div></div>' : '') +
+          '<div class="form-group"><label>状态</label><div>' + esc(o.status || '') + '</div></div>' +
+          (o.remark ? '<div class="form-group"><label>备注</label><div>' + esc(o.remark) + '</div></div>' : '') +
+          '<div class="modal-actions"><button class="btn btn-cancel" onclick="closeModal()">关闭</button></div>'
+        );
+      }).catch(e => toast('加载失败'));
+    }
+
+    // 3. 我的图库
+    function showGallery() {
+      const html = '<div id="galleryList"><div class="loading-spinner"></div></div>';
+      showSubPage('我的图库', html);
+      const id = getTechId();
+      api('/api/technician/' + id + '/gallery').then(d => {
+        const photos = d.photos || d.data || d || [];
+        const list = document.getElementById('galleryList');
+        if (!photos || photos.length === 0) {
+          list.innerHTML = '<div class="empty-state"><div class="icon">🖼️</div><p>暂无图片</p></div>';
+          return;
+        }
+        list.innerHTML = '<div class="photo-grid">' +
+          photos.map(p => '<div class="photo-item"><img src="' + esc(p.url || p) + '" alt="photo"></div>').join('') +
+        '</div>';
+      }).catch(e => {
+        const list = document.getElementById('galleryList');
+        if (list) list.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    // 4. 收入明细
+    function showIncome() {
+      const html = '' +
+        '<div id="incomeTotal"><div class="income-total"><div class="total-label">总收入</div><div class="total-amount">¥0</div></div></div>' +
+        '<div id="incomeList"><div class="loading-spinner"></div></div>';
+      showSubPage('收入明细', html);
+      const id = getTechId();
+      api('/api/technician/' + id + '/income').then(d => {
+        const data = d.income || d.data || d || [];
+        const total = d.total_income || d.total || 0;
+        const totalEl = document.getElementById('incomeTotal');
+        if (totalEl) {
+          totalEl.innerHTML = '<div class="income-total"><div class="total-label">总收入</div><div class="total-amount">¥' + total + '</div></div>';
+        }
+        const list = document.getElementById('incomeList');
+        if (!data || data.length === 0) {
+          if (list) list.innerHTML = '<div class="empty-state"><div class="icon">💰</div><p>暂无收入记录</p></div>';
+          return;
+        }
+        if (list) {
+          list.innerHTML = data.map(i => '' +
+            '<div class="income-item">' +
+              '<div class="left"><div class="desc">' + esc(i.description || i.desc || '') + '</div><div class="time">' + esc(i.created_at || i.time || '') + '</div></div>' +
+              '<div class="right"><div class="amount' + (i.type === 'out' ? ' out' : '') + '">' + (i.type === 'out' ? '-' : '+') + '¥' + Math.abs(i.amount || 0) + '</div></div>' +
+            '</div>'
+          ).join('');
+        }
+      }).catch(e => {
+        const list = document.getElementById('incomeList');
+        if (list) list.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    // 5. 争议申诉
+    function showDispute() {
+      showModal('' +
+        '<h3>⚖️ 争议申诉</h3>' +
+        '<div class="form-group"><label>订单编号</label><input type="text" id="disputeOrderId" placeholder="请输入订单编号"></div>' +
+        '<div class="form-group"><label>申诉内容</label><textarea id="disputeContent" placeholder="请详细描述申诉内容"></textarea></div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doDispute()">提交申诉</button>' +
+        '</div>'
+      );
+    }
+
+    function doDispute() {
+      const orderId = document.getElementById('disputeOrderId').value;
+      const content = document.getElementById('disputeContent').value;
+      if (!orderId || !content) { toast('请填写完整信息'); return; }
+      api('/api/technician/dispute', {
+        method: 'POST',
+        body: JSON.stringify({ technician_id: getTechId(), order_id: orderId, content: content })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '申诉已提交');
+      }).catch(e => toast('提交失败: ' + e.message));
+    }
+
+    // 6. 差评申诉
+    function showBadReviewAppeal() {
+      const html = '<div id="complaintList"><div class="loading-spinner"></div></div>';
+      showSubPage('差评申诉', html);
+      const id = getTechId();
+      api('/api/technician/complaints?technician_id=' + id).then(d => {
+        const list = d.complaints || d.data || d || [];
+        const el = document.getElementById('complaintList');
+        if (!list || list.length === 0) {
+          if (el) el.innerHTML = '<div class="empty-state"><div class="icon">😊</div><p>暂无差评</p></div>';
+          return;
+        }
+        if (el) {
+          el.innerHTML = list.map(c => '' +
+            '<div class="credit-record">' +
+              '<div class="cr-row"><span class="cr-label">订单</span><span class="cr-value">#' + esc(c.order_id || '') + '</span></div>' +
+              '<div class="cr-row"><span class="cr-label">投诉内容</span><span class="cr-value">' + esc(c.content || c.reason || '') + '</span></div>' +
+              '<div class="cr-row"><span class="cr-label">时间</span><span class="cr-value">' + esc(c.created_at || '') + '</span></div>' +
+              (c.status === 'pending' ? '<button class="appeal-btn" onclick="appealComplaint(' + c.id + ')">申诉</button>' : '<div style="font-size:12px;color:#999;">已处理</div>') +
+            '</div>'
+          ).join('');
+        }
+      }).catch(e => {
+        const el = document.getElementById('complaintList');
+        if (el) el.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    function appealComplaint(complaintId) {
+      closeSubPage();
+      showModal('' +
+        '<h3>差评申诉</h3>' +
+        '<div class="form-group"><label>申诉理由</label><textarea id="appealReason" placeholder="请输入申诉理由"></textarea></div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doAppealComplaint(' + complaintId + ')">提交</button>' +
+        '</div>'
+      );
+    }
+
+    function doAppealComplaint(complaintId) {
+      const reason = document.getElementById('appealReason').value;
+      if (!reason) { toast('请输入申诉理由'); return; }
+      api('/api/technician/appeal-complaint', {
+        method: 'POST',
+        body: JSON.stringify({ technician_id: getTechId(), complaint_id: complaintId, reason: reason })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '申诉已提交');
+      }).catch(e => toast('提交失败: ' + e.message));
+    }
+
+    // 7. 信用分申诉
+    function showCreditAppeal() {
+      const html = '<div id="creditList"><div class="loading-spinner"></div></div>';
+      showSubPage('信用分申诉', html);
+      const id = getTechId();
+      api('/api/technician/' + id + '/credit-records').then(d => {
+        const records = d.records || d.data || d || [];
+        const el = document.getElementById('creditList');
+        if (!records || records.length === 0) {
+          if (el) el.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>暂无信用记录</p></div>';
+          return;
+        }
+        if (el) {
+          el.innerHTML = records.map(r => '' +
+            '<div class="credit-record">' +
+              '<div class="cr-row"><span class="cr-label">变动</span><span class="cr-value' + (r.change > 0 ? ' success' : ' danger') + '">' + (r.change > 0 ? '+' : '') + r.change + '分</span></div>' +
+              '<div class="cr-row"><span class="cr-label">原因</span><span class="cr-value">' + esc(r.reason || r.description || '') + '</span></div>' +
+              '<div class="cr-row"><span class="cr-label">时间</span><span class="cr-value">' + esc(r.created_at || r.time || '') + '</span></div>' +
+              (r.change < 0 ? '<button class="appeal-btn" onclick="appealCredit(' + r.id + ')">申诉</button>' : '') +
+            '</div>'
+          ).join('');
+        }
+      }).catch(e => {
+        const el = document.getElementById('creditList');
+        if (el) el.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    function appealCredit(recordId) {
+      showModal('' +
+        '<h3>信用分申诉</h3>' +
+        '<div class="form-group"><label>申诉理由</label><textarea id="creditAppealReason" placeholder="请输入申诉理由"></textarea></div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doAppealCredit(' + recordId + ')">提交</button>' +
+        '</div>'
+      );
+    }
+
+    function doAppealCredit(recordId) {
+      const reason = document.getElementById('creditAppealReason').value;
+      if (!reason) { toast('请输入申诉理由'); return; }
+      api('/api/technician/appeal-credit', {
+        method: 'POST',
+        body: JSON.stringify({ technician_id: getTechId(), record_id: recordId, reason: reason })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '申诉已提交');
+      }).catch(e => toast('提交失败: ' + e.message));
+    }
+
+    // 8. 我的黑名单
+    function showBlacklist() {
+      const html = '<div id="blacklistContent"><div class="loading-spinner"></div></div>';
+      showSubPage('我的黑名单', html);
+      const id = getTechId();
+      api('/api/blacklist?technician_id=' + id).then(d => {
+        const list = d.blacklist || d.data || d || [];
+        const el = document.getElementById('blacklistContent');
+        if (!list || list.length === 0) {
+          if (el) el.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>暂无黑名单</p></div>';
+          return;
+        }
+        if (el) {
+          el.innerHTML = list.map(b => '' +
+            '<div class="bl-item">' +
+              '<div class="bl-info"><div class="bl-name">' + esc(b.user_name || '用户#' + b.user_id) + '</div><div class="bl-reason">' + esc(b.reason || '') + '</div></div>' +
+              '<button class="bl-remove" onclick="removeBlacklist(' + b.id + ')">移除</button>' +
+            '</div>'
+          ).join('');
+        }
+      }).catch(e => {
+        const el = document.getElementById('blacklistContent');
+        if (el) el.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    function removeBlacklist(blacklistId) {
+      api('/api/blacklist', {
+        method: 'DELETE',
+        body: JSON.stringify({ id: blacklistId, technician_id: getTechId() })
+      }).then(d => {
+        toast(d.message || '已移除');
+        showBlacklist();
+      }).catch(e => toast('操作失败: ' + e.message));
+    }
+
+    // 9. 接单范围设置
+    function showRangeSetting() {
+      const saved = localStorage.getItem('jljt_range_km') || '10';
+      showSubPage('接单范围设置', '' +
+        '<div class="range-slider">' +
+          '<div class="range-val"><span id="rangeValue">' + saved + '</span> <span class="range-unit">km</span></div>' +
+          '<input type="range" id="rangeSlider" min="1" max="50" value="' + saved + '" oninput="updateRange(this.value)">' +
+          '<div style="display:flex;justify-content:space-between;font-size:12px;color:#999;padding:0 4px;"><span>1km</span><span>50km</span></div>' +
+        '</div>' +
+        '<div style="text-align:center;margin-top:16px;">' +
+          '<button onclick="saveRange()" style="padding:10px 30px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;">保存设置</button>' +
+        '</div>'
+      );
+    }
+
+    function updateRange(val) {
+      document.getElementById('rangeValue').textContent = val;
+    }
+
+    function saveRange() {
+      const val = document.getElementById('rangeSlider').value;
+      localStorage.setItem('jljt_range_km', val);
+      toast('接单范围已设置为 ' + val + 'km');
+    }
+
+    // 10. 历史公告
+    function showAnnouncements() {
+      showSubPage('历史公告', '' +
+        '<div class="rules-list">' +
+          '<li>2024-01-15 平台服务费调整通知</li>' +
+          '<li>2024-01-10 春节放假值班安排</li>' +
+          '<li>2024-01-01 新年快乐！平台服务升级</li>' +
+          '<li>2023-12-20 恶劣天气接单补贴政策</li>' +
+          '<li>2023-12-15 新功能上线：增项申请</li>' +
+          '<li>2023-12-01 信用分规则更新公告</li>' +
+        '</div>'
+      );
+    }
+
+    // 11. 平台服务协议
+    function showAgreement() {
+      showSubPage('平台服务协议', '' +
+        '<div style="background:#fff;border-radius:8px;padding:16px;font-size:13px;color:#555;line-height:1.8;">' +
+          '<h4 style="color:#333;margin-bottom:10px;">佳乐家平台服务协议</h4>' +
+          '<p>欢迎使用佳乐家家电维修服务平台。本协议是您与佳乐家平台之间关于服务使用的法律协议。</p><br>' +
+          '<p><strong>1. 服务内容</strong></p>' +
+          '<p>平台提供家电维修订单分配、接单、完工确认等服务。</p><br>' +
+          '<p><strong>2. 师傅责任</strong></p>' +
+          '<p>师傅需按时完成接单，保证服务质量，遵守平台规则。</p><br>' +
+          '<p><strong>3. 费用结算</strong></p>' +
+          '<p>平台按约定比例收取服务费，师傅收入按月结算。</p><br>' +
+          '<p><strong>4. 信用管理</strong></p>' +
+          '<p>平台实行信用分制度，违规行为将扣除信用分。</p><br>' +
+          '<p><strong>5. 争议处理</strong></p>' +
+          '<p>如有争议，双方应友好协商解决；协商不成的，可向平台申诉。</p><br>' +
+          '<p style="color:#999;font-size:11px;">最后更新：2024年1月</p>' +
+        '</div>'
+      );
+    }
+
+    // 12. 联系客服
+    function showContact() {
+      showSubPage('联系客服', '' +
+        '<div style="background:#fff;border-radius:8px;padding:20px;text-align:center;">' +
+          '<div style="font-size:40px;margin-bottom:12px;">📞</div>' +
+          '<p style="font-size:16px;font-weight:500;margin-bottom:8px;">客服热线</p>' +
+          '<p style="font-size:20px;color:var(--primary);font-weight:bold;margin-bottom:16px;"><a href="tel:400-888-8888" style="color:var(--primary);text-decoration:none;">400-888-8888</a></p>' +
+          '<p style="font-size:13px;color:#999;">服务时间：08:00 - 22:00</p>' +
+          '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">' +
+          '<p style="font-size:13px;color:#666;">在线客服</p>' +
+          '<p style="font-size:13px;color:#999;">也可通过飞书联系在线客服</p>' +
+        '</div>'
+      );
+    }
+
+    // ===== Bottom Tab Navigation =====
+    document.querySelectorAll('.tab-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const page = this.dataset.page;
+        if (page === 'my') return;
+        if (page === 'orders') window.location.href = 'orders.html';
+        else if (page === 'active') window.location.href = 'active.html';
+      });
+    });
+
+    // ===== Auto-login Check =====
+    (function init() {
+      const token = getToken();
+      const id = getTechId();
+      const saved = localStorage.getItem(TECH_INFO_KEY);
+      if (token && id) {
+        if (saved) {
+          try { techInfo = JSON.parse(saved); } catch(e) {}
+        }
+        enterApp();
+      } else {
+        document.getElementById('loginPage').style.display = 'flex';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的 - 佳乐家</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f5f5; color: #333; font-size: 14px; padding-bottom: 56px; }
+  :root { --primary: #1677FF; --primary-light: #e6f4ff; --primary-bg: #1677FF; }
+
+  .header { background: var(--primary); color: #fff; padding: 12px 16px; text-align: center; font-size: 18px; font-weight: 600; position: sticky; top: 0; z-index: 100; }
+
+  /* Login Section */
+  .login-section { background: #fff; margin: 10px 12px; border-radius: 10px; padding: 24px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .login-title { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 20px; }
+  .login-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .login-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+  .login-row input:focus { border-color: var(--primary); }
+  .login-row input.code-input { letter-spacing: 8px; text-align: center; font-size: 20px; }
+  .login-row button { padding: 12px 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .login-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: 600; cursor: pointer; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Code Display Box */
+  .code-box { background: var(--primary-light); border: 2px dashed var(--primary); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 16px; display: none; }
+  .code-box .code-label { font-size: 13px; color: #666; margin-bottom: 4px; }
+  .code-box .code-value { font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: 8px; font-family: 'Courier New', monospace; }
+  .code-box .code-timer { font-size: 12px; color: #999; margin-top: 4px; }
+
+  /* User Info Card */
+  .user-card { background: var(--primary); color: #fff; margin: 0; padding: 24px 20px; display: flex; align-items: center; gap: 16px; }
+  .user-card .avatar { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .user-card .info .phone { font-size: 20px; font-weight: 600; }
+  .user-card .info .tip { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  /* Menu */
+  .menu-section { background: #fff; margin: 10px 12px; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item .left { display: flex; align-items: center; gap: 10px; }
+  .menu-item .left .icon { font-size: 20px; }
+  .menu-item .left .label { font-size: 14px; color: #333; }
+  .menu-item .right { color: #999; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+  .menu-item .right .arrow { font-size: 12px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 85%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+  .modal-header { padding: 16px; text-align: center; font-size: 16px; font-weight: 600; border-bottom: 1px solid #eee; }
+  .modal-body { padding: 16px; font-size: 14px; line-height: 1.6; color: #555; white-space: pre-wrap; }
+  .modal-footer { padding: 12px 16px; text-align: center; border-top: 1px solid #eee; }
+  .modal-footer button { padding: 8px 32px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .modal-footer button.danger { background: #ff4d4f; }
+
+  /* Address Management */
+  .addr-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .addr-item:last-child { border-bottom: none; }
+  .addr-item .addr-info { flex: 1; }
+  .addr-item .addr-info .name { font-size: 14px; font-weight: 600; }
+  .addr-item .addr-info .detail { font-size: 13px; color: #666; margin-top: 2px; }
+  .addr-item .addr-actions { display: flex; gap: 8px; }
+  .addr-item .addr-actions button { padding: 4px 12px; border-radius: 4px; border: 1px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; }
+  .addr-item .addr-actions button.danger { color: #ff4d4f; border-color: #ff4d4f; }
+  .addr-form input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 8px; }
+  .addr-form input:focus { border-color: var(--primary); }
+  .addr-form .btn-row { display: flex; gap: 8px; }
+  .addr-form .btn-row button { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .addr-form .btn-row .save-btn { background: var(--primary); color: #fff; border: none; }
+  .addr-form .btn-row .cancel-btn { background: #fff; border: 1px solid #ddd; }
+
+  /* Blacklist & Announcements List */
+  .list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .list-item:last-child { border-bottom: none; }
+  .list-item .info { flex: 1; }
+  .list-item .info .title { font-size: 14px; }
+  .list-item .info .time { font-size: 12px; color: #999; margin-top: 2px; }
+  .list-item .action-btn { padding: 4px 12px; border-radius: 4px; border: 1px solid #ff4d4f; color: #ff4d4f; background: #fff; font-size: 12px; cursor: pointer; }
+  .pagination-info { text-align: center; font-size: 13px; color: #999; padding: 12px 0; }
+  .load-more-btn { width: 100%; padding: 10px; text-align: center; color: var(--primary); font-size: 14px; cursor: pointer; }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; border-top: 1px solid #eee; z-index: 100; }
+  .bottom-nav a { flex: 1; text-align: center; padding: 8px 0; text-decoration: none; color: #999; font-size: 11px; }
+  .bottom-nav a .nav-icon { display: block; font-size: 20px; margin-bottom: 2px; }
+  .bottom-nav a.active { color: var(--primary); }
+  .bottom-nav a.active .nav-icon { color: var(--primary); }
+
+  .hidden { display: none !important; }
+  .empty { text-align: center; padding: 30px 20px; color: #999; font-size: 14px; }
+  .text-tip { color: #999; font-size: 12px; text-align: center; margin-top: 8px; }
+  .mt-10 { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">我的</div>
+
+<!-- Login Section -->
+<div id="loginContainer">
+  <div class="login-section" id="loginSection">
+    <div class="login-title">登录以查看个人信息</div>
+    <div class="login-row">
+      <input type="tel" id="loginPhone" placeholder="手机号" maxlength="11" oninput="onPhoneInput()">
+      <button id="sendCodeBtn" onclick="sendCode()" disabled>获取验证码</button>
+    </div>
+    <!-- Code Display Box -->
+    <div class="code-box" id="codeBox">
+      <div class="code-label">您的验证码（5分钟内有效）</div>
+      <div class="code-value" id="codeValue">----</div>
+      <div class="code-timer" id="codeTimer"></div>
+    </div>
+    <div class="login-row">
+      <input type="text" id="loginCode" class="code-input" placeholder="验证码" maxlength="4" inputmode="numeric">
+    </div>
+    <button class="login-btn" id="verifyBtn" onclick="verifyCode()" disabled>登 录</button>
+    <div class="text-tip">验证码有效期为5分钟，请及时使用</div>
+  </div>
+</div>
+
+<!-- User Content (hidden until login) -->
+<div id="userContent" class="hidden">
+  <!-- User Card -->
+  <div class="user-card">
+    <div class="avatar">👤</div>
+    <div class="info">
+      <div class="phone" id="userPhone">--</div>
+      <div class="tip">已登录</div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div class="menu-section" style="margin-top:0;border-radius:0;">
+    <div class="menu-item" onclick="goToQuery()">
+      <div class="left"><span class="icon">📋</span><span class="label">我的订单</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-item" onclick="openAddressManager()">
+      <div class="left"><span class="icon">📍</span><span class="label">地址管理</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+    <div class="menu-item" onclick="openBlacklist()">
+      <div class="left"><span class="icon">🚫</span><span class="label">我的黑名单</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+    <div class="menu-item" onclick="openHistoryAnnouncements()">
+      <div class="left"><span class="icon">📢</span><span class="label">历史公告</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+    <div class="menu-item" onclick="openAgreement()">
+      <div class="left"><span class="icon">📄</span><span class="label">服务协议</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+    <div class="menu-item" onclick="openContactService()">
+      <div class="left"><span class="icon">📞</span><span class="label">联系客服</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+    <div class="menu-item" onclick="openAbout()">
+      <div class="left"><span class="icon">ℹ️</span><span class="label">关于我们</span></div>
+      <div class="right"><span class="arrow">›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- General Modal -->
+<div class="modal-overlay" id="generalModal">
+  <div class="modal">
+    <div class="modal-header" id="modalTitle">详情</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer"><button onclick="closeGeneralModal()">关闭</button></div>
+  </div>
+</div>
+
+<!-- Address Manager Modal -->
+<div class="modal-overlay" id="addressModal">
+  <div class="modal" style="width:90%;max-width:400px;">
+    <div class="modal-header">地址管理</div>
+    <div class="modal-body" id="addressBody"></div>
+    <div class="modal-footer">
+      <button onclick="showAddAddressForm()">添 加</button>
+      <button onclick="closeAddressModal()" style="background:#fff;color:#666;border:1px solid #ddd;margin-left:8px;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <a href="booking.html">
+    <span class="nav-icon">📋</span>
+    预约
+  </a>
+  <a href="query.html">
+    <span class="nav-icon">🔍</span>
+    查单
+  </a>
+  <a href="my.html" class="active">
+    <span class="nav-icon">👤</span>
+    我的
+  </a>
+</div>
+
+<script>
+// ========== State ==========
+const state = {
+  phone: '',
+  token: '',
+  codeTimer: null,
+  codeCooldown: 0,
+  blacklistPage: 1,
+  blacklistHasMore: true,
+  blacklistData: [],
+  annPage: 1,
+  annHasMore: true,
+  annData: []
+};
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', () => {
+  const savedPhone = localStorage.getItem('jlj_phone');
+  const savedToken = savedPhone ? localStorage.getItem('jlj_token_' + savedPhone) : null;
+  if (savedToken && savedPhone) {
+    state.phone = savedPhone;
+    state.token = savedToken;
+    showUserContent();
+  }
+});
+
+// ========== Phone Input ==========
+function onPhoneInput() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  document.getElementById('sendCodeBtn').disabled = !/^1\d{9,10}$/.test(phone);
+}
+
+// ========== Send Code ==========
+async function sendCode() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    alert('请输入正确的手机号');
+    return;
+  }
+
+  const btn = document.getElementById('sendCodeBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    const code = data.data?.code || data.code || data.data || '----';
+    document.getElementById('codeValue').textContent = code;
+    document.getElementById('codeBox').style.display = 'block';
+
+    state.phone = phone;
+    state.codeCooldown = 60;
+    startCooldown();
+    document.getElementById('verifyBtn').disabled = false;
+  } catch(e) {
+    alert('发送验证码失败，请重试');
+    btn.disabled = false;
+  }
+}
+
+function startCooldown() {
+  const btn = document.getElementById('sendCodeBtn');
+  const timerEl = document.getElementById('codeTimer');
+
+  if (state.codeTimer) clearInterval(state.codeTimer);
+
+  state.codeTimer = setInterval(() => {
+    state.codeCooldown--;
+    if (state.codeCooldown <= 0) {
+      clearInterval(state.codeTimer);
+      state.codeTimer = null;
+      btn.disabled = false;
+      btn.textContent = '重新获取';
+      timerEl.textContent = '';
+    } else {
+      btn.disabled = true;
+      btn.textContent = `${state.codeCooldown}s`;
+      timerEl.textContent = `验证码有效期剩余：${state.codeCooldown > 0 ? Math.min(state.codeCooldown, 300) : 0}s`;
+    }
+  }, 1000);
+}
+
+// ========== Verify Code ==========
+async function verifyCode() {
+  const code = document.getElementById('loginCode').value.trim();
+  if (!code || code.length !== 4) {
+    alert('请输入4位验证码');
+    return;
+  }
+
+  const btn = document.getElementById('verifyBtn');
+  btn.disabled = true;
+  btn.textContent = '验证中...';
+
+  try {
+    const res = await fetch('/api/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone, code })
+    });
+    const data = await res.json();
+    if (data.code === 0 || data.code === 200 || res.ok) {
+      state.token = data.data?.token || data.token || 'token_' + state.phone;
+      localStorage.setItem('jlj_phone', state.phone);
+      localStorage.setItem('jlj_token_' + state.phone, state.token);
+      showUserContent();
+    } else {
+      alert(data.message || '验证码错误');
+      btn.disabled = false;
+      btn.textContent = '登 录';
+    }
+  } catch(e) {
+    alert('网络错误');
+    btn.disabled = false;
+    btn.textContent = '登 录';
+  }
+}
+
+// ========== Show User Content ==========
+function showUserContent() {
+  document.getElementById('loginContainer').style.display = 'none';
+  document.getElementById('userContent').classList.remove('hidden');
+  document.getElementById('userPhone').textContent = state.phone;
+}
+
+// ========== Go to Query ==========
+function goToQuery() {
+  window.location.href = 'query.html?phone=' + encodeURIComponent(state.phone);
+}
+
+// ========== Address Management (localStorage) ==========
+function getAddresses() {
+  try {
+    return JSON.parse(localStorage.getItem('jlj_addresses_' + state.phone) || '[]');
+  } catch(e) { return []; }
+}
+
+function saveAddresses(addrs) {
+  localStorage.setItem('jlj_addresses_' + state.phone, JSON.stringify(addrs));
+}
+
+function openAddressManager() {
+  renderAddresses();
+  document.getElementById('addressModal').classList.add('show');
+}
+
+function closeAddressModal() {
+  document.getElementById('addressModal').classList.remove('show');
+}
+
+function renderAddresses() {
+  const addrs = getAddresses();
+  const container = document.getElementById('addressBody');
+  if (addrs.length === 0) {
+    container.innerHTML = '<div class="empty">暂无地址，点击下方添加</div>';
+    return;
+  }
+  container.innerHTML = addrs.map((a, i) =>
+    `<div class="addr-item">
+      <div class="addr-info">
+        <div class="name">${a.area || ''} ${a.detail || ''}</div>
+        <div class="detail">${a.name || ''} ${a.phone || ''}</div>
+      </div>
+      <div class="addr-actions">
+        <button onclick="editAddress(${i})">编辑</button>
+        <button class="danger" onclick="deleteAddress(${i})">删除</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function showAddAddressForm() {
+  document.getElementById('addressBody').innerHTML = `
+    <div class="addr-form">
+      <input type="text" id="addrArea" placeholder="所在区域（必填）" maxlength="20">
+      <input type="text" id="addrDetail" placeholder="详细地址（必填）" maxlength="100">
+      <input type="text" id="addrName" placeholder="联系人（必填）" maxlength="20">
+      <input type="tel" id="addrPhone" placeholder="联系电话（必填）" maxlength="11">
+      <div class="btn-row">
+        <button class="save-btn" onclick="saveNewAddress()">保存</button>
+        <button class="cancel-btn" onclick="renderAddresses()">取消</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveNewAddress() {
+  const area = document.getElementById('addrArea').value.trim();
+  const detail = document.getElementById('addrDetail').value.trim();
+  const name = document.getElementById('addrName').value.trim();
+  const phone = document.getElementById('addrPhone').value.trim();
+  if (!area || !detail || !name || !phone) {
+    alert('请填写完整信息');
+    return;
+  }
+  const addrs = getAddresses();
+  addrs.push({ area, detail, name, phone });
+  saveAddresses(addrs);
+  renderAddresses();
+}
+
+function editAddress(index) {
+  const addrs = getAddresses();
+  const a = addrs[index];
+  document.getElementById('addressBody').innerHTML = `
+    <div class="addr-form">
+      <input type="text" id="addrArea" placeholder="所在区域" maxlength="20" value="${a.area || ''}">
+      <input type="text" id="addrDetail" placeholder="详细地址" maxlength="100" value="${a.detail || ''}">
+      <input type="text" id="addrName" placeholder="联系人" maxlength="20" value="${a.name || ''}">
+      <input type="tel" id="addrPhone" placeholder="联系电话" maxlength="11" value="${a.phone || ''}">
+      <div class="btn-row">
+        <button class="save-btn" onclick="updateAddress(${index})">更新</button>
+        <button class="cancel-btn" onclick="renderAddresses()">取消</button>
+      </div>
+    </div>
+  `;
+}
+
+function updateAddress(index) {
+  const area = document.getElementById('addrArea').value.trim();
+  const detail = document.getElementById('addrDetail').value.trim();
+  const name = document.getElementById('addrName').value.trim();
+  const phone = document.getElementById('addrPhone').value.trim();
+  if (!area || !detail || !name || !phone) {
+    alert('请填写完整信息');
+    return;
+  }
+  const addrs = getAddresses();
+  addrs[index] = { area, detail, name, phone };
+  saveAddresses(addrs);
+  renderAddresses();
+}
+
+function deleteAddress(index) {
+  if (!confirm('确定删除此地址？')) return;
+  const addrs = getAddresses();
+  addrs.splice(index, 1);
+  saveAddresses(addrs);
+  renderAddresses();
+}
+
+// ========== Blacklist ==========
+async function openBlacklist() {
+  state.blacklistPage = 1;
+  state.blacklistData = [];
+  state.blacklistHasMore = true;
+  document.getElementById('modalTitle').textContent = '我的黑名单';
+  document.getElementById('modalBody').innerHTML = '<div class="empty">加载中...</div>';
+  document.getElementById('generalModal').classList.add('show');
+  await loadBlacklist();
+}
+
+async function loadBlacklist() {
+  if (!state.blacklistHasMore) return;
+  try {
+    const res = await fetch(`/api/blacklist?user_id=${encodeURIComponent(state.phone)}&page=${state.blacklistPage}`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const list = data.data?.list || data.data || data || [];
+    const total = data.data?.total || data.total || list.length;
+
+    if (state.blacklistPage === 1) {
+      state.blacklistData = Array.isArray(list) ? list : [];
+    } else {
+      if (Array.isArray(list)) state.blacklistData = state.blacklistData.concat(list);
+    }
+    state.blacklistHasMore = state.blacklistData.length < total;
+    state.blacklistPage++;
+    renderBlacklist();
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = '<div class="empty">加载失败</div>';
+  }
+}
+
+function renderBlacklist() {
+  const container = document.getElementById('modalBody');
+  if (state.blacklistData.length === 0) {
+    container.innerHTML = '<div class="empty">暂无黑名单记录</div>';
+    return;
+  }
+  container.innerHTML = state.blacklistData.map(b =>
+    `<div class="list-item">
+      <div class="info">
+        <div class="title">${b.name || b.technician_name || '--'} ${b.phone || b.technician_phone || ''}</div>
+        <div class="time">${b.reason || b.reason || ''}</div>
+      </div>
+      <button class="action-btn" onclick="removeBlacklist('${b.id}')">移除</button>
+    </div>`
+  ).join('') + (state.blacklistHasMore ? '<div class="load-more-btn" onclick="loadBlacklist()">加载更多</div>' : '<div class="pagination-info">共 ' + state.blacklistData.length + ' 条</div>');
+}
+
+async function removeBlacklist(id) {
+  if (!confirm('确定移出黑名单？')) return;
+  try {
+    const res = await fetch(`/api/blacklist/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    if (data.code === 0 || data.code === 200 || res.ok) {
+      state.blacklistData = state.blacklistData.filter(b => b.id !== id);
+      renderBlacklist();
+    } else {
+      alert(data.message || '操作失败');
+    }
+  } catch(e) {
+    alert('网络错误');
+  }
+}
+
+// ========== History Announcements ==========
+async function openHistoryAnnouncements() {
+  state.annPage = 1;
+  state.annData = [];
+  state.annHasMore = true;
+  document.getElementById('modalTitle').textContent = '历史公告';
+  document.getElementById('modalBody').innerHTML = '<div class="empty">加载中...</div>';
+  document.getElementById('generalModal').classList.add('show');
+  await loadAnnouncements();
+}
+
+async function loadAnnouncements() {
+  if (!state.annHasMore) return;
+  try {
+    const res = await fetch(`/api/announcements?page=${state.annPage}`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const list = data.data?.list || data.data || data || [];
+    const total = data.data?.total || data.total || list.length;
+
+    if (state.annPage === 1) {
+      state.annData = Array.isArray(list) ? list : [];
+    } else {
+      if (Array.isArray(list)) state.annData = state.annData.concat(list);
+    }
+    state.annHasMore = state.annData.length < total;
+    state.annPage++;
+    renderAnnouncements();
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = '<div class="empty">加载失败</div>';
+  }
+}
+
+function renderAnnouncements() {
+  const container = document.getElementById('modalBody');
+  if (state.annData.length === 0) {
+    container.innerHTML = '<div class="empty">暂无公告</div>';
+    return;
+  }
+  container.innerHTML = state.annData.map(a =>
+    `<div class="list-item" style="cursor:pointer;" onclick="showAnnouncementDetail('${encodeURIComponent(a.title || '')}','${encodeURIComponent(a.content || '')}')">
+      <div class="info">
+        <div class="title">${a.title || '公告'}</div>
+        <div class="time">${a.created_at || a.time || ''}</div>
+      </div>
+    </div>`
+  ).join('') + (state.annHasMore ? '<div class="load-more-btn" onclick="loadAnnouncements()">加载更多</div>' : '<div class="pagination-info">共 ' + state.annData.length + ' 条</div>');
+}
+
+function showAnnouncementDetail(title, content) {
+  document.getElementById('modalTitle').textContent = decodeURIComponent(title);
+  document.getElementById('modalBody').innerHTML = '<div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:#555;">' + decodeURIComponent(content) + '</div>';
+}
+
+// ========== Agreement ==========
+async function openAgreement() {
+  document.getElementById('modalTitle').textContent = '服务协议';
+  document.getElementById('modalBody').innerHTML = '<div class="empty">加载中...</div>';
+  document.getElementById('generalModal').classList.add('show');
+  try {
+    const res = await fetch('/api/agreements', {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const list = data.data || data || [];
+    let html = '';
+    if (Array.isArray(list)) {
+      list.forEach(a => {
+        html += `<div style="font-weight:600;font-size:15px;margin:12px 0 6px;">${a.title || a.type || '协议'}</div>`;
+        html += `<div style="white-space:pre-wrap;font-size:13px;color:#555;line-height:1.6;margin-bottom:12px;">${a.content || a.body || ''}</div>`;
+      });
+    } else {
+      html = '<div style="white-space:pre-wrap;">暂无协议内容</div>';
+    }
+    document.getElementById('modalBody').innerHTML = html || '<div class="empty">暂无协议内容</div>';
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = '<div class="empty">加载失败</div>';
+  }
+}
+
+// ========== Contact Service ==========
+async function openContactService() {
+  document.getElementById('modalTitle').textContent = '联系客服';
+  document.getElementById('modalBody').innerHTML = '<div class="empty">加载中...</div>';
+  document.getElementById('generalModal').classList.add('show');
+  try {
+    const res = await fetch('/api/config/service_phone', {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    const phone = data.data?.phone || data.data || data.phone || data.service_phone || '400-000-0000';
+    document.getElementById('modalBody').innerHTML = `
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:40px;margin-bottom:12px;">📞</div>
+        <div style="font-size:16px;font-weight:600;color:var(--primary);margin-bottom:8px;">${phone}</div>
+        <div style="font-size:13px;color:#999;">服务时间：工作日 8:00-18:00</div>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = `
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:40px;margin-bottom:12px;">📞</div>
+        <div style="font-size:16px;font-weight:600;color:var(--primary);margin-bottom:8px;">400-000-0000</div>
+        <div style="font-size:13px;color:#999;">服务时间：工作日 8:00-18:00</div>
+      </div>
+    `;
+  }
+}
+
+// ========== About ==========
+function openAbout() {
+  document.getElementById('modalTitle').textContent = '关于我们';
+  document.getElementById('modalBody').innerHTML = `
+    <div style="text-align:center;padding:16px 0;">
+      <div style="font-size:36px;font-weight:700;color:var(--primary);margin-bottom:8px;">佳乐家</div>
+      <div style="font-size:14px;color:#666;margin-bottom:16px;">家电服务预约平台</div>
+      <div style="font-size:13px;color:#999;line-height:1.8;text-align:left;padding:0 8px;">
+        <p>佳乐家家电服务预约平台，致力于为曹县及周边地区用户提供专业、便捷的家电维修、清洗、安装等服务。</p>
+        <p style="margin-top:8px;">我们拥有一支经验丰富的技术团队，覆盖曹县全区域，快速响应您的服务需求。</p>
+        <p style="margin-top:8px;color:#666;">版本：1.0.0</p>
+      </div>
+    </div>
+  `;
+  document.getElementById('generalModal').classList.add('show');
+}
+
+// ========== Close Modal ==========
+function closeGeneralModal() {
+  document.getElementById('generalModal').classList.remove('show');
+}
+</script>
+</body>
+</html>

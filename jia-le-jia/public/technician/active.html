@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>进行中 - 佳乐家</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; color: #333; font-size: 14px; }
+    :root { --primary: #1677FF; --primary-light: #e6f4ff; --danger: #ff4d4f; --success: #52c41a; --warning: #faad14; --border: #e8e8e8; --bg: #f5f5f5; }
+    .hidden { display: none !important; }
+
+    /* Login Page */
+    #loginPage { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    #loginPage .logo { width: 80px; height: 80px; background: var(--primary); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 36px; font-weight: bold; margin-bottom: 16px; }
+    #loginPage h1 { font-size: 22px; margin-bottom: 4px; }
+    #loginPage .subtitle { color: #999; margin-bottom: 32px; }
+    #loginPage .form-group { width: 100%; max-width: 360px; margin-bottom: 16px; }
+    #loginPage .form-group label { display: block; margin-bottom: 6px; color: #666; font-size: 13px; }
+    #loginPage .form-group input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+    #loginPage .form-group input:focus { border-color: var(--primary); }
+    #loginPage .login-btn { width: 100%; max-width: 360px; padding: 13px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    #loginPage .login-btn:disabled { opacity: 0.6; }
+    #loginPage .login-error { color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; }
+    #loginPage .test-hint { margin-top: 16px; color: #999; font-size: 12px; text-align: center; }
+
+    /* Main Layout */
+    #app { display: none; flex-direction: column; height: 100vh; }
+    #app.show { display: flex; }
+
+    /* Header */
+    .page-header { background: var(--primary); color: #fff; padding: 16px; text-align: center; font-size: 17px; font-weight: 500; flex-shrink: 0; }
+
+    /* Order List */
+    .order-list { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+    .order-card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .order-card.overdue { border-left: 4px solid var(--warning); }
+    .order-card .overdue-badge { display: inline-block; background: #fff7e6; color: #d46b08; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; }
+    .order-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .order-card .category { font-size: 15px; font-weight: 600; color: var(--primary); }
+    .order-card .price { font-size: 16px; font-weight: 600; color: var(--danger); }
+    .order-card .info-row { display: flex; align-items: flex-start; margin-bottom: 5px; font-size: 13px; color: #555; }
+    .order-card .info-row .label { color: #999; width: 60px; flex-shrink: 0; }
+    .order-card .info-row .value { flex: 1; }
+    .order-card .address-text { font-weight: 500; color: #333; }
+    .order-card .phone-btn { display: inline-block; padding: 2px 10px; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); border-radius: 4px; font-size: 12px; cursor: pointer; text-decoration: none; }
+    .order-card .remark-area { background: #fafafa; border-radius: 6px; padding: 8px; margin-top: 4px; font-size: 12px; color: #888; }
+    .order-card .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .order-card .action-grid .act-btn { padding: 8px 0; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
+    .order-card .action-grid .act-btn.primary { background: var(--primary); color: #fff; }
+    .order-card .action-grid .act-btn.success { background: var(--success); color: #fff; }
+    .order-card .action-grid .act-btn.warning { background: var(--warning); color: #fff; }
+    .order-card .action-grid .act-btn.danger { background: var(--danger); color: #fff; }
+    .order-card .action-grid .act-btn.outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+    .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 900; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 20px; }
+    .modal h3 { font-size: 17px; margin-bottom: 16px; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal .form-group label { display: block; margin-bottom: 4px; color: #666; font-size: 13px; }
+    .modal .form-group input, .modal .form-group select, .modal .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; }
+    .modal .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal .form-group input:focus, .modal .form-group select:focus, .modal .form-group textarea:focus { border-color: var(--primary); }
+    .modal .form-group .option-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modal .form-group .chip { padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px; font-size: 13px; cursor: pointer; color: #666; }
+    .modal .form-group .chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .modal .form-group .photo-upload { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal .form-group .photo-upload .photo-preview { width: 60px; height: 60px; border: 1px solid var(--border); border-radius: 6px; object-fit: cover; }
+    .modal .form-group .photo-upload .upload-btn { width: 60px; height: 60px; border: 1px dashed var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ccc; cursor: pointer; }
+    .modal .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .modal .modal-actions .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+    .modal .modal-actions .btn-cancel { background: #f5f5f5; color: #666; }
+    .modal .modal-actions .btn-confirm { background: var(--primary); color: #fff; }
+    .modal .modal-actions .btn-danger { background: var(--danger); color: #fff; }
+
+    /* Bottom Tab */
+    .bottom-tab { display: flex; background: #fff; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
+    .tab-item { flex: 1; text-align: center; padding: 8px 0 6px; color: #999; cursor: pointer; }
+    .tab-item .tab-icon { font-size: 20px; display: block; }
+    .tab-item .tab-label { font-size: 11px; margin-top: 2px; }
+    .tab-item.active { color: var(--primary); }
+
+    /* Toast */
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 2000; font-size: 14px; pointer-events: none; transition: opacity 0.3s; }
+    .toast.hidden { opacity: 0; }
+
+    .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; }
+    .loading-spinner::after { content: ''; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="loginPage">
+    <div class="logo">佳</div>
+    <h1>佳乐家师傅端</h1>
+    <p class="subtitle">家电维修服务接单平台</p>
+    <div class="form-group">
+      <label>手机号</label>
+      <input type="tel" id="loginPhone" placeholder="请输入手机号" maxlength="11">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入密码">
+    </div>
+    <button class="login-btn" id="loginBtn">登 录</button>
+    <div id="loginError" class="login-error"></div>
+    <p class="test-hint">测试账号: 13800000001~13800000010<br>密码: 123456</p>
+  </div>
+
+  <!-- Main App -->
+  <div id="app">
+    <div class="page-header">进行中订单</div>
+    <div class="order-list" id="orderList"></div>
+    <div class="bottom-tab">
+      <div class="tab-item" data-page="orders"><span class="tab-icon">📋</span><span class="tab-label">工单</span></div>
+      <div class="tab-item active" data-page="active"><span class="tab-icon">🔧</span><span class="tab-label">进行中</span></div>
+      <div class="tab-item" data-page="my"><span class="tab-icon">👤</span><span class="tab-label">我的</span></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'jljt_tech_token';
+    const TECH_ID_KEY = 'jljt_tech_id';
+    const TECH_INFO_KEY = 'jljt_tech_info';
+
+    let techInfo = null;
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2000);
+    }
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+    function getTechId() { return localStorage.getItem(TECH_ID_KEY); }
+
+    function showModal(html) {
+      document.getElementById('modalContent').innerHTML = html;
+      document.getElementById('modalOverlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    function api(path, options = {}) {
+      const token = getToken();
+      const headers = { ...options.headers };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return fetch(path, { ...options, headers }).then(r => {
+        if (r.status === 401) { logout(); return Promise.reject('未登录'); }
+        return r.json().then(d => { if (d.error) throw new Error(d.error); return d; });
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TECH_ID_KEY);
+      localStorage.removeItem(TECH_INFO_KEY);
+      document.getElementById('app').classList.remove('show');
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // ===== Login =====
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('loginPhone').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+    function doLogin() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const errEl = document.getElementById('loginError');
+      if (!phone || !password) { errEl.textContent = '请输入手机号和密码'; return; }
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('loginBtn').textContent = '登录中...';
+      errEl.textContent = '';
+
+      fetch('/api/technician/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      }).then(r => r.json()).then(d => {
+        if (d.error) { errEl.textContent = d.error; return; }
+        localStorage.setItem(TOKEN_KEY, d.token);
+        localStorage.setItem(TECH_ID_KEY, d.technician_id);
+        localStorage.setItem(TECH_INFO_KEY, JSON.stringify(d.technician || {}));
+        techInfo = d.technician || {};
+        enterApp();
+      }).catch(e => {
+        errEl.textContent = '登录失败: ' + (e.message || '网络错误');
+      }).finally(() => {
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '登 录';
+      });
+    }
+
+    function enterApp() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').classList.add('show');
+      loadOrders();
+    }
+
+    // ===== Load Active Orders =====
+    function loadOrders() {
+      const id = getTechId();
+      if (!id) return;
+      const list = document.getElementById('orderList');
+      list.innerHTML = '<div class="loading-spinner"></div>';
+      api('/api/technician/' + id + '/history?status=in_progress').then(d => {
+        const orders = d.orders || d.data || d || [];
+        renderOrders(orders);
+      }).catch(e => {
+        list.innerHTML = '<div class="empty-state"><div class="icon">😵</div><p>加载失败</p></div>';
+      });
+    }
+
+    function renderOrders(orders) {
+      const list = document.getElementById('orderList');
+      if (!orders || orders.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">🔧</div><p>暂无进行中的订单</p></div>';
+        return;
+      }
+      const now = Date.now();
+      list.innerHTML = orders.map(o => {
+        const isOverdue = isOrderOverdue(o, now);
+        return '' +
+          '<div class="order-card' + (isOverdue ? ' overdue' : '') + '">' +
+            (isOverdue ? '<div class="overdue-badge">⏰ 超过24小时未完工</div>' : '') +
+            '<div class="card-header">' +
+              '<span class="category">' + esc(o.service_category || o.category || '维修') + '</span>' +
+              '<span class="price">¥' + (o.estimated_price || o.price || 0) + '</span>' +
+            '</div>' +
+            '<div class="info-row"><span class="label">地址</span><span class="value address-text">' + esc(o.address || '') + '</span></div>' +
+            '<div class="info-row">' +
+              '<span class="label">客户</span>' +
+              '<span class="value">' + esc(o.customer_name || o.name || '') + ' ' +
+                '<a class="phone-btn" href="tel:' + esc(o.phone || o.customer_phone || '') + '">📞 ' + esc(o.phone || o.customer_phone || '') + '</a>' +
+              '</span>' +
+            '</div>' +
+            '<div class="info-row"><span class="label">预约</span><span class="value">' + esc(o.booking_time || o.time || '') + '</span></div>' +
+            (o.remark ? '<div class="remark-area">📝 备注: ' + esc(o.remark) + '</div>' : '') +
+            '<div class="action-grid">' +
+              '<button class="act-btn success" onclick="showCompleteModal(' + o.id + ')">✅ 完工</button>' +
+              '<button class="act-btn outline" onclick="showTransferModal(' + o.id + ')">🔄 转派</button>' +
+              '<button class="act-btn danger" onclick="showCancelModal(' + o.id + ')">✕ 取消</button>' +
+              '<button class="act-btn warning" onclick="showOnsiteModal(' + o.id + ')">📋 现场状态</button>' +
+              '<button class="act-btn primary" onclick="showAdditionalModal(' + o.id + ')">➕ 增项申请</button>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function isOrderOverdue(order, now) {
+      const created = order.created_at || order.create_time || order.booking_time;
+      if (!created) return false;
+      const t = new Date(created).getTime();
+      if (isNaN(t)) return false;
+      return (now - t) > 24 * 60 * 60 * 1000;
+    }
+
+    // ===== Complete Modal =====
+    let currentOrderId = null;
+
+    function showCompleteModal(orderId) {
+      currentOrderId = orderId;
+      showModal('' +
+        '<h3>✅ 完工确认</h3>' +
+        '<div class="form-group">' +
+          '<label>实际金额 (¥)</label>' +
+          '<input type="number" id="actualAmount" placeholder="请输入实际金额" step="0.01">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>保修期限</label>' +
+          '<div class="option-chips" id="warrantyChips">' +
+            '<span class="chip" data-val="3">3个月</span>' +
+            '<span class="chip" data-val="6">6个月</span>' +
+            '<span class="chip active" data-val="12">12个月</span>' +
+            '<span class="chip" data-val="24">24个月</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>现场照片</label>' +
+          '<div class="photo-upload" id="photoUpload">' +
+            '<div class="upload-btn" id="addPhotoBtn">+</div>' +
+          '</div>' +
+          '<input type="file" id="photoInput" accept="image/*" multiple style="display:none">' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doComplete()">确认完工</button>' +
+        '</div>'
+      );
+      // Warranty chip selection
+      document.querySelectorAll('#warrantyChips .chip').forEach(c => {
+        c.addEventListener('click', function() {
+          document.querySelectorAll('#warrantyChips .chip').forEach(x => x.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+      // Photo upload
+      document.getElementById('addPhotoBtn').addEventListener('click', function() {
+        document.getElementById('photoInput').click();
+      });
+      document.getElementById('photoInput').addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        const container = document.getElementById('photoUpload');
+        files.forEach(f => {
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            const img = document.createElement('img');
+            img.className = 'photo-preview';
+            img.src = ev.target.result;
+            container.insertBefore(img, document.getElementById('addPhotoBtn'));
+          };
+          reader.readAsDataURL(f);
+        });
+      });
+    }
+
+    function doComplete() {
+      const amount = document.getElementById('actualAmount').value;
+      if (!amount) { toast('请输入实际金额'); return; }
+      const activeChip = document.querySelector('#warrantyChips .chip.active');
+      const warrantyMonths = activeChip ? parseInt(activeChip.dataset.val) : 12;
+      const photoInput = document.getElementById('photoInput');
+      const files = photoInput ? photoInput.files : null;
+
+      if (files && files.length > 0) {
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+          formData.append('photos', files[i]);
+        }
+        formData.append('order_id', currentOrderId);
+        formData.append('technician_id', getTechId());
+        api('/api/technician/upload-photos', {
+          method: 'POST',
+          body: formData
+        }).then(() => {
+          // Now complete
+          return api('/api/technician/complete', {
+            method: 'POST',
+            body: JSON.stringify({
+              order_id: currentOrderId,
+              technician_id: getTechId(),
+              actual_amount: parseFloat(amount),
+              warranty_months: warrantyMonths
+            })
+          });
+        }).then(d => {
+          closeModal();
+          toast(d.message || '完工成功');
+          loadOrders();
+        }).catch(e => toast('操作失败: ' + e.message));
+      } else {
+        api('/api/technician/complete', {
+          method: 'POST',
+          body: JSON.stringify({
+            order_id: currentOrderId,
+            technician_id: getTechId(),
+            actual_amount: parseFloat(amount),
+            warranty_months: warrantyMonths
+          })
+        }).then(d => {
+          closeModal();
+          toast(d.message || '完工成功');
+          loadOrders();
+        }).catch(e => toast('操作失败: ' + e.message));
+      }
+    }
+
+    // ===== Transfer Modal =====
+    function showTransferModal(orderId) {
+      currentOrderId = orderId;
+      showModal('' +
+        '<h3>🔄 转派</h3>' +
+        '<div class="form-group">' +
+          '<label>选择师傅</label>' +
+          '<select id="transferTech"><option value="">加载中...</option></select>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>转派备注</label>' +
+          '<textarea id="transferRemark" placeholder="请输入转派原因"></textarea>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doTransfer()">确认转派</button>' +
+        '</div>'
+      );
+      // Load technicians
+      api('/api/technician/list').then(d => {
+        const list = d.technicians || d.data || d || [];
+        const sel = document.getElementById('transferTech');
+        sel.innerHTML = '<option value="">请选择师傅</option>' +
+          list.map(t => '<option value="' + t.id + '">' + esc(t.name || t.id) + ' (' + esc(t.area || '') + ')</option>').join('');
+      }).catch(() => {
+        document.getElementById('transferTech').innerHTML = '<option value="">加载失败</option>';
+      });
+    }
+
+    function doTransfer() {
+      const targetId = document.getElementById('transferTech').value;
+      if (!targetId) { toast('请选择师傅'); return; }
+      const remark = document.getElementById('transferRemark').value;
+      api('/api/technician/transfer', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: currentOrderId,
+          technician_id: getTechId(),
+          target_technician_id: targetId,
+          remark: remark
+        })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '转派成功');
+        loadOrders();
+      }).catch(e => toast('操作失败: ' + e.message));
+    }
+
+    // ===== Cancel Modal =====
+    function showCancelModal(orderId) {
+      currentOrderId = orderId;
+      showModal('' +
+        '<h3>✕ 取消订单</h3>' +
+        '<div class="form-group">' +
+          '<label>取消原因</label>' +
+          '<div class="option-chips" id="cancelReasonChips">' +
+            '<span class="chip" data-reason="用户取消">用户取消</span>' +
+            '<span class="chip" data-reason="联系不上用户">联系不上用户</span>' +
+            '<span class="chip" data-reason="无法按时到达">无法按时到达</span>' +
+            '<span class="chip" data-reason="超出服务范围">超出服务范围</span>' +
+            '<span class="chip" data-reason="缺少配件">缺少配件</span>' +
+            '<span class="chip" data-reason="其他">其他</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>详细说明</label>' +
+          '<textarea id="cancelRemark" placeholder="请详细描述取消原因"></textarea>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">返回</button>' +
+          '<button class="btn btn-danger" onclick="doCancel()">确认取消</button>' +
+        '</div>'
+      );
+      document.querySelectorAll('#cancelReasonChips .chip').forEach(c => {
+        c.addEventListener('click', function() {
+          document.querySelectorAll('#cancelReasonChips .chip').forEach(x => x.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+    }
+
+    function doCancel() {
+      const activeChip = document.querySelector('#cancelReasonChips .chip.active');
+      const reason = activeChip ? activeChip.dataset.reason : '其他';
+      const remark = document.getElementById('cancelRemark').value;
+      api('/api/technician/cancel', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: currentOrderId,
+          technician_id: getTechId(),
+          reason: reason,
+          remark: remark
+        })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '取消成功');
+        loadOrders();
+      }).catch(e => toast('操作失败: ' + e.message));
+    }
+
+    // ===== Onsite Status Modal =====
+    function showOnsiteModal(orderId) {
+      currentOrderId = orderId;
+      showModal('' +
+        '<h3>📋 现场状态</h3>' +
+        '<div class="form-group">' +
+          '<label>选择状态</label>' +
+          '<div class="option-chips" id="onsiteChips">' +
+            '<span class="chip" data-status="arrived">已到达</span>' +
+            '<span class="chip" data-status="user_not_home">用户不在</span>' +
+            '<span class="chip" data-status="unreachable">联系不上</span>' +
+            '<span class="chip" data-status="user_cancelled">用户取消</span>' +
+            '<span class="chip" data-status="rescheduled">改约</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>备注</label>' +
+          '<textarea id="onsiteRemark" placeholder="请输入备注信息"></textarea>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doOnsite()">确认</button>' +
+        '</div>'
+      );
+      document.querySelectorAll('#onsiteChips .chip').forEach(c => {
+        c.addEventListener('click', function() {
+          document.querySelectorAll('#onsiteChips .chip').forEach(x => x.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+    }
+
+    function doOnsite() {
+      const activeChip = document.querySelector('#onsiteChips .chip.active');
+      if (!activeChip) { toast('请选择状态'); return; }
+      const status = activeChip.dataset.status;
+      const remark = document.getElementById('onsiteRemark').value;
+      api('/api/technician/onsite', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: currentOrderId,
+          technician_id: getTechId(),
+          status: status,
+          remark: remark
+        })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '状态已更新');
+        loadOrders();
+      }).catch(e => toast('操作失败: ' + e.message));
+    }
+
+    // ===== Additional Application Modal =====
+    function showAdditionalModal(orderId) {
+      currentOrderId = orderId;
+      showModal('' +
+        '<h3>➕ 增项申请</h3>' +
+        '<div class="form-group">' +
+          '<label>增项说明</label>' +
+          '<textarea id="additionalDesc" placeholder="请描述增项内容"></textarea>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>增项金额 (¥)</label>' +
+          '<input type="number" id="additionalAmount" placeholder="请输入金额" step="0.01">' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-cancel" onclick="closeModal()">取消</button>' +
+          '<button class="btn btn-confirm" onclick="doAdditional()">提交申请</button>' +
+        '</div>'
+      );
+    }
+
+    function doAdditional() {
+      const desc = document.getElementById('additionalDesc').value;
+      const amount = document.getElementById('additionalAmount').value;
+      if (!desc) { toast('请输入增项说明'); return; }
+      if (!amount) { toast('请输入增项金额'); return; }
+      api('/api/technician/additional', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: currentOrderId,
+          technician_id: getTechId(),
+          description: desc,
+          amount: parseFloat(amount)
+        })
+      }).then(d => {
+        closeModal();
+        toast(d.message || '增项申请已提交');
+        loadOrders();
+      }).catch(e => toast('操作失败: ' + e.message));
+    }
+
+    // ===== Bottom Tab Navigation =====
+    document.querySelectorAll('.tab-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const page = this.dataset.page;
+        if (page === 'active') return;
+        if (page === 'orders') window.location.href = 'orders.html';
+        else if (page === 'my') window.location.href = 'my.html';
+      });
+    });
+
+    // ===== Auto-login Check =====
+    (function init() {
+      const token = getToken();
+      const id = getTechId();
+      const saved = localStorage.getItem(TECH_INFO_KEY);
+      if (token && id) {
+        if (saved) {
+          try { techInfo = JSON.parse(saved); } catch(e) {}
+        }
+        enterApp();
+      } else {
+        document.getElementById('loginPage').style.display = 'flex';
+      }
+    })();
+  </script>
+</body>
+</html>

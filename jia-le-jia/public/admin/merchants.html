@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佳乐家 - 商家管理</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f2f5; display:flex; min-height:100vh; }
+:root { --primary:#1677FF; --primary-hover:#0958d9; --sidebar-w:220px; --header-h:56px; }
+.sidebar { width:var(--sidebar-w); background:#001529; color:#fff; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:100; }
+.sidebar-logo { height:var(--header-h); display:flex; align-items:center; padding:0 20px; font-size:18px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sidebar-logo span { margin-left:10px; }
+.sidebar-menu { flex:1; padding:12px 0; overflow-y:auto; }
+.menu-item { display:flex; align-items:center; padding:12px 24px; color:rgba(255,255,255,0.65); text-decoration:none; font-size:14px; transition:all .2s; cursor:pointer; }
+.menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+.menu-item.active { color:#fff; background:var(--primary); }
+.menu-item .icon { margin-right:10px; font-size:16px; }
+.main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+.header { height:var(--header-h); background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:50; }
+.header h2 { font-size:18px; color:#1a1a1a; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.logout-btn { padding:6px 16px; background:#fff; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:13px; color:#666; }
+.logout-btn:hover { color:var(--primary); border-color:var(--primary); }
+.content { padding:20px; }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:#fff; border-radius:8px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.stat-card .label { font-size:13px; color:#8c8c8c; margin-bottom:6px; }
+.stat-card .value { font-size:26px; font-weight:600; color:#1a1a1a; }
+.tabs { display:flex; gap:0; margin-bottom:16px; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.tab { padding:12px 24px; cursor:pointer; font-size:14px; color:#666; border-bottom:2px solid transparent; transition:all .2s; }
+.tab:hover { color:var(--primary); }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:500; }
+.filter-row { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.filter-row select, .filter-row input { height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.filter-row select:focus, .filter-row input:focus { border-color:var(--primary); }
+.filter-btn { padding:0 16px; height:34px; background:var(--primary); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+.filter-btn:hover { background:var(--primary-hover); }
+.filter-btn.outline { background:#fff; color:var(--primary); border:1px solid var(--primary); }
+.filter-btn.outline:hover { background:#f0f7ff; }
+.filter-btn.green { background:#52c41a; }
+.filter-btn.green:hover { background:#73d13d; }
+.table-container { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+table { width:100%; border-collapse:collapse; }
+table th, table td { padding:10px 12px; text-align:left; border-bottom:1px solid #f0f0f0; font-size:13px; }
+table th { color:#8c8c8c; font-weight:500; background:#fafafa; white-space:nowrap; }
+table td { color:#333; }
+table tr:hover td { background:#fafafa; }
+.action-link { color:var(--primary); cursor:pointer; font-size:12px; margin-right:8px; }
+.action-link:hover { text-decoration:underline; }
+.action-link.danger { color:#ff4d4f; }
+.action-link.green { color:#52c41a; }
+.modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:1000; justify-content:center; align-items:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:8px; width:640px; max-height:80vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
+.modal-sm { width:480px; }
+.modal-header { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:16px; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:#999; }
+.modal-body { padding:24px; }
+.modal-footer { padding:12px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+.modal-footer button { padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; }
+.btn-primary { background:var(--primary); color:#fff; border:none; }
+.btn-primary:hover { background:var(--primary-hover); }
+.btn-default { background:#fff; border:1px solid #d9d9d9; color:#333; }
+.btn-default:hover { border-color:var(--primary); color:var(--primary); }
+.btn-success { background:#52c41a; color:#fff; border:none; }
+.btn-success:hover { background:#73d13d; }
+.btn-danger { background:#ff4d4f; color:#fff; border:none; }
+.btn-danger:hover { background:#ff7875; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:#333; margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea { width:100%; height:34px; border:1px solid #d9d9d9; border-radius:4px; padding:0 10px; font-size:13px; outline:none; }
+.form-group input:focus, .form-group select:focus { border-color:var(--primary); }
+.form-group textarea { height:80px; padding:8px 10px; resize:vertical; }
+.form-row { display:flex; gap:12px; }
+.form-row .form-group { flex:1; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo"><span>🔧</span> 佳乐家管理</div>
+  <div class="sidebar-menu">
+    <a class="menu-item" href="dashboard.html"><span class="icon">📊</span>仪表盘</a>
+    <a class="menu-item" href="orders.html"><span class="icon">📦</span>订单管理</a>
+    <a class="menu-item" href="technicians.html"><span class="icon">👨‍🔧</span>师傅管理</a>
+    <a class="menu-item active" href="merchants.html"><span class="icon">🏪</span>商家管理</a>
+    <a class="menu-item" href="services.html"><span class="icon">🛠️</span>服务管理</a>
+    <a class="menu-item" href="announcements.html"><span class="icon">📢</span>公告管理</a>
+    <a class="menu-item" href="dataview.html"><span class="icon">📊</span>数据大屏</a>
+    <a class="menu-item" href="settings.html"><span class="icon">⚙️</span>系统设置</a>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <h2>商家管理</h2>
+    <div class="header-right">
+      <span style="font-size:14px;color:#666;">管理员</span>
+      <button class="logout-btn" onclick="localStorage.removeItem('admin_token');window.location.href='login.html'">退出登录</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchMerchantTab(this,'list')">商家列表</div>
+      <div class="tab" onclick="switchMerchantTab(this,'withdrawals')">提现管理</div>
+    </div>
+    <div id="merchantListSection">
+      <div class="filter-row">
+        <input type="text" id="searchInput" placeholder="搜索商家名称" style="width:200px;">
+        <button class="filter-btn" onclick="loadMerchants()">搜索</button>
+        <button class="filter-btn green" onclick="openAddMerchantModal()">+ 添加商家</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>商家名称</th><th>联系人</th><th>电话</th><th>推广费率</th><th>余额</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="merchantTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="withdrawalSection" style="display:none;">
+      <div class="table-container">
+        <table>
+          <thead><tr><th>商家</th><th>提现金额</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="withdrawalTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Merchant Modal -->
+<div class="modal-overlay" id="merchantFormModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="merchantFormTitle">添加商家</h3><button class="modal-close" onclick="closeModal('merchantFormModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>商家名称</label><input id="m_name"></div>
+      <div class="form-group"><label>联系人</label><input id="m_contact"></div>
+      <div class="form-group"><label>电话</label><input id="m_phone"></div>
+      <div class="form-group"><label>推广费率 (%)</label><input id="m_rate" type="number" step="0.1"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('merchantFormModal')">取消</button><button class="btn-primary" onclick="saveMerchant()">保存</button></div>
+  </div>
+</div>
+
+<!-- Rate Modal -->
+<div class="modal-overlay" id="rateModal">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>设置推广费率</h3><button class="modal-close" onclick="closeModal('rateModal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>推广费率 (%)</label><input id="r_rate" type="number" step="0.1"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-default" onclick="closeModal('rateModal')">取消</button><button class="btn-primary" onclick="saveRate()">保存</button></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) window.location.href = 'login.html';
+function getHeaders() { return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token }; }
+
+let editMerchantId = null;
+
+function formatDate(d) { if(!d) return '-'; const dt=new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); }
+
+function loadStats() {
+  fetch('/api/admin/merchants', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.merchants || data.list || data.data || [];
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">商家总数</div><div class="value">${list.length}</div></div>
+      <div class="stat-card"><div class="label">本月新增</div><div class="value">${data.new_this_month||0}</div></div>
+      <div class="stat-card"><div class="label">推广总佣金</div><div class="value">¥${(data.total_referral_fees||0).toFixed(2)}</div></div>
+    `;
+  }).catch(()=>{});
+}
+
+function loadMerchants() {
+  const search = document.getElementById('searchInput').value;
+  let url = '/api/admin/merchants';
+  if (search) url += '?search=' + search;
+  fetch(url, { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.merchants || data.list || data.data || [];
+    const tbody = document.getElementById('merchantTableBody');
+    if (list.length) {
+      tbody.innerHTML = list.map(m => `<tr>
+        <td><span class="action-link" onclick="showPromotionStats(${m.id})">${m.name||'-'}</span></td>
+        <td>${m.contact||'-'}</td>
+        <td>${m.phone||'-'}</td>
+        <td>${m.referral_rate||m.rate||0}%</td>
+        <td>¥${(m.balance||0).toFixed(2)}</td>
+        <td><span class="status-badge" style="background:${m.status==='active'?'#f6ffed':'#f5f5f5'};color:${m.status==='active'?'#52c41a':'#999'}">${m.status==='active'?'启用':'禁用'}</span></td>
+        <td>
+          <span class="action-link" onclick="openEditMerchant(${m.id})">编辑</span>
+          <span class="action-link" onclick="openRateModal(${m.id},${m.referral_rate||m.rate||0})">设置比例</span>
+          <span class="action-link" onclick="viewSettlements(${m.id})">结算记录</span>
+          <span class="action-link ${m.status==='disabled'?'':'danger'}" onclick="toggleMerchant(${m.id},'${m.status}')">${m.status==='disabled'?'启用':'禁用'}</span>
+        </td>
+      </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:30px;">暂无商家</td></tr>';
+    }
+  }).catch(()=>{});
+}
+
+function loadWithdrawals() {
+  fetch('/api/admin/merchant-withdrawals', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.withdrawals || data.list || data.data || [];
+    const tbody = document.getElementById('withdrawalTableBody');
+    if (list.length) {
+      tbody.innerHTML = list.map(w => `<tr>
+        <td>${w.merchant_name||w.name||'-'}</td>
+        <td>¥${(w.amount||0).toFixed(2)}</td>
+        <td>${formatDate(w.created_at)}</td>
+        <td><span class="status-badge" style="background:${w.status==='pending'?'#fff7e6':'#f6ffed'};color:${w.status==='pending'?'#fa8c16':'#52c41a'}">${w.status==='pending'?'待审核':'已处理'}</span></td>
+        <td>${w.status==='pending'?`<span class="action-link green" onclick="handleWithdrawal(${w.id},'approve')">通过</span><span class="action-link danger" onclick="handleWithdrawal(${w.id},'reject')">拒绝</span>`:'-'}</td>
+      </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:30px;">暂无提现记录</td></tr>';
+    }
+  }).catch(()=>{});
+}
+
+function switchMerchantTab(el, tab) {
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'list') {
+    document.getElementById('merchantListSection').style.display = 'block';
+    document.getElementById('withdrawalSection').style.display = 'none';
+  } else {
+    document.getElementById('merchantListSection').style.display = 'none';
+    document.getElementById('withdrawalSection').style.display = 'block';
+    loadWithdrawals();
+  }
+}
+
+function openAddMerchantModal() {
+  editMerchantId = null;
+  document.getElementById('merchantFormTitle').textContent = '添加商家';
+  ['m_name','m_contact','m_phone','m_rate'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('merchantFormModal').classList.add('show');
+}
+
+function openEditMerchant(id) {
+  editMerchantId = id;
+  document.getElementById('merchantFormTitle').textContent = '编辑商家';
+  fetch('/api/admin/merchants', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.merchants || data.list || data.data || [];
+    const m = list.find(x => x.id == id);
+    if (m) {
+      document.getElementById('m_name').value = m.name || '';
+      document.getElementById('m_contact').value = m.contact || '';
+      document.getElementById('m_phone').value = m.phone || '';
+      document.getElementById('m_rate').value = m.referral_rate || m.rate || 0;
+    }
+    document.getElementById('merchantFormModal').classList.add('show');
+  }).catch(()=>{});
+}
+
+function saveMerchant() {
+  const body = {
+    name: document.getElementById('m_name').value,
+    contact: document.getElementById('m_contact').value,
+    phone: document.getElementById('m_phone').value,
+    referral_rate: parseFloat(document.getElementById('m_rate').value) || 0
+  };
+  const url = editMerchantId ? '/api/admin/merchants/' + editMerchantId : '/api/admin/merchants';
+  fetch(url, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('merchantFormModal'); loadMerchants(); loadStats(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function openRateModal(id, rate) {
+  document.getElementById('r_rate').value = rate || 0;
+  document.getElementById('rateModal').dataset.id = id;
+  document.getElementById('rateModal').classList.add('show');
+}
+
+function saveRate() {
+  const id = document.getElementById('rateModal').dataset.id;
+  const rate = parseFloat(document.getElementById('r_rate').value) || 0;
+  fetch('/api/admin/merchants/' + id, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ referral_rate: rate }) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) { closeModal('rateModal'); loadMerchants(); } else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function toggleMerchant(id, status) {
+  const action = status === 'disabled' ? 'enable' : 'disable';
+  if (!confirm(`确定要${action==='disable'?'禁用':'启用'}此商家吗？`)) return;
+  fetch('/api/admin/merchants/' + id, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ action }) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) loadMerchants(); else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function handleWithdrawal(id, action) {
+  if (!confirm(`确定要${action==='approve'?'通过':'拒绝'}此提现申请吗？`)) return;
+  fetch('/api/admin/merchant-withdrawals/' + id, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ action }) }).then(r=>r.json()).then(res=>{
+    if (res.code===0 || res.success) loadWithdrawals(); else alert(res.message||'操作失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+function viewSettlements(id) {
+  fetch('/api/admin/merchants/' + id + '/settlements', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    const list = data.settlements || data.list || data.data || [];
+    let html = '<div class="modal" style="width:640px;"><div class="modal-header"><h3>结算记录</h3><button class="modal-close" onclick="this.closest(\'.modal-overlay\').classList.remove(\'show\')">&times;</button></div><div class="modal-body">';
+    if (list.length) {
+      html += '<table style="font-size:12px;"><thead><tr><th>时间</th><th>金额</th><th>类型</th><th>备注</th></tr></thead><tbody>';
+      html += list.map(s => `<tr><td>${formatDate(s.created_at)}</td><td>¥${(s.amount||0).toFixed(2)}</td><td>${s.type||'-'}</td><td>${s.remark||'-'}</td></tr>`).join('');
+      html += '</tbody></table>';
+    } else {
+      html += '<div style="text-align:center;padding:30px;color:#999;">暂无结算记录</div>';
+    }
+    html += '</div></div>';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay show';
+    overlay.innerHTML = html;
+    overlay.onclick = function(e) { if (e.target === this) this.remove(); };
+    document.body.appendChild(overlay);
+  }).catch(()=>alert('加载失败'));
+}
+
+function showPromotionStats(id) {
+  fetch('/api/admin/merchants/' + id + '/promotion', { headers: getHeaders() }).then(r=>r.json()).then(res=>{
+    const data = res.data || res;
+    alert('推广统计\n总订单: ' + (data.total_orders||0) + '\n总佣金: ¥' + (data.total_commission||0).toFixed(2) + '\n本月订单: ' + (data.month_orders||0));
+  }).catch(()=>alert('暂无推广数据'));
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+loadStats();
+loadMerchants();
+</script>
+</body>
+</html>
