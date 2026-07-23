@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>佳乐家师傅端 - 我的</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== 页面专属样式 ===== */
+    .page { max-width: 750px; margin: 0 auto; min-height: 100vh; background: #F5F5F5; padding-bottom: 70px; position: relative; }
+
+    /* 师傅信息卡片 */
+    .profile-card { background: linear-gradient(135deg, #1677FF, #4096FF); color: #fff; padding: 24px 16px 20px; }
+    .profile-card .top { display: flex; align-items: center; gap: 14px; }
+    .profile-card .avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); object-fit: cover; background: #fff; }
+    .profile-card .avatar-placeholder { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; }
+    .profile-card .info { flex: 1; }
+    .profile-card .name { font-size: 20px; font-weight: 600; }
+    .profile-card .detail { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+    .profile-card .detail span { margin-right: 16px; }
+    .profile-card .stats-row { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); }
+    .profile-card .stat-item { flex: 1; text-align: center; }
+    .profile-card .stat-item .val { font-size: 22px; font-weight: 700; }
+    .profile-card .stat-item .lbl { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+    /* 菜单区域 */
+    .menu-section { margin: 12px 16px; }
+    .menu-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+    .menu-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #F5F5F5; cursor: pointer; transition: background 0.2s; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:active { background: #FAFAFA; }
+    .menu-item .icon-wrap { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; margin-right: 12px; flex-shrink: 0; }
+    .menu-item .icon-wrap.blue { background: #1677FF; }
+    .menu-item .icon-wrap.green { background: #52C41A; }
+    .menu-item .icon-wrap.orange { background: #FA8C16; }
+    .menu-item .icon-wrap.red { background: #FF4D4F; }
+    .menu-item .icon-wrap.purple { background: #722ED1; }
+    .menu-item .icon-wrap.cyan { background: #13C2C2; }
+    .menu-item .icon-wrap.grey { background: #999; }
+    .menu-item .text { flex: 1; font-size: 15px; color: #333; }
+    .menu-item .arrow { color: #CCC; font-size: 14px; }
+    .menu-item .sub-text { font-size: 12px; color: #999; margin-right: 8px; }
+
+    /* 登录弹窗 */
+    .login-form { padding: 8px 0; }
+    .login-form .form-group { margin-bottom: 16px; }
+    .login-form .form-group label { display: block; font-size: 14px; color: #333; margin-bottom: 6px; font-weight: 500; }
+    .login-form .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #E8E8E8; border-radius: 8px; font-size: 14px; background: #FAFAFA; }
+    .login-form .form-group input:focus { border-color: #1677FF; background: #fff; }
+    .login-form .btn { width: 100%; height: 44px; font-size: 16px; }
+
+    /* 信用分规则 */
+    .rule-list { padding: 8px 0; }
+    .rule-item { padding: 10px 0; border-bottom: 1px solid #F0F0F0; font-size: 14px; }
+    .rule-item:last-child { border-bottom: none; }
+    .rule-item .title { font-weight: 600; color: #333; margin-bottom: 4px; }
+    .rule-item .desc { color: #666; font-size: 13px; }
+
+    /* 历史订单筛选 */
+    .filter-bar { display: flex; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
+    .filter-bar select, .filter-bar input { flex: 1; min-width: 80px; padding: 8px 10px; border: 1px solid #E8E8E8; border-radius: 6px; font-size: 13px; background: #fff; }
+
+    /* 图库 */
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 0; }
+    .gallery-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; background: #F5F5F5; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-item .empty { display: flex; align-items: center; justify-content: center; height: 100%; color: #CCC; font-size: 28px; }
+    .gallery-filter { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .gallery-filter .filter-btn { padding: 6px 14px; border: 1px solid #E8E8E8; border-radius: 16px; font-size: 13px; cursor: pointer; background: #fff; color: #666; }
+    .gallery-filter .filter-btn.active { border-color: #1677FF; background: #E6F4FF; color: #1677FF; }
+
+    /* 收入明细 */
+    .income-summary { display: flex; gap: 12px; margin-bottom: 16px; }
+    .income-summary .item { flex: 1; background: #FAFAFA; border-radius: 8px; padding: 12px; text-align: center; }
+    .income-summary .item .val { font-size: 20px; font-weight: 700; color: #1677FF; }
+    .income-summary .item .lbl { font-size: 12px; color: #999; margin-top: 4px; }
+    .chart-bar { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding: 8px 0; }
+    .chart-bar .col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+    .chart-bar .col .bar { width: 100%; max-width: 24px; background: #1677FF; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
+    .chart-bar .col .day-label { font-size: 10px; color: #999; margin-top: 4px; }
+    .chart-bar .col .val-label { font-size: 10px; color: #1677FF; margin-bottom: 2px; }
+
+    /* 争议申诉 */
+    .dispute-form { padding: 8px 0; }
+    .dispute-form .form-group { margin-bottom: 14px; }
+    .dispute-form .form-label { font-size: 14px; color: #333; margin-bottom: 6px; display: block; font-weight: 500; }
+    .dispute-form .form-select,
+    .dispute-form .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid #E8E8E8; border-radius: 8px; font-size: 14px; background: #FAFAFA; }
+    .dispute-form .form-textarea { min-height: 80px; resize: vertical; }
+    .dispute-item { padding: 12px 0; border-bottom: 1px solid #F0F0F0; }
+    .dispute-item:last-child { border-bottom: none; }
+    .dispute-item .title { font-size: 14px; font-weight: 500; }
+    .dispute-item .status { font-size: 12px; margin-left: 8px; }
+    .dispute-item .status.pending { color: #FAAD14; }
+    .dispute-item .status.resolved { color: #52C41A; }
+    .dispute-item .status.rejected { color: #FF4D4F; }
+    .dispute-item .desc { font-size: 13px; color: #666; margin-top: 4px; }
+
+    /* 接单范围 */
+    .range-options { display: flex; gap: 12px; padding: 8px 0; }
+    .range-option { flex: 1; text-align: center; padding: 14px 0; border: 1px solid #E8E8E8; border-radius: 8px; cursor: pointer; font-size: 14px; background: #FAFAFA; }
+    .range-option.active { border-color: #1677FF; background: #E6F4FF; color: #1677FF; font-weight: 600; }
+
+    /* 公告列表 */
+    .announcement-item { padding: 14px 0; border-bottom: 1px solid #F0F0F0; }
+    .announcement-item:last-child { border-bottom: none; }
+    .announcement-item .title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .announcement-item .time { font-size: 12px; color: #999; }
+
+    /* 图片查看器 */
+    .image-viewer { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .image-viewer img { max-width: 95%; max-height: 95%; object-fit: contain; }
+
+    /* 夜间模式 */
+    @media (prefers-color-scheme: dark) {
+      body.dark-mode-auto .page { background: #1a1a1a; }
+      body.dark-mode-auto .menu-card { background: #2a2a2a; }
+      body.dark-mode-auto .menu-item { border-bottom-color: #333; }
+      body.dark-mode-auto .menu-item .text { color: #eee; }
+      body.dark-mode-auto .menu-item:active { background: #333; }
+    }
+    body.dark-mode .page { background: #1a1a1a; }
+    body.dark-mode .menu-card { background: #2a2a2a; }
+    body.dark-mode .menu-item { border-bottom-color: #333; }
+    body.dark-mode .menu-item .text { color: #eee; }
+    body.dark-mode .menu-item:active { background: #333; }
+
+    /* 证据上传 */
+    .evidence-upload-area { display: flex; gap: 10px; flex-wrap: wrap; }
+    .evidence-box { width: 72px; height: 72px; border: 1px dashed #E8E8E8; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #FAFAFA; font-size: 24px; color: #999; overflow: hidden; position: relative; }
+    .evidence-box img { width: 100%; height: 100%; object-fit: cover; }
+    .evidence-box .del { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="page" id="app">
+  <!-- 师傅信息卡片 -->
+  <div class="profile-card" id="profileCard">
+    <div class="top">
+      <div class="avatar-placeholder" id="avatarEl"><i class="fas fa-user"></i></div>
+      <div class="info">
+        <div class="name" id="techName">加载中...</div>
+        <div class="detail" id="techDetail">
+          <span>📱 <span id="techPhone">-</span></span>
+          <span>📍 <span id="techArea">-</span></span>
+        </div>
+        <div class="detail" style="margin-top:2px;">
+          <span>💰 余额：<span id="balanceNum">¥0.00</span></span>
+          <span>⭐ 信用分：<span id="creditScore">100</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="val" id="todayCompleted">0</div>
+        <div class="lbl">今日完工</div>
+      </div>
+      <div class="stat-item">
+        <div class="val" id="todayIncome">¥0</div>
+        <div class="lbl">今日收入</div>
+      </div>
+      <div class="stat-item">
+        <div class="val" id="totalOrders">0</div>
+        <div class="lbl">累计接单</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 功能菜单 -->
+  <div class="menu-section">
+    <div class="menu-card">
+      <div class="menu-item" onclick="showCreditRules()">
+        <div class="icon-wrap orange"><i class="fas fa-shield-alt"></i></div>
+        <span class="text">信用分规则</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showHistoryOrders()">
+        <div class="icon-wrap blue"><i class="fas fa-history"></i></div>
+        <span class="text">历史订单</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showGallery()">
+        <div class="icon-wrap green"><i class="fas fa-images"></i></div>
+        <span class="text">我的图库</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showIncome()">
+        <div class="icon-wrap blue"><i class="fas fa-chart-line"></i></div>
+        <span class="text">收入明细</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showDisputes()">
+        <div class="icon-wrap red"><i class="fas fa-gavel"></i></div>
+        <span class="text">争议申诉</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showRangeSetting()">
+        <div class="icon-wrap cyan"><i class="fas fa-location-arrow"></i></div>
+        <span class="text">接单范围设置</span>
+        <span class="sub-text" id="rangeText">10公里</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showAnnouncements()">
+        <div class="icon-wrap purple"><i class="fas fa-bullhorn"></i></div>
+        <span class="text">历史公告</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="showAgreement()">
+        <div class="icon-wrap grey"><i class="fas fa-file-contract"></i></div>
+        <span class="text">平台服务协议</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="contactService()">
+        <div class="icon-wrap grey"><i class="fas fa-headset"></i></div>
+        <span class="text">联系客服</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+      <div class="menu-item" onclick="toggleDarkMode()">
+        <div class="icon-wrap grey"><i class="fas fa-moon"></i></div>
+        <span class="text">夜间模式</span>
+        <span class="sub-text" id="darkModeText">跟随系统</span>
+        <span class="arrow"><i class="fas fa-chevron-right"></i></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item" onclick="goTo('index.html')">
+      <i class="fas fa-clipboard-list icon"></i>
+      <span class="label">工单</span>
+    </div>
+    <div class="tabbar-item" onclick="goTo('ongoing.html')">
+      <i class="fas fa-spinner icon"></i>
+      <span class="label">进行中</span>
+    </div>
+    <div class="tabbar-item active" onclick="goTo('profile.html')">
+      <i class="fas fa-user icon"></i>
+      <span class="label">我的</span>
+    </div>
+  </div>
+</div>
+
+<script src="../common.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  checkLogin();
+  initPage();
+  initDarkMode();
+});
+
+/* ===== 登录验证 ===== */
+function checkLogin() {
+  if (!API.token) {
+    showLoginModal();
+    return false;
+  }
+  return true;
+}
+
+function showLoginModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'loginOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">师傅登录</div>
+      <div class="login-form">
+        <div class="form-group">
+          <label>手机号</label>
+          <input type="tel" id="loginPhone" placeholder="请输入手机号" maxlength="11">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码">
+        </div>
+        <button class="btn btn-primary" onclick="handleLogin()">登 录</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('loginPhone').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '');
+  });
+  document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleLogin();
+  });
+}
+
+async function handleLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!phone || !password) {
+    Utils.toast('请输入手机号和密码');
+    return;
+  }
+  if (!Utils.isValidPhone(phone)) {
+    Utils.toast('请输入正确的手机号');
+    return;
+  }
+  const btn = document.querySelector('#loginOverlay .btn');
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  const res = await API.techLogin(phone, password);
+  btn.disabled = false;
+  btn.textContent = '登 录';
+  if (res.code === 200) {
+    Utils.set('token', res.data.token);
+    API.token = res.data.token;
+    document.getElementById('loginOverlay').remove();
+    initPage();
+  }
+}
+
+/* ===== 页面初始化 ===== */
+async function initPage() {
+  if (!API.token) return;
+  await loadProfile();
+}
+
+async function loadProfile() {
+  const res = await API.techGetProfile();
+  if (res.code !== 200 || !res.data) return;
+  const d = res.data;
+  document.getElementById('techName').textContent = d.name || '未知';
+  document.getElementById('techPhone').textContent = Utils.maskPhone(d.phone) || '-';
+  document.getElementById('techArea').textContent = d.area || '-';
+  document.getElementById('balanceNum').textContent = '¥' + (parseFloat(d.balance) || 0).toFixed(2);
+  document.getElementById('creditScore').textContent = d.credit_score || 100;
+  document.getElementById('todayCompleted').textContent = d.today_completed || 0;
+  document.getElementById('todayIncome').textContent = '¥' + (parseFloat(d.today_income) || 0).toFixed(0);
+  document.getElementById('totalOrders').textContent = d.total_orders || 0;
+
+  if (d.avatar) {
+    document.getElementById('avatarEl').outerHTML = '<img class="avatar" src="' + d.avatar + '" alt="avatar">';
+  }
+
+  if (d.range) {
+    const rangeMap = { 5: '5公里', 10: '10公里', 0: '不限' };
+    document.getElementById('rangeText').textContent = rangeMap[d.range] || '10公里';
+  }
+}
+
+/* ===== 信用分规则 ===== */
+function showCreditRules() {
+  const rules = [
+    { title: '初始信用分', desc: '新注册师傅默认100分。' },
+    { title: '完成工单', desc: '每完成1单加1分，每日上限5分。' },
+    { title: '用户好评', desc: '获得好评每次加2分。' },
+    { title: '取消工单', desc: '主动取消工单扣5分/单。' },
+    { title: '超时未完成', desc: '超时未完成扣10分/单。' },
+    { title: '用户投诉', desc: '被投诉且核实扣10分/次。' },
+    { title: '信用分等级', desc: '90分以上：优秀；80-89分：良好；70-79分：一般；60-69分：待提升；60分以下：暂停接单。' }
+  ];
+  let html = '<div class="rule-list">';
+  rules.forEach(r => {
+    html += '<div class="rule-item"><div class="title">' + r.title + '</div><div class="desc">' + r.desc + '</div></div>';
+  });
+  html += '</div>';
+  Utils.modal('信用分规则', html, null, null, '知道了');
+}
+
+/* ===== 历史订单 ===== */
+function showHistoryOrders() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'historyOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">历史订单</div>
+      <div class="filter-bar">
+        <select id="filterStatus" onchange="loadHistoryOrders()">
+          <option value="">全部状态</option>
+          <option value="completed">已完成</option>
+          <option value="cancelled">已取消</option>
+          <option value="dispute">争议中</option>
+        </select>
+        <select id="filterTime" onchange="loadHistoryOrders()">
+          <option value="">全部时间</option>
+          <option value="7">最近7天</option>
+          <option value="30">最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div id="historyList"><div class="loading">加载中</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  loadHistoryOrders();
+}
+
+async function loadHistoryOrders() {
+  const container = document.getElementById('historyList');
+  const status = document.getElementById('filterStatus').value;
+  const days = document.getElementById('filterTime').value;
+
+  const params = { page: 1, page_size: 50 };
+  if (status) params.status = status;
+  if (days) params.days = days;
+
+  const res = await API.techGetOrders(params);
+  if (res.code !== 200) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">加载失败</div>';
+    return;
+  }
+  const orders = res.data.list || [];
+  if (orders.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span class="icon">📋</span><div class="text">暂无订单</div></div>';
+    return;
+  }
+  container.innerHTML = orders.map(o =>
+    '<div class="order-card" style="margin-bottom:8px;padding:12px;">' +
+      '<div class="card-header" style="margin-bottom:4px;">' +
+        '<span class="service-name" style="font-size:14px;">' + (o.service_name || '-') + '</span>' +
+        '<span class="tag ' + Utils.getStatusClass(o.status) + '">' + Utils.getStatusText(o.status) + '</span>' +
+      '</div>' +
+      '<div class="order-info" style="font-size:12px;color:#999;">' +
+        Utils.formatTime(o.created_at) + ' | ' + Utils.formatMoney(o.actual_price || o.estimated_price || 0) +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+/* ===== 我的图库 ===== */
+function showGallery() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'galleryOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">我的图库</div>
+      <div class="gallery-filter" id="galleryFilter">
+        <span class="filter-btn active" data-cat="all" onclick="filterGallery('all')">全部</span>
+      </div>
+      <div id="galleryList"><div class="loading">加载中</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  loadGallery();
+}
+
+function filterGallery(cat) {
+  document.querySelectorAll('.gallery-filter .filter-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  loadGallery(cat);
+}
+
+async function loadGallery(cat) {
+  const container = document.getElementById('galleryList');
+  const res = await API.techGetGallery();
+  if (res.code !== 200) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">加载失败</div>';
+    return;
+  }
+  const photos = res.data.list || [];
+  if (photos.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span class="icon">📷</span><div class="text">暂无完工照片</div></div>';
+    return;
+  }
+
+  // 提取分类
+  const cats = new Set();
+  photos.forEach(p => { if (p.category) cats.add(p.category); });
+  const filterEl = document.getElementById('galleryFilter');
+  let filterHtml = '<span class="filter-btn active" data-cat="all" onclick="filterGallery(\'all\')">全部</span>';
+  cats.forEach(c => {
+    filterHtml += '<span class="filter-btn" data-cat="' + c + '" onclick="filterGallery(\'' + c + '\')">' + c + '</span>';
+  });
+  filterEl.innerHTML = filterHtml;
+
+  const filtered = cat && cat !== 'all' ? photos.filter(p => p.category === cat) : photos;
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span class="icon">📷</span><div class="text">暂无匹配照片</div></div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="gallery-grid">' +
+    filtered.map(p => '<div class="gallery-item" onclick="viewImage(\'' + (p.url || p) + '\')"><img src="' + (p.url || p) + '" alt="photo"></div>').join('') +
+    '</div>';
+}
+
+function viewImage(url) {
+  if (!url) return;
+  const viewer = document.createElement('div');
+  viewer.className = 'image-viewer';
+  viewer.innerHTML = '<img src="' + url + '" alt="photo">';
+  viewer.onclick = () => viewer.remove();
+  document.body.appendChild(viewer);
+}
+
+/* ===== 收入明细 ===== */
+function showIncome() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'incomeOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">收入明细</div>
+      <div class="income-summary">
+        <div class="item"><div class="val" id="incomeToday">¥0</div><div class="lbl">今日</div></div>
+        <div class="item"><div class="val" id="incomeMonth">¥0</div><div class="lbl">本月</div></div>
+        <div class="item"><div class="val" id="incomeTotal">¥0</div><div class="lbl">累计</div></div>
+      </div>
+      <div style="margin-bottom:8px;font-size:14px;font-weight:500;">本周趋势</div>
+      <div class="chart-bar" id="incomeChart"></div>
+      <div id="incomeList" style="margin-top:12px;"><div class="loading">加载中</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  loadIncomeData();
+}
+
+async function loadIncomeData() {
+  const res = await API.techGetStatistics();
+  if (res.code !== 200) return;
+  const d = res.data;
+
+  document.getElementById('incomeToday').textContent = '¥' + (parseFloat(d.today_income) || 0).toFixed(0);
+  document.getElementById('incomeMonth').textContent = '¥' + (parseFloat(d.month_income) || 0).toFixed(0);
+  document.getElementById('incomeTotal').textContent = '¥' + (parseFloat(d.total_income) || 0).toFixed(0);
+
+  // 柱状图
+  const weekData = d.weekly_income || [];
+  const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  const maxVal = Math.max(...weekData.map(v => parseFloat(v) || 0), 1);
+  const chartEl = document.getElementById('incomeChart');
+  chartEl.innerHTML = weekData.map((v, i) => {
+    const val = parseFloat(v) || 0;
+    const height = (val / maxVal) * 80;
+    return '<div class="col"><div class="val-label">¥' + val.toFixed(0) + '</div><div class="bar" style="height:' + height + 'px"></div><div class="day-label">' + (days[i] || '') + '</div></div>';
+  }).join('');
+
+  // 明细列表
+  const list = d.income_detail || [];
+  if (list.length === 0) {
+    document.getElementById('incomeList').innerHTML = '<div style="text-align:center;padding:12px;color:#999;">暂无明细</div>';
+  } else {
+    document.getElementById('incomeList').innerHTML = list.map(item =>
+      '<div class="detail-item"><span class="left">' + (item.order_no || '') + '<br><small>' + (item.time || '') + '</small></span><span class="right">¥' + (parseFloat(item.amount) || 0).toFixed(2) + '</span></div>'
+    ).join('');
+  }
+}
+
+/* ===== 争议申诉 ===== */
+function showDisputes() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'disputeOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">争议申诉</div>
+      <div style="margin-bottom:12px;">
+        <button class="btn btn-primary btn-sm" onclick="showCreateDispute()">发起申诉</button>
+      </div>
+      <div id="disputeList"><div class="loading">加载中</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  loadDisputes();
+}
+
+async function loadDisputes() {
+  const container = document.getElementById('disputeList');
+  const res = await API.techGetDisputes();
+  if (res.code !== 200) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">加载失败</div>';
+    return;
+  }
+  const list = res.data.list || [];
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span class="icon">📋</span><div class="text">暂无申诉记录</div></div>';
+    return;
+  }
+  const statusMap = { pending: '待处理', resolved: '已解决', rejected: '已驳回' };
+  const statusClassMap = { pending: 'pending', resolved: 'resolved', rejected: 'rejected' };
+  container.innerHTML = list.map(d =>
+    '<div class="dispute-item"><div class="title">' + (d.title || '申诉') + '<span class="status ' + (statusClassMap[d.status] || '') + '">' + (statusMap[d.status] || d.status) + '</span></div><div class="desc">' + (d.reason || '') + '</div></div>'
+  ).join('');
+}
+
+let evidencePhotos = [];
+
+function showCreateDispute() {
+  evidencePhotos = [];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'createDisputeOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">发起申诉</div>
+      <div class="dispute-form">
+        <div class="form-group">
+          <label class="form-label">选择订单</label>
+          <select class="form-select" id="disputeOrder">
+            <option value="">请选择订单</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">申诉原因</label>
+          <textarea class="form-textarea" id="disputeReason" placeholder="请详细描述申诉原因"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">上传证据（选填）</label>
+          <div class="evidence-upload-area" id="evidenceArea">
+            <div class="evidence-box" onclick="uploadEvidence()"><i class="fas fa-camera"></i></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="document.getElementById('createDisputeOverlay').remove()">取消</button>
+          <button class="btn btn-primary" onclick="submitDispute()">提交申诉</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  loadDisputeOrders();
+}
+
+async function loadDisputeOrders() {
+  const select = document.getElementById('disputeOrder');
+  const res = await API.techGetOrders({ page: 1, page_size: 50 });
+  if (res.code === 200) {
+    const orders = res.data.list || [];
+    orders.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.order_no;
+      opt.textContent = (o.service_name || '订单') + ' - ' + o.order_no;
+      select.appendChild(opt);
+    });
+  }
+}
+
+function uploadEvidence() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      evidencePhotos.push(ev.target.result);
+      renderEvidence();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function renderEvidence() {
+  const area = document.getElementById('evidenceArea');
+  let html = evidencePhotos.map((url, i) =>
+    '<div class="evidence-box"><img src="' + url + '"><span class="del" onclick="removeEvidence(' + i + ')">✕</span></div>'
+  ).join('');
+  if (evidencePhotos.length < 6) {
+    html += '<div class="evidence-box" onclick="uploadEvidence()"><i class="fas fa-camera"></i></div>';
+  }
+  area.innerHTML = html;
+}
+
+function removeEvidence(idx) {
+  evidencePhotos.splice(idx, 1);
+  renderEvidence();
+}
+
+async function submitDispute() {
+  const orderNo = document.getElementById('disputeOrder').value;
+  const reason = document.getElementById('disputeReason').value.trim();
+  if (!orderNo) { Utils.toast('请选择订单'); return; }
+  if (!reason) { Utils.toast('请填写申诉原因'); return; }
+
+  const res = await API.techCreateDispute({
+    order_no: orderNo,
+    reason: reason,
+    evidence: evidencePhotos
+  });
+  if (res.code === 200) {
+    Utils.toast('申诉已提交');
+    document.getElementById('createDisputeOverlay').remove();
+    document.getElementById('disputeOverlay').remove();
+    showDisputes();
+  }
+}
+
+/* ===== 接单范围设置 ===== */
+function showRangeSetting() {
+  const currentRange = Utils.get('tech_range') || '10';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'rangeOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">接单范围设置</div>
+      <div class="range-options">
+        <div class="range-option ${currentRange === '5' ? 'active' : ''}" data-range="5" onclick="selectRange(this)">5公里</div>
+        <div class="range-option ${currentRange === '10' ? 'active' : ''}" data-range="10" onclick="selectRange(this)">10公里</div>
+        <div class="range-option ${currentRange === '0' ? 'active' : ''}" data-range="0" onclick="selectRange(this)">不限</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="document.getElementById('rangeOverlay').remove()">取消</button>
+        <button class="btn btn-primary" onclick="saveRange()">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+let selectedRange = '10';
+
+function selectRange(el) {
+  document.querySelectorAll('.range-option').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  selectedRange = el.dataset.range;
+}
+
+function saveRange() {
+  Utils.set('tech_range', selectedRange);
+  const rangeMap = { 5: '5公里', 10: '10公里', 0: '不限' };
+  document.getElementById('rangeText').textContent = rangeMap[selectedRange] || '10公里';
+  Utils.toast('接单范围已更新');
+  document.getElementById('rangeOverlay').remove();
+}
+
+/* ===== 历史公告 ===== */
+async function showAnnouncements() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'announcementOverlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">历史公告</div>
+      <div id="announcementList"><div class="loading">加载中</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const container = document.getElementById('announcementList');
+  const res = await API.getAnnouncements(1);
+  if (res.code !== 200) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">加载失败</div>';
+    return;
+  }
+  const list = res.data.list || [];
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span class="icon">📢</span><div class="text">暂无公告</div></div>';
+    return;
+  }
+  container.innerHTML = list.map(a =>
+    '<div class="announcement-item"><div class="title">' + (a.title || '') + '</div><div class="time">' + Utils.formatTime(a.created_at) + '</div></div>'
+  ).join('');
+}
+
+/* ===== 平台服务协议 ===== */
+function showAgreement() {
+  Utils.modal('平台服务协议',
+    '<div style="text-align:left;font-size:13px;color:#666;line-height:1.8;max-height:400px;overflow-y:auto;">' +
+    '<p>欢迎使用佳乐家平台服务。本协议是您与佳乐家平台之间关于使用平台服务所订立的协议。</p>' +
+    '<p><br><b>一、服务内容</b></p>' +
+    '<p>平台为师傅提供工单接单、抢单、完工结算等服务。师傅应确保具备相应的服务资质和能力。</p>' +
+    '<p><br><b>二、师傅权利与义务</b></p>' +
+    '<p>1. 师傅有权在平台规定范围内接单和提供服务。</p>' +
+    '<p>2. 师傅应按时完成服务，保证服务质量。</p>' +
+    '<p>3. 师傅不得私下联系客户绕过平台交易。</p>' +
+    '<p><br><b>三、平台抽成</b></p>' +
+    '<p>平台对每笔完工订单收取10%的服务费作为平台运营费用。</p>' +
+    '<p><br><b>四、信用管理</b></p>' +
+    '<p>平台实行信用分管理制度，信用分低于60分将暂停接单权限。</p>' +
+    '<p><br><b>五、争议处理</b></p>' +
+    '<p>如发生争议，双方可向平台申诉，平台将根据事实和规则进行裁决。</p>' +
+    '</div>',
+    null, null, '知道了');
+}
+
+/* ===== 联系客服 ===== */
+function contactService() {
+  Utils.modal('联系客服', '<div style="text-align:center;padding:16px 0;"><p style="font-size:16px;font-weight:600;margin-bottom:8px;">客服热线</p><a href="tel:400-000-0000" style="font-size:24px;color:#1677FF;font-weight:700;text-decoration:none;">400-000-0000</a><p style="font-size:13px;color:#999;margin-top:8px;">工作日 9:00-18:00</p></div>', null, null, '关闭');
+}
+
+/* ===== 夜间模式 ===== */
+function initDarkMode() {
+  const mode = Utils.get('dark_mode') || 'auto';
+  applyDarkMode(mode);
+  const modeText = { auto: '跟随系统', on: '手动开启', off: '关闭' };
+  document.getElementById('darkModeText').textContent = modeText[mode] || '跟随系统';
+}
+
+function toggleDarkMode() {
+  const current = Utils.get('dark_mode') || 'auto';
+  const modes = ['auto', 'on', 'off'];
+  const nextIdx = (modes.indexOf(current) + 1) % modes.length;
+  const next = modes[nextIdx];
+  Utils.set('dark_mode', next);
+  applyDarkMode(next);
+  const modeText = { auto: '跟随系统', on: '手动开启', off: '关闭' };
+  document.getElementById('darkModeText').textContent = modeText[next] || '跟随系统';
+  Utils.toast('夜间模式已切换为' + (modeText[next] || next));
+}
+
+function applyDarkMode(mode) {
+  document.body.classList.remove('dark-mode', 'dark-mode-auto');
+  if (mode === 'on') {
+    document.body.classList.add('dark-mode');
+  } else if (mode === 'auto') {
+    document.body.classList.add('dark-mode-auto');
+  }
+}
+
+/* ===== 路由跳转 ===== */
+function goTo(url) {
+  window.location.href = url;
+}
+</script>
+</body>
+</html>

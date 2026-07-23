@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仪表盘 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .quick-actions .btn { flex: 1; min-width: 120px; height: 44px; font-size: 14px; }
+    .chart-wrap { background: #fff; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .chart-wrap .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+    #trendChart { height: 280px; }
+    .realtime-indicator { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: #FFF2F0; border-radius: 20px; color: var(--danger); font-size: 12px; font-weight: 500; animation: pulse 2s infinite; }
+    .realtime-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,77,79,0.4); } 50% { box-shadow: 0 0 0 6px rgba(255,77,79,0); } }
+    .order-alert { background: #FFF2F0; border: 1px solid #FFCCC7; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .order-alert .alert-left { display: flex; align-items: center; gap: 8px; color: var(--danger); font-weight: 500; }
+    .order-alert .alert-count { font-size: 20px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <h2 style="font-size:18px;font-weight:600;">仪表盘</h2>
+          <span class="realtime-indicator" id="realtimeBadge" style="display:none;">
+            <span class="dot"></span> 新订单
+          </span>
+        </div>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <span id="currentTime" style="font-size:13px;color:var(--text-light);"></span>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 统计卡片 -->
+        <div class="admin-stats" id="statsCards">
+          <div class="stat-card primary"><div class="label">总订单</div><div class="value" id="statTotalOrders">-</div><div class="trend" id="trendTotalOrders"></div></div>
+          <div class="stat-card warning"><div class="label">今日订单</div><div class="value" id="statTodayOrders">-</div><div class="trend" id="trendTodayOrders"></div></div>
+          <div class="stat-card primary"><div class="label">今日抽成</div><div class="value" id="statTodayCommission">-</div><div class="trend" id="trendTodayCommission"></div></div>
+          <div class="stat-card primary"><div class="label">在线师傅</div><div class="value" id="statOnlineTechs">-</div><div class="trend" id="trendOnlineTechs"></div></div>
+        </div>
+        <!-- 超期预警 -->
+        <div class="order-alert" id="overdueAlert" style="display:none;">
+          <div class="alert-left"><i class="fas fa-exclamation-triangle"></i> 超期预警</div>
+          <div><span class="alert-count" id="overdueCount">0</span> 笔订单超期未完结</div>
+        </div>
+        <!-- 快捷操作 -->
+        <div class="quick-actions">
+          <button class="btn btn-primary" onclick="Utils.go('announcements.html')"><i class="fas fa-bullhorn"></i> 发布公告</button>
+          <button class="btn btn-success" onclick="Utils.go('technicians.html')"><i class="fas fa-user-plus"></i> 添加师傅</button>
+          <button class="btn btn-warning" onclick="exportReport()"><i class="fas fa-file-export"></i> 导出报表</button>
+        </div>
+        <!-- 图表+最新订单 -->
+        <div class="dashboard-grid">
+          <div class="chart-wrap">
+            <div class="chart-title">近7天订单趋势</div>
+            <div id="trendChart"></div>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">最新订单 <span style="font-size:12px;color:var(--text-light);font-weight:400;">最近10笔</span></div>
+            <div class="table-wrap" style="max-height:320px;overflow-y:auto;">
+              <table id="latestOrdersTable">
+                <thead><tr><th>订单号</th><th>服务</th><th>金额</th><th>状态</th></tr></thead>
+                <tbody id="latestOrdersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 登录验证
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('dashboard');
+      const userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      // 时钟
+      function updateTime() {
+        document.getElementById('currentTime').textContent = Utils.formatTime(new Date());
+      }
+      updateTime();
+      setInterval(updateTime, 10000);
+      // 加载数据
+      loadDashboard();
+      // 每30秒轮询
+      setInterval(loadDashboard, 30000);
+    });
+
+    function loadDashboard() {
+      API.adminGetDashboard().then(function(res) {
+        if (res.code === 200 && res.data) {
+          renderStats(res.data);
+          renderTrendChart(res.data.trend || []);
+          renderLatestOrders(res.data.latestOrders || []);
+          checkOverdue(res.data);
+          checkNewOrders(res.data);
+        }
+      });
+    }
+
+    function renderStats(data) {
+      document.getElementById('statTotalOrders').textContent = data.totalOrders || 0;
+      document.getElementById('statTodayOrders').textContent = data.todayOrders || 0;
+      document.getElementById('statTodayCommission').textContent = Utils.formatMoney(data.todayCommission || 0);
+      document.getElementById('statOnlineTechs').textContent = data.onlineTechs || 0;
+      // 趋势
+      renderTrend('trendTotalOrders', data.totalOrdersTrend);
+      renderTrend('trendTodayOrders', data.todayOrdersTrend);
+      renderTrend('trendTodayCommission', data.todayCommissionTrend);
+      renderTrend('trendOnlineTechs', data.onlineTechsTrend);
+    }
+
+    function renderTrend(elId, trend) {
+      const el = document.getElementById(elId);
+      if (!trend) return;
+      const isUp = trend.rate >= 0;
+      el.innerHTML = '<span class="' + (isUp ? 'up' : 'down') + '"><i class="fas fa-' + (isUp ? 'arrow-up' : 'arrow-down') + '"></i> ' + Math.abs(trend.rate).toFixed(1) + '% 同比' + (trend.type === 'week' ? '上周' : '昨日') + '</span>';
+    }
+
+    function renderTrendChart(trendData) {
+      const chartDom = document.getElementById('trendChart');
+      const myChart = echarts.init(chartDom);
+      const option = {
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: trendData.map(function(d) { return d.date; }), axisLabel: { fontSize: 11 } },
+        yAxis: { type: 'value', minInterval: 1 },
+        series: [{
+          type: 'line', smooth: true, data: trendData.map(function(d) { return d.count; }),
+          lineStyle: { color: '#1677FF', width: 2 },
+          areaStyle: { color: 'rgba(22,119,255,0.1)' },
+          itemStyle: { color: '#1677FF' },
+          symbol: 'circle', symbolSize: 6
+        }]
+      };
+      myChart.setOption(option);
+      window.addEventListener('resize', function() { myChart.resize(); });
+    }
+
+    function renderLatestOrders(orders) {
+      const tbody = document.getElementById('latestOrdersBody');
+      if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:30px;">暂无订单数据</td></tr>';
+        return;
+      }
+      tbody.innerHTML = orders.map(function(o) {
+        return '<tr><td style="font-size:12px;font-family:monospace;">' + (o.order_no || o.id) + '</td><td>' + (o.service_name || '-') + '</td><td>' + Utils.formatMoney(o.amount) + '</td><td><span class="tag ' + Utils.getStatusClass(o.status) + '">' + Utils.getStatusText(o.status) + '</span></td></tr>';
+      }).join('');
+    }
+
+    function checkOverdue(data) {
+      if (data.overdueCount > 0) {
+        document.getElementById('overdueAlert').style.display = 'flex';
+        document.getElementById('overdueCount').textContent = data.overdueCount;
+      } else {
+        document.getElementById('overdueAlert').style.display = 'none';
+      }
+    }
+
+    let prevOrderCount = 0;
+    function checkNewOrders(data) {
+      const badge = document.getElementById('realtimeBadge');
+      if (prevOrderCount > 0 && data.totalOrders > prevOrderCount) {
+        badge.style.display = 'inline-flex';
+        // 播放提示音
+        try {
+          var ctx = new (window.AudioContext || window.webkitAudioContext)();
+          var osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = 800;
+          var gain = ctx.createGain();
+          gain.gain.value = 0.3;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          setTimeout(function() { osc.stop(); }, 200);
+        } catch(e) {}
+        setTimeout(function() { badge.style.display = 'none'; }, 5000);
+      }
+      prevOrderCount = data.totalOrders || 0;
+    }
+
+    function exportReport() {
+      Utils.toast('正在导出报表，请稍候...');
+      // 模拟导出
+      setTimeout(function() {
+        Utils.success('报表导出成功');
+      }, 1500);
+    }
+
+    function renderSidebar(current) {
+      var menuItems = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      menuItems.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

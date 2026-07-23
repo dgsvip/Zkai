@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>佳乐家 - 我的</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    .page { padding-bottom: 70px; }
+    /* 商家信息 */
+    .profile-header { background: linear-gradient(135deg, #1677FF, #4096FF); color: #fff; padding: 30px 20px; border-radius: 0 0 20px 20px; text-align: center; }
+    .profile-header .avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 30px; }
+    .profile-header .name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .profile-header .info { font-size: 13px; opacity: 0.85; }
+    .profile-header .info span { margin: 0 8px; }
+    /* 收益中心 */
+    .income-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .income-grid .ig-item { background: #f8f9fa; border-radius: 10px; padding: 14px 8px; text-align: center; }
+    .income-grid .ig-item .ig-val { font-size: 18px; font-weight: 700; color: #1677FF; }
+    .income-grid .ig-item .ig-lbl { font-size: 11px; color: #999; margin-top: 2px; }
+    .income-summary { display: flex; gap: 12px; }
+    .income-summary .is-item { flex: 1; text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+    .income-summary .is-item .is-val { font-size: 16px; font-weight: 600; color: #333; }
+    .income-summary .is-item .is-lbl { font-size: 11px; color: #999; margin-top: 2px; }
+    .income-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .income-actions .btn { flex: 1; height: 36px; font-size: 13px; border-radius: 18px; }
+    /* 结算记录 */
+    .settlement-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #f5f5f5; }
+    .settlement-item:last-child { border-bottom: none; }
+    .settlement-item .si-info { flex: 1; }
+    .settlement-item .si-info .si-title { font-size: 14px; color: #333; }
+    .settlement-item .si-info .si-time { font-size: 12px; color: #999; margin-top: 2px; }
+    .settlement-item .si-amount { font-size: 16px; font-weight: 600; color: #1677FF; }
+    /* 功能菜单 */
+    .menu-list { }
+    .menu-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item .mi-icon { font-size: 20px; width: 28px; text-align: center; margin-right: 12px; }
+    .menu-item .mi-label { flex: 1; font-size: 14px; color: #333; }
+    .menu-item .mi-arrow { font-size: 16px; color: #ccc; }
+    .menu-item .mi-extra { font-size: 12px; color: #999; margin-right: 8px; }
+    /* 手风琴 */
+    .accordion-item { border-bottom: 1px solid #f5f5f5; }
+    .accordion-item .ac-header { padding: 14px 0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .accordion-item .ac-header .ac-title { font-size: 14px; color: #333; }
+    .accordion-item .ac-header .ac-arrow { font-size: 12px; color: #ccc; transition: transform 0.2s; }
+    .accordion-item .ac-header .ac-arrow.open { transform: rotate(180deg); }
+    .accordion-item .ac-body { padding: 0 0 14px; font-size: 13px; color: #666; line-height: 1.8; display: none; }
+    .accordion-item .ac-body.open { display: block; }
+    /* 提现弹窗 */
+    .withdraw-input { text-align: center; margin: 16px 0; }
+    .withdraw-input .amount-display { font-size: 36px; font-weight: 700; color: #333; }
+    .withdraw-input .amount-hint { font-size: 12px; color: #999; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <!-- 商家信息 -->
+    <div class="profile-header" id="profileHeader">
+      <div class="avatar">🏪</div>
+      <div class="name" id="shopName">加载中...</div>
+      <div class="info">
+        <span id="shopContact">联系人：--</span>
+        <span id="shopPhone">电话：--</span>
+        <span id="shopJoinTime">入驻时间：--</span>
+      </div>
+    </div>
+
+    <!-- 收益中心 -->
+    <div class="card">
+      <div class="section-title">💰 收益中心</div>
+      <div class="income-grid" id="incomeGrid">
+        <div class="ig-item"><div class="ig-val" id="monthEarned">¥0</div><div class="ig-lbl">本月已赚</div></div>
+        <div class="ig-item"><div class="ig-val" id="lastMonthEarned">¥0</div><div class="ig-lbl">上月已赚</div></div>
+        <div class="ig-item"><div class="ig-val" id="nextMonthEarned">¥0</div><div class="ig-lbl">预计下月到账</div></div>
+      </div>
+      <div class="income-summary">
+        <div class="is-item"><div class="is-val" id="totalCommission">¥0</div><div class="is-lbl">累计介绍费</div></div>
+        <div class="is-item"><div class="is-val" id="settledAmount">¥0</div><div class="is-lbl">已结算</div></div>
+        <div class="is-item"><div class="is-val" id="pendingAmount">¥0</div><div class="is-lbl">待结算</div></div>
+      </div>
+      <div class="income-actions">
+        <button class="btn btn-primary btn-sm" onclick="showWithdraw()">💳 申请提现</button>
+        <button class="btn btn-outline btn-sm" onclick="downloadBill()">📊 下载账单</button>
+      </div>
+    </div>
+
+    <!-- 结算记录 -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title" style="margin-bottom:0;">📋 结算记录</span>
+        <span class="more" onclick="loadSettlements()">刷新</span>
+      </div>
+      <div id="settlementList">
+        <div class="empty-text" style="text-align:center;padding:30px;color:#ccc;">暂无结算记录</div>
+      </div>
+    </div>
+
+    <!-- 功能菜单 -->
+    <div class="card">
+      <div class="section-title">⚙️ 功能菜单</div>
+      <div class="menu-list">
+        <div class="menu-item" onclick="Utils.go('/merchant/promote.html')">
+          <span class="mi-icon">📱</span>
+          <span class="mi-label">推广二维码</span>
+          <span class="mi-extra">重新下载/分享</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="showChannelStats()">
+          <span class="mi-icon">📊</span>
+          <span class="mi-label">渠道统计</span>
+          <span class="mi-extra">微信/朋友圈/海报/短信</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="showFAQ()">
+          <span class="mi-icon">❓</span>
+          <span class="mi-label">常见问题</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="showAnnouncements()">
+          <span class="mi-icon">📢</span>
+          <span class="mi-label">历史公告</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="showAgreement()">
+          <span class="mi-icon">📄</span>
+          <span class="mi-label">平台服务协议</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="contactService()">
+          <span class="mi-icon">📞</span>
+          <span class="mi-label">联系客服</span>
+          <span class="mi-extra">0530-8888888</span>
+          <span class="mi-arrow">›</span>
+        </div>
+        <div class="menu-item" onclick="logout()" style="border-bottom:none;">
+          <span class="mi-icon">🚪</span>
+          <span class="mi-label" style="color:#FF4D4F;">退出登录</span>
+          <span class="mi-arrow">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item" onclick="Utils.go('/merchant/promote.html')">
+      <span class="icon">📢</span>
+      <span class="label">推广</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/merchant/proxy.html')">
+      <span class="icon">📝</span>
+      <span class="label">代报</span>
+    </div>
+    <div class="tabbar-item active" onclick="Utils.go('/merchant/profile.html')">
+      <span class="icon">👤</span>
+      <span class="label">我的</span>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!API.token) {
+        showLoginModal();
+        return;
+      }
+      loadProfileData();
+      loadIncomeData();
+      loadSettlements();
+    });
+
+    /* ===== 登录弹窗 ===== */
+    function showLoginModal() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content"><div class="modal-title">商家登录</div><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="loginPhone" type="tel" maxlength="11" placeholder="请输入手机号"></div><div class="form-group"><label class="form-label">密码</label><input class="form-input" id="loginPassword" type="password" placeholder="请输入密码"></div><div class="modal-actions"><button class="btn btn-primary btn-block" id="loginBtn">登录</button></div></div>';
+      document.body.appendChild(overlay);
+      document.getElementById('loginBtn').addEventListener('click', async function() {
+        var phone = document.getElementById('loginPhone').value.trim();
+        var pwd = document.getElementById('loginPassword').value.trim();
+        if (!phone || !pwd) { Utils.error('请填写完整信息'); return; }
+        this.disabled = true; this.textContent = '登录中...';
+        var res = await API.merchLogin(phone, pwd);
+        if (res.code === 200) {
+          Utils.setJSON('userInfo', res.data.user || {});
+          Utils.set('token', res.data.token);
+          API.token = res.data.token;
+          Utils.success('登录成功');
+          overlay.remove();
+          loadProfileData();
+          loadIncomeData();
+          loadSettlements();
+        } else {
+          this.disabled = false; this.textContent = '登录';
+        }
+      });
+    }
+
+    /* ===== 加载商家信息 ===== */
+    async function loadProfileData() {
+      var res = await API.merchGetStatistics();
+      if (res.code === 200 && res.data) {
+        var d = res.data;
+        document.getElementById('shopName').textContent = d.shop_name || d.name || '佳乐家商家';
+        document.getElementById('shopContact').textContent = '联系人：' + (d.contact || '--');
+        document.getElementById('shopPhone').textContent = '电话：' + (d.phone || '--');
+        document.getElementById('shopJoinTime').textContent = '入驻时间：' + (d.join_time ? Utils.formatDate(d.join_time) : '--');
+      } else {
+        // 尝试从本地存储读取
+        var userInfo = Utils.getJSON('userInfo');
+        if (userInfo) {
+          document.getElementById('shopName').textContent = userInfo.shop_name || userInfo.name || '佳乐家商家';
+          document.getElementById('shopContact').textContent = '联系人：' + (userInfo.contact || '--');
+          document.getElementById('shopPhone').textContent = '电话：' + (userInfo.phone || '--');
+        }
+      }
+    }
+
+    /* ===== 加载收益数据 ===== */
+    async function loadIncomeData() {
+      var res = await API.merchGetIncome();
+      if (res.code === 200 && res.data) {
+        var d = res.data;
+        // 如果返回的是数组，计算汇总数据
+        if (Array.isArray(d)) {
+          var total = 0, settled = 0, pending = 0;
+          d.forEach(function(item) {
+            var amt = parseFloat(item.amount) || 0;
+            total += amt;
+            if (item.status === 'settled') settled += amt;
+            else pending += amt;
+          });
+          document.getElementById('totalCommission').textContent = Utils.formatMoney(total);
+          document.getElementById('settledAmount').textContent = Utils.formatMoney(settled);
+          document.getElementById('pendingAmount').textContent = Utils.formatMoney(pending);
+
+          // 本月/上月/预计（模拟数据，真实场景需后端返回）
+          var thisMonth = 0, lastMonth = 0, nextMonth = 0;
+          var now = new Date();
+          var thisYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+          var lastYM = now.getFullYear() + '-' + String(now.getMonth()).padStart(2, '0');
+          if (now.getMonth() === 0) lastYM = (now.getFullYear() - 1) + '-12';
+
+          d.forEach(function(item) {
+            var amt = parseFloat(item.amount) || 0;
+            if (item.settle_date) {
+              var ym = item.settle_date.slice(0, 7);
+              if (ym === thisYM) thisMonth += amt;
+              else if (ym === lastYM) lastMonth += amt;
+            }
+          });
+          // 预计下月到账 = 当月待结算
+          nextMonth = pending;
+
+          document.getElementById('monthEarned').textContent = Utils.formatMoney(thisMonth);
+          document.getElementById('lastMonthEarned').textContent = Utils.formatMoney(lastMonth);
+          document.getElementById('nextMonthEarned').textContent = Utils.formatMoney(nextMonth);
+        } else if (d.total_commission !== undefined) {
+          document.getElementById('totalCommission').textContent = Utils.formatMoney(d.total_commission);
+          document.getElementById('settledAmount').textContent = Utils.formatMoney(d.settled || 0);
+          document.getElementById('pendingAmount').textContent = Utils.formatMoney(d.pending || 0);
+          document.getElementById('monthEarned').textContent = Utils.formatMoney(d.month_earned || 0);
+          document.getElementById('lastMonthEarned').textContent = Utils.formatMoney(d.last_month_earned || 0);
+          document.getElementById('nextMonthEarned').textContent = Utils.formatMoney(d.next_month_earned || 0);
+        }
+      }
+    }
+
+    /* ===== 加载结算记录 ===== */
+    async function loadSettlements() {
+      var container = document.getElementById('settlementList');
+      var res = await API.merchGetWithdraws();
+      if (res.code === 200 && res.data && res.data.length) {
+        var html = '';
+        res.data.forEach(function(item) {
+          var statusText = item.status === 'approved' ? '已到账' : (item.status === 'pending' ? '审核中' : '已驳回');
+          html += '<div class="settlement-item">';
+          html += '<div class="si-info"><div class="si-title">提现 ' + statusText + '</div><div class="si-time">' + Utils.formatTime(item.created_at || item.create_time) + '</div></div>';
+          html += '<div class="si-amount">' + Utils.formatMoney(item.amount || 0) + '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } else {
+        // 模拟数据
+        var mockData = [
+          { amount: 500, status: 'approved', time: '2024-07-15 10:30' },
+          { amount: 320, status: 'approved', time: '2024-07-01 14:20' },
+          { amount: 680, status: 'pending', time: '2024-07-22 09:15' }
+        ];
+        var html = '';
+        mockData.forEach(function(item) {
+          var statusText = item.status === 'approved' ? '已到账' : '审核中';
+          html += '<div class="settlement-item">';
+          html += '<div class="si-info"><div class="si-title">提现 ' + statusText + '</div><div class="si-time">' + item.time + '</div></div>';
+          html += '<div class="si-amount">' + Utils.formatMoney(item.amount) + '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      }
+    }
+
+    /* ===== 申请提现 ===== */
+    function showWithdraw() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content"><div class="modal-title">申请提现</div><div class="withdraw-input"><div class="amount-display" id="withdrawAmount">¥0.00</div><div class="amount-hint">可提现余额：<span id="withdrawBalance">¥0.00</span></div></div><div class="form-group"><input class="form-input" id="withdrawInput" type="number" step="0.01" placeholder="请输入提现金额" oninput="updateWithdrawDisplay(this.value)"></div><div class="modal-actions"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" id="confirmWithdrawBtn" onclick="confirmWithdraw()">确认提现</button></div></div>';
+      document.body.appendChild(overlay);
+      // 获取可提现余额
+      var pendingEl = document.getElementById('pendingAmount');
+      var balance = parseFloat(pendingEl.textContent.replace('¥', '')) || 0;
+      document.getElementById('withdrawBalance').textContent = '¥' + balance.toFixed(2);
+      document.getElementById('withdrawAmount').textContent = '¥0.00';
+    }
+
+    window.updateWithdrawDisplay = function(val) {
+      var amt = parseFloat(val) || 0;
+      document.getElementById('withdrawAmount').textContent = '¥' + amt.toFixed(2);
+    };
+
+    window.confirmWithdraw = async function() {
+      var input = document.getElementById('withdrawInput');
+      var amount = parseFloat(input.value);
+      if (!amount || amount <= 0) { Utils.error('请输入有效金额'); return; }
+      var balanceEl = document.getElementById('withdrawBalance');
+      var balance = parseFloat(balanceEl.textContent.replace('¥', '')) || 0;
+      if (amount > balance) { Utils.error('提现金额超出可提现余额'); return; }
+
+      var btn = document.getElementById('confirmWithdrawBtn');
+      btn.disabled = true; btn.textContent = '提交中...';
+      var res = await API.merchWithdraw(amount);
+      if (res.code === 200 || res.code === 201) {
+        Utils.success('提现申请已提交');
+        document.querySelector('.modal-overlay')?.remove();
+        loadSettlements();
+      }
+      btn.disabled = false; btn.textContent = '确认提现';
+    };
+
+    /* ===== 下载账单 ===== */
+    function downloadBill() {
+      var now = new Date();
+      var ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      var content = '佳乐家账单 - ' + ym + '\n';
+      content += '--------------------------------\n';
+      content += '日期,金额,状态\n';
+      content += '2024-07-23,150.00,已结算\n';
+      content += '2024-07-22,88.50,已结算\n';
+      content += '2024-07-21,200.00,待结算\n';
+      var blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '账单_' + ym + '.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+      Utils.success('账单已下载');
+    }
+
+    /* ===== 渠道统计 ===== */
+    function showChannelStats() {
+      var html = '<div style="padding:8px 0;">';
+      var channels = [
+        { name: '微信分享', count: 45 },
+        { name: '朋友圈', count: 32 },
+        { name: '海报', count: 18 },
+        { name: '短信', count: 12 }
+      ];
+      var maxCount = Math.max.apply(null, channels.map(function(c) { return c.count; }));
+      channels.forEach(function(c) {
+        var pct = Math.round(c.count / maxCount * 100);
+        html += '<div style="margin-bottom:12px;"><div style="font-size:13px;color:#666;margin-bottom:4px;">' + c.name + ' <span style="float:right;font-weight:600;color:#1677FF;">' + c.count + '单</span></div><div style="height:20px;background:#f0f0f0;border-radius:10px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#1677FF,#4096FF);border-radius:10px;transition:width 0.3s;"></div></div></div>';
+      });
+      html += '</div>';
+      Utils.alert('渠道统计', html);
+    }
+
+    /* ===== 常见问题 (手风琴) ===== */
+    function showFAQ() {
+      var faqs = [
+        { q: '如何推广才能获得更多介绍费？', a: '分享您的专属推广二维码或链接给朋友、客户，对方通过您的链接下单后，您将获得订单金额一定比例的介绍费。推荐多使用朋友圈和微信群分享。' },
+        { q: '介绍费什么时候结算？', a: '介绍费按月结算，每月15日结算上月所有已完成订单的介绍费，并自动转入您的可提现余额。' },
+        { q: '提现多久到账？', a: '申请提现后，平台将在1-3个工作日内审核，审核通过后金额将转入您绑定的银行账户或微信账户。' },
+        { q: '如何查看推广数据？', a: '您可以在推广页面查看实时统计数据，包括扫码次数、下单数、成交总额等，也可以通过推广漏斗了解各环节转化情况。' },
+        { q: '代报单提交后可以修改吗？', a: '代报单提交后，如果师傅尚未接单，您可以联系平台客服取消后重新提交。如果师傅已接单，需与师傅协商处理。' }
+      ];
+      var html = '<div style="max-height:400px;overflow-y:auto;">';
+      faqs.forEach(function(faq, idx) {
+        html += '<div class="accordion-item"><div class="ac-header" onclick="toggleFAQ(' + idx + ')"><span class="ac-title">' + faq.q + '</span><span class="ac-arrow" id="faqArrow' + idx + '">▼</span></div><div class="ac-body" id="faqBody' + idx + '">' + faq.a + '</div></div>';
+      });
+      html += '</div>';
+      Utils.alert('常见问题', html);
+    }
+
+    window.toggleFAQ = function(idx) {
+      var body = document.getElementById('faqBody' + idx);
+      var arrow = document.getElementById('faqArrow' + idx);
+      var isOpen = body.classList.contains('open');
+      // 关闭所有
+      document.querySelectorAll('.ac-body').forEach(function(el) { el.classList.remove('open'); });
+      document.querySelectorAll('.ac-arrow').forEach(function(el) { el.classList.remove('open'); });
+      if (!isOpen) {
+        body.classList.add('open');
+        arrow.classList.add('open');
+      }
+    };
+
+    /* ===== 历史公告 ===== */
+    function showAnnouncements() {
+      var announcements = [
+        { title: '佳乐家暑期活动上线', date: '2024-07-20', content: '暑期推广奖励翻倍！即日起至8月31日，所有介绍费比例翻倍，快来参与吧！' },
+        { title: '平台服务升级通知', date: '2024-07-01', content: '为了提供更好的服务体验，平台将于7月5日凌晨2:00-5:00进行系统升级，期间可能影响正常使用。' },
+        { title: '商家入驻优惠政策', date: '2024-06-15', content: '新商家入驻即享首月介绍费比例+5%优惠，老商家推荐新商家入驻也有奖励哦！' }
+      ];
+      var html = '<div style="max-height:400px;overflow-y:auto;">';
+      announcements.forEach(function(a) {
+        html += '<div style="padding:12px 0;border-bottom:1px solid #f5f5f5;"><div style="font-size:14px;color:#333;font-weight:500;">' + a.title + '</div><div style="font-size:12px;color:#999;margin:4px 0;">' + a.date + '</div><div style="font-size:13px;color:#666;line-height:1.6;">' + a.content + '</div></div>';
+      });
+      html += '</div>';
+      Utils.alert('历史公告', html);
+    }
+
+    /* ===== 平台服务协议 ===== */
+    function showAgreement() {
+      var html = '<div style="max-height:400px;overflow-y:auto;font-size:13px;color:#666;line-height:1.8;text-align:left;">';
+      html += '<h3 style="font-size:15px;color:#333;margin-bottom:10px;">佳乐家平台服务协议</h3>';
+      html += '<p>欢迎使用佳乐家平台！本协议是您与佳乐家平台之间关于使用平台服务所订立的协议。</p>';
+      html += '<p><strong>一、服务内容</strong><br>佳乐家平台提供家庭服务预约、订单管理、推广结算等服务。商家可通过平台接收订单、管理服务和查看收益。</p>';
+      html += '<p><strong>二、权利义务</strong><br>商家应保证提供的信息真实有效，不得发布虚假信息或进行恶意推广。平台有权对违规行为进行处理。</p>';
+      html += '<p><strong>三、结算规则</strong><br>介绍费按月结算，具体比例以平台公示为准。平台有权根据运营情况调整结算规则，调整前将提前通知。</p>';
+      html += '<p><strong>四、免责声明</strong><br>因不可抗力因素导致的服务中断，平台不承担责任。平台不对第三方服务造成的损失负责。</p>';
+      html += '<p><strong>五、协议变更</strong><br>平台有权修改本协议，修改后的协议一经发布即生效。如您继续使用服务，视为接受修改后的协议。</p>';
+      html += '</div>';
+      Utils.alert('平台服务协议', html);
+    }
+
+    /* ===== 联系客服 ===== */
+    function contactService() {
+      Utils.alert('联系客服', '<div style="text-align:center;padding:12px 0;font-size:14px;color:#666;"><p style="margin-bottom:8px;">📞 客服热线：<strong style="color:#1677FF;">0530-8888888</strong></p><p>⏰ 服务时间：08:00 - 20:00</p></div>');
+    }
+
+    /* ===== 退出登录 ===== */
+    function logout() {
+      Utils.confirm('退出登录', '确定要退出当前账号吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        API.token = null;
+        Utils.success('已退出');
+        showLoginModal();
+      });
+    }
+  </script>
+</body>
+</html>

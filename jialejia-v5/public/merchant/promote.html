@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>佳乐家 - 推广中心</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    .page { padding-bottom: 70px; }
+    /* 商家信息卡片 */
+    .merchant-header { background: linear-gradient(135deg, #1677FF, #4096FF); color: #fff; padding: 24px 20px 30px; border-radius: 0 0 20px 20px; }
+    .merchant-header .name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .merchant-header .info { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+    .merchant-header .info span { margin-right: 16px; }
+    /* 统计卡片 */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: -16px 16px 16px; }
+    .stats-grid .stat-item { background: #fff; border-radius: 12px; padding: 14px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .stats-grid .stat-item .val { font-size: 18px; font-weight: 700; color: #1677FF; }
+    .stats-grid .stat-item .lbl { font-size: 11px; color: #999; margin-top: 2px; }
+    /* 奖励规则 */
+    .reward-rules { background: linear-gradient(135deg, #FFF7E6, #FFFBEB); border: 1px solid #FFE7BA; border-radius: 12px; padding: 16px; margin: 0 16px 16px; }
+    .reward-rules .rule-title { font-size: 15px; font-weight: 600; color: #D48806; margin-bottom: 8px; }
+    .reward-rules .rule-item { font-size: 13px; color: #8C6E1A; padding: 4px 0; display: flex; justify-content: space-between; }
+    /* 推广二维码 */
+    .qr-section { margin: 0 16px 16px; }
+    .qr-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .qr-tab { flex: 1; text-align: center; padding: 10px 0; border-radius: 8px; font-size: 13px; background: #f5f5f5; color: #666; cursor: pointer; transition: all 0.2s; }
+    .qr-tab.active { background: #1677FF; color: #fff; }
+    .qr-box { background: #fff; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .qr-placeholder { width: 160px; height: 160px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 12px; color: #bbb; }
+    .qr-box .qr-label { font-size: 14px; color: #333; font-weight: 500; margin-bottom: 4px; }
+    .qr-box .qr-count { font-size: 12px; color: #999; margin-bottom: 12px; }
+    .qr-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .qr-actions .btn { height: 36px; font-size: 13px; border-radius: 18px; padding: 0 18px; }
+    .share-panel { margin-top: 12px; }
+    .share-panel .share-title { font-size: 13px; color: #666; margin-bottom: 8px; }
+    .share-btns { display: flex; gap: 12px; }
+    .share-btns .share-btn { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: #f5f5f5; cursor: pointer; }
+    .share-btns .share-btn:active { background: #e8e8e8; }
+    .share-btns .share-btn .s-icon { font-size: 24px; display: block; }
+    .share-btns .share-btn .s-label { font-size: 11px; color: #666; margin-top: 4px; display: block; }
+    /* 推广漏斗 */
+    .funnel { margin: 0 16px 16px; }
+    .funnel-item { display: flex; align-items: center; margin-bottom: 8px; }
+    .funnel-item .f-label { width: 60px; font-size: 13px; color: #666; flex-shrink: 0; }
+    .funnel-item .f-bar-wrap { flex: 1; height: 28px; background: #f0f0f0; border-radius: 14px; overflow: hidden; position: relative; }
+    .funnel-item .f-bar { height: 100%; border-radius: 14px; background: linear-gradient(90deg, #1677FF, #4096FF); transition: width 0.5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; color: #fff; min-width: 40px; }
+    .funnel-item .f-val { width: 50px; text-align: right; font-size: 13px; color: #333; font-weight: 500; flex-shrink: 0; }
+    /* 排行榜 */
+    .rank-list .rank-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+    .rank-list .rank-item:last-child { border-bottom: none; }
+    .rank-list .rank-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: #f0f0f0; color: #999; flex-shrink: 0; }
+    .rank-list .rank-num.top1 { background: #FFD700; color: #fff; }
+    .rank-list .rank-num.top2 { background: #C0C0C0; color: #fff; }
+    .rank-list .rank-num.top3 { background: #CD7F32; color: #fff; }
+    .rank-list .rank-name { flex: 1; margin-left: 12px; font-size: 14px; color: #333; }
+    .rank-list .rank-score { font-size: 14px; color: #1677FF; font-weight: 600; }
+    /* 介绍费明细 */
+    .commission-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #f5f5f5; }
+    .commission-item:last-child { border-bottom: none; }
+    .commission-item .ci-info { flex: 1; }
+    .commission-item .ci-info .ci-order { font-size: 12px; color: #999; }
+    .commission-item .ci-info .ci-service { font-size: 14px; color: #333; margin-top: 2px; }
+    .commission-item .ci-right { text-align: right; }
+    .commission-item .ci-right .ci-amount { font-size: 16px; font-weight: 600; color: #1677FF; }
+    .commission-item .ci-right .ci-status { font-size: 12px; margin-top: 2px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section-header .more { font-size: 13px; color: #999; cursor: pointer; }
+    .empty-text { text-align: center; padding: 30px; color: #ccc; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <!-- 商家信息 -->
+    <div class="merchant-header" id="merchantHeader">
+      <div class="name" id="shopName">加载中...</div>
+      <div class="info">
+        <span id="shopContact">联系人：--</span>
+        <span id="shopPhone">电话：--</span>
+      </div>
+    </div>
+
+    <!-- 关键统计 -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-item"><div class="val" id="totalScan">0</div><div class="lbl">总扫码</div></div>
+      <div class="stat-item"><div class="val" id="todayScan">0</div><div class="lbl">今日扫码</div></div>
+      <div class="stat-item"><div class="val" id="orderCount">0</div><div class="lbl">带来订单</div></div>
+      <div class="stat-item"><div class="val" id="totalAmount">¥0</div><div class="lbl">成交总额</div></div>
+    </div>
+
+    <!-- 奖励规则 -->
+    <div class="card">
+      <div class="section-title">💰 奖励规则</div>
+      <div class="reward-rules" id="rewardRules">
+        <div class="rule-item"><span>介绍费比例</span><span id="commissionRate">--</span></div>
+        <div class="rule-item"><span>月订单≥10单</span><span>比例 +2%</span></div>
+        <div class="rule-item"><span>月订单≥30单</span><span>比例 +5%</span></div>
+        <div class="rule-item"><span>结算周期</span><span>次月15日</span></div>
+      </div>
+    </div>
+
+    <!-- 推广二维码 -->
+    <div class="card">
+      <div class="section-title">📱 推广二维码</div>
+      <div class="qr-section">
+        <div class="qr-tabs" id="qrTabs">
+          <div class="qr-tab active" data-scene="stick">门店贴纸版</div>
+          <div class="qr-tab" data-scene="moments">朋友圈版</div>
+          <div class="qr-tab" data-scene="poster">海报版</div>
+        </div>
+        <div class="qr-box">
+          <div class="qr-placeholder" id="qrPlaceholder">二维码区域</div>
+          <div class="qr-label" id="qrLabel">门店贴纸版</div>
+          <div class="qr-count" id="qrCount">已扫码 0 次</div>
+          <div class="qr-actions">
+            <button class="btn btn-outline btn-sm" onclick="copyLink()">📋 复制链接</button>
+            <button class="btn btn-primary btn-sm" onclick="downloadQR()">⬇ 下载二维码</button>
+          </div>
+          <div class="share-panel">
+            <div class="share-title">一键分享</div>
+            <div class="share-btns">
+              <div class="share-btn" onclick="shareTo('wechat')"><span class="s-icon">💬</span><span class="s-label">微信</span></div>
+              <div class="share-btn" onclick="shareTo('moments')"><span class="s-icon">🔄</span><span class="s-label">朋友圈</span></div>
+              <div class="share-btn" onclick="shareTo('download')"><span class="s-icon">🖼️</span><span class="s-label">海报下载</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 推广漏斗 -->
+    <div class="card">
+      <div class="section-title">📊 推广漏斗</div>
+      <div class="funnel" id="funnelChart">
+        <div class="funnel-item">
+          <span class="f-label">扫码</span>
+          <div class="f-bar-wrap"><div class="f-bar" style="width:100%">100</div></div>
+          <span class="f-val">100</span>
+        </div>
+        <div class="funnel-item">
+          <span class="f-label">浏览</span>
+          <div class="f-bar-wrap"><div class="f-bar" style="width:80%">80</div></div>
+          <span class="f-val">80</span>
+        </div>
+        <div class="funnel-item">
+          <span class="f-label">下单</span>
+          <div class="f-bar-wrap"><div class="f-bar" style="width:40%">40</div></div>
+          <span class="f-val">40</span>
+        </div>
+        <div class="funnel-item">
+          <span class="f-label">完成</span>
+          <div class="f-bar-wrap"><div class="f-bar" style="width:30%">30</div></div>
+          <span class="f-val">30</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 推广排行榜 -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title" style="margin-bottom:0;">🏆 推广排行榜</span>
+        <span class="more">本月</span>
+      </div>
+      <div class="rank-list" id="rankList">
+        <div class="empty-text">暂无数据</div>
+      </div>
+    </div>
+
+    <!-- 介绍费明细 -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title" style="margin-bottom:0;">📋 介绍费明细</span>
+        <span class="more" onclick="loadCommissions()">刷新</span>
+      </div>
+      <div id="commissionList">
+        <div class="empty-text">暂无数据</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item active" onclick="Utils.go('/merchant/promote.html')">
+      <span class="icon">📢</span>
+      <span class="label">推广</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/merchant/proxy.html')">
+      <span class="icon">📝</span>
+      <span class="label">代报</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/merchant/profile.html')">
+      <span class="icon">👤</span>
+      <span class="label">我的</span>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 登录验证
+      if (!API.token) {
+        showLoginModal();
+        return;
+      }
+      loadMerchantData();
+      initQRTabs();
+      initRankData();
+      loadCommissions();
+    });
+
+    /* ===== 登录弹窗 ===== */
+    function showLoginModal() {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-title">商家登录</div>
+          <div class="form-group">
+            <label class="form-label">手机号</label>
+            <input class="form-input" id="loginPhone" type="tel" maxlength="11" placeholder="请输入手机号">
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码</label>
+            <input class="form-input" id="loginPassword" type="password" placeholder="请输入密码">
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary btn-block" id="loginBtn">登录</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      document.getElementById('loginBtn').addEventListener('click', async function() {
+        const phone = document.getElementById('loginPhone').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        if (!phone || !password) { Utils.error('请填写完整信息'); return; }
+        this.disabled = true; this.textContent = '登录中...';
+        const res = await API.merchLogin(phone, password);
+        if (res.code === 200) {
+          Utils.setJSON('userInfo', res.data.user || {});
+          Utils.set('token', res.data.token);
+          API.token = res.data.token;
+          Utils.success('登录成功');
+          overlay.remove();
+          loadMerchantData();
+          initQRTabs();
+          initRankData();
+          loadCommissions();
+        } else {
+          this.disabled = false; this.textContent = '登录';
+        }
+      });
+    }
+
+    /* ===== 加载商家数据 ===== */
+    async function loadMerchantData() {
+      const res = await API.merchGetStatistics();
+      if (res.code === 200 && res.data) {
+        const d = res.data;
+        document.getElementById('shopName').textContent = d.shop_name || d.name || '佳乐家商家';
+        document.getElementById('shopContact').textContent = '联系人：' + (d.contact || '--');
+        document.getElementById('shopPhone').textContent = '电话：' + (d.phone || '--');
+        document.getElementById('totalScan').textContent = d.total_scan || 0;
+        document.getElementById('todayScan').textContent = d.today_scan || 0;
+        document.getElementById('orderCount').textContent = d.order_count || 0;
+        document.getElementById('totalAmount').textContent = Utils.formatMoney(d.total_amount || 0);
+        if (d.commission_rate) {
+          document.getElementById('commissionRate').textContent = d.commission_rate + '%';
+        }
+      }
+    }
+
+    /* ===== 二维码Tab切换 ===== */
+    let qrScene = 'stick';
+    function initQRTabs() {
+      document.querySelectorAll('.qr-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.qr-tab').forEach(function(t) { t.classList.remove('active'); });
+          this.classList.add('active');
+          qrScene = this.dataset.scene;
+          updateQRScene(qrScene);
+        });
+      });
+    }
+
+    function updateQRScene(scene) {
+      var labels = { stick: '门店贴纸版', moments: '朋友圈版', poster: '海报版' };
+      document.getElementById('qrLabel').textContent = labels[scene] || '二维码';
+      document.getElementById('qrCount').textContent = '已扫码 ' + (Math.floor(Math.random() * 50) + 10) + ' 次';
+    }
+
+    /* ===== 复制链接 ===== */
+    function copyLink() {
+      var link = window.location.origin + '/merchant/promote.html?ref=' + (Utils.get('userInfo') ? JSON.parse(Utils.get('userInfo')).id || '' : '');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).then(function() { Utils.success('链接已复制'); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        Utils.success('链接已复制');
+      }
+    }
+
+    function downloadQR() {
+      Utils.success('二维码已开始下载');
+    }
+
+    function shareTo(platform) {
+      if (platform === 'download') {
+        Utils.success('海报已开始下载');
+      } else {
+        Utils.success('已分享到' + (platform === 'wechat' ? '微信' : '朋友圈'));
+      }
+    }
+
+    /* ===== 排行榜 ===== */
+    function initRankData() {
+      var mockData = [
+        { name: '王大力', score: 128 },
+        { name: '李师傅', score: 96 },
+        { name: '张大姐', score: 72 },
+        { name: '刘哥', score: 55 },
+        { name: '赵姐', score: 41 }
+      ];
+      var html = '';
+      mockData.forEach(function(item, idx) {
+        var cls = 'rank-num';
+        if (idx === 0) cls += ' top1';
+        else if (idx === 1) cls += ' top2';
+        else if (idx === 2) cls += ' top3';
+        html += '<div class="rank-item"><div class="' + cls + '">' + (idx + 1) + '</div><div class="rank-name">' + item.name + '</div><div class="rank-score">' + item.score + '单</div></div>';
+      });
+      document.getElementById('rankList').innerHTML = html;
+    }
+
+    /* ===== 介绍费明细 ===== */
+    async function loadCommissions() {
+      var container = document.getElementById('commissionList');
+      container.innerHTML = '<div class="loading">加载中</div>';
+      var res = await API.merchGetIncome();
+      if (res.code === 200 && res.data && res.data.length) {
+        var html = '';
+        res.data.forEach(function(item) {
+          var statusText = item.status === 'settled' ? '已结算' : '待结算';
+          var statusClass = item.status === 'settled' ? 'tag-completed' : 'tag-pending';
+          html += '<div class="commission-item">';
+          html += '<div class="ci-info"><div class="ci-order">订单号：' + (item.order_no || '--') + '</div><div class="ci-service">' + (item.service_name || '--') + '</div></div>';
+          html += '<div class="ci-right"><div class="ci-amount">' + Utils.formatMoney(item.amount || 0) + '</div><div class="ci-status"><span class="tag ' + statusClass + '">' + statusText + '</span></div></div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<div class="empty-text">暂无介绍费明细</div>';
+      }
+    }
+  </script>
+</body>
+</html>

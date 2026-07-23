@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公告管理 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .rich-text-area { min-height: 150px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #FAFAFA; transition: border-color 0.2s; }
+    .rich-text-area:focus { border-color: var(--primary); background: #fff; }
+    .read-receipts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .read-receipts .user { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--primary-light); border-radius: 20px; font-size: 12px; color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">公告管理</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="filter-bar">
+          <button class="btn btn-primary" onclick="showAddAnnouncement()"><i class="fas fa-plus"></i> 发布公告</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>标题</th><th>推送端</th><th>置顶</th><th>发布时间</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="announcementBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('announcements');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadAnnouncements();
+    });
+
+    function loadAnnouncements() {
+      API.adminGetAnnouncements().then(function(res) {
+        if (res.code === 200) {
+          renderAnnouncements(res.data.list || res.data || []);
+        }
+      });
+    }
+
+    function renderAnnouncements(list) {
+      var tbody = document.getElementById('announcementBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-light);">暂无公告</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(a) {
+        var pushTargets = [];
+        if (a.push_user) pushTargets.push('用户端');
+        if (a.push_tech) pushTargets.push('师傅端');
+        if (a.push_merchant) pushTargets.push('商家端');
+        var actions = '<button class="btn btn-sm btn-primary" onclick="viewReceipts(\'' + a.id + '\')"><i class="fas fa-check-circle"></i> 已读回执</button>';
+        actions += ' <button class="btn btn-sm btn-warning" onclick="editAnnouncement(\'' + a.id + '\')"><i class="fas fa-edit"></i> 编辑</button>';
+        actions += ' <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement(\'' + a.id + '\')"><i class="fas fa-trash"></i> 删除</button>';
+        return '<tr>' +
+          '<td>' + (a.title || '-') + '</td>' +
+          '<td>' + (pushTargets.join('、') || '全部') + '</td>' +
+          '<td>' + (a.is_pinned ? '<span class="tag" style="background:#FFF7E6;color:var(--warning);"><i class="fas fa-thumbtack"></i> 置顶</span>' : '-') + '</td>' +
+          '<td>' + Utils.formatTime(a.publish_time || a.created_at) + '</td>' +
+          '<td><span class="tag ' + (a.status === 'published' ? 'tag-completed' : 'tag-pending') + '">' + (a.status === 'published' ? '已发布' : '草稿') + '</span></td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    // 发布公告
+    function showAddAnnouncement() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content" style="max-width:550px;"><div class="modal-title">发布公告</div>' +
+        '<div class="form-group"><label class="form-label">标题</label><input class="form-input" id="aTitle" placeholder="请输入公告标题"></div>' +
+        '<div class="form-group"><label class="form-label">内容</label><div class="rich-text-area" id="aContent" contenteditable="true" style="min-height:120px;"></div></div>' +
+        '<div class="form-group"><label class="form-label">推送端</label>' +
+        '<label style="margin-right:12px;font-size:13px;"><input type="checkbox" id="pushUser" checked> 用户端</label>' +
+        '<label style="margin-right:12px;font-size:13px;"><input type="checkbox" id="pushTech" checked> 师傅端</label>' +
+        '<label style="font-size:13px;"><input type="checkbox" id="pushMerchant" checked> 商家端</label></div>' +
+        '<div class="form-group"><label style="font-size:13px;margin-right:16px;"><input type="checkbox" id="aPinned"> 置顶</label></div>' +
+        '<div class="form-group"><label class="form-label">定时发布（可选）</label><input class="form-input" id="aPublishTime" type="datetime-local"></div>' +
+        '<div class="modal-actions"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+        '<button class="btn btn-primary" onclick="addAnnouncement()">发布</button></div></div>';
+      document.body.appendChild(overlay);
+    }
+
+    function addAnnouncement() {
+      var title = document.getElementById('aTitle').value.trim();
+      var content = document.getElementById('aContent').innerHTML;
+      if (!title) { Utils.error('请输入公告标题'); return; }
+      var publishTime = document.getElementById('aPublishTime').value;
+      var data = {
+        title: title,
+        content: content,
+        push_user: document.getElementById('pushUser').checked,
+        push_tech: document.getElementById('pushTech').checked,
+        push_merchant: document.getElementById('pushMerchant').checked,
+        is_pinned: document.getElementById('aPinned').checked,
+        status: publishTime ? 'scheduled' : 'published',
+        publish_time: publishTime ? new Date(publishTime).toISOString() : new Date().toISOString()
+      };
+      API.adminCreateAnnouncement(data).then(function(res) {
+        if (res.code === 200) { Utils.success('发布成功'); document.querySelector('.modal-overlay').remove(); loadAnnouncements(); }
+      });
+    }
+
+    // 已读回执
+    function viewReceipts(id) {
+      API.adminGetAnnouncements().then(function(res) {
+        if (res.code === 200) {
+          var list = res.data.list || res.data || [];
+          var ann = null;
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) { ann = list[i]; break; }
+          }
+          if (!ann) { Utils.alert('已读回执', '暂无已读记录'); return; }
+          var readers = ann.readers || [];
+          var html = readers.length ? readers.map(function(r) { return '<span class="user"><i class="fas fa-user"></i> ' + (r.name || r.phone || '用户') + '</span>'; }).join('') : '<span style="color:var(--text-light);">暂无已读记录</span>';
+          var overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          overlay.innerHTML = '<div class="modal-content"><div class="modal-title">已读回执 - ' + (ann.title || '') + '</div><div class="read-receipts">' + html + '</div><div class="modal-actions"><button class="btn btn-primary" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button></div></div>';
+          document.body.appendChild(overlay);
+        }
+      });
+    }
+
+    // 编辑公告
+    function editAnnouncement(id) {
+      Utils.modal('编辑公告', '编辑功能开发中，请通过API调用完成。', null, null, '知道了');
+    }
+
+    function deleteAnnouncement(id) {
+      Utils.confirm('删除确认', '确定删除该公告吗？', function() {
+        API.adminUpdateAnnouncement(id, { status: 'deleted' }).then(function(res) {
+          if (res.code === 200) { Utils.success('已删除'); loadAnnouncements(); }
+        });
+      });
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

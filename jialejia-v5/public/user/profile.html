@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的 - 佳乐家</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== 我的页面专属样式 ===== */
+    .page-profile { padding-bottom: 80px; }
+
+    /* 登录界面（复用查单页样式） */
+    .login-wrap { padding: 40px 32px; }
+    .login-title { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .login-subtitle { font-size: 14px; color: var(--text-light); text-align: center; margin-bottom: 32px; }
+    .login-form .form-group { margin-bottom: 20px; }
+    .login-form .form-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+    .login-form .form-input { height: 48px; font-size: 16px; }
+    .login-code-row { display: flex; gap: 12px; }
+    .login-code-row .form-input { flex: 1; }
+    .login-code-row .btn { flex-shrink: 0; height: 48px; border-radius: 8px; }
+    .login-error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+    .login-btn { height: 50px; font-size: 16px; border-radius: 25px; width: 100%; margin-top: 12px; }
+
+    /* 用户信息卡片 */
+    .user-card { background: linear-gradient(135deg, var(--primary), #4096FF); padding: 30px 20px; display: flex; align-items: center; gap: 16px; }
+    .user-card .avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; flex-shrink: 0; overflow: hidden; }
+    .user-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-card .user-info { flex: 1; color: #fff; }
+    .user-card .user-info .name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .user-card .user-info .phone { font-size: 13px; opacity: 0.85; }
+    .user-card .logout-btn { color: #fff; opacity: 0.8; font-size: 13px; cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; background: transparent; }
+
+    /* 功能菜单 */
+    .menu-section { margin: 12px 16px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .menu-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .menu-item:active { background: #f5f5f5; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item .menu-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; margin-right: 12px; flex-shrink: 0; }
+    .menu-item .menu-text { flex: 1; font-size: 14px; color: var(--text); }
+    .menu-item .menu-arrow { color: var(--text-light); font-size: 14px; }
+    .menu-item .menu-badge { font-size: 12px; color: var(--text-light); margin-right: 8px; }
+
+    /* 地址管理 */
+    .address-list { max-height: 400px; overflow-y: auto; }
+    .address-card { padding: 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; position: relative; }
+    .address-card:last-child { margin-bottom: 0; }
+    .address-card .addr-main { display: flex; justify-content: space-between; align-items: flex-start; }
+    .address-card .addr-detail { flex: 1; }
+    .address-card .addr-detail .addr-text { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+    .address-card .addr-detail .addr-label { font-size: 12px; color: var(--text-light); }
+    .address-card .addr-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .address-card .addr-tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--primary-light); color: var(--primary); }
+    .address-card .addr-tag.default { background: #F6FFED; color: var(--success); }
+    .address-card .addr-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .address-card .addr-actions span { font-size: 12px; color: var(--text-light); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+    .address-card .addr-actions span:active { background: #f0f0f0; }
+    .address-card .addr-actions .set-default { color: var(--primary); }
+
+    /* 公告列表 */
+    .announce-list { max-height: 400px; overflow-y: auto; }
+    .announce-item { padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .announce-item:last-child { border-bottom: none; }
+    .announce-item .title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .announce-item .time { font-size: 12px; color: var(--text-light); }
+    .announce-item .summary { font-size: 13px; color: var(--text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* 客服 */
+    .客服-section { text-align: center; }
+    .客服-phone { font-size: 24px; font-weight: 700; color: var(--primary); margin: 12px 0; }
+    .客服-phone i { margin-right: 8px; }
+    .客服-form { margin-top: 16px; }
+    .客服-form .form-textarea { min-height: 100px; }
+    .客服-form .btn { margin-top: 12px; }
+
+    /* 关于我们 */
+    .about-section { text-align: center; }
+    .about-section .logo { font-size: 48px; color: var(--primary); margin: 16px 0; }
+    .about-section .app-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .about-section .version { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
+    .about-section .desc { font-size: 13px; color: var(--text-secondary); line-height: 1.8; text-align: left; }
+
+    /* 新增地址表单 */
+    .addr-form-row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .addr-form-row .form-group { flex: 1; margin-bottom: 0; }
+    .addr-form-tags { display: flex; gap: 8px; margin-bottom: 12px; }
+    .addr-form-tag { padding: 6px 16px; border-radius: 16px; font-size: 13px; background: #f0f0f0; cursor: pointer; }
+    .addr-form-tag.active { background: var(--primary); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="page page-profile">
+
+    <!-- 顶部导航 -->
+    <div class="header">
+      <div class="title">个人中心</div>
+    </div>
+
+    <!-- ===== 登录界面 ===== -->
+    <div id="loginSection" style="display:none;">
+      <div class="login-wrap">
+        <div class="login-title">欢迎回来</div>
+        <div class="login-subtitle">登录后享受更多服务</div>
+        <div class="login-form">
+          <div class="form-group">
+            <label class="form-label">手机号</label>
+            <input type="tel" class="form-input" id="loginPhone" placeholder="请输入11位手机号" maxlength="11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">验证码</label>
+            <div class="login-code-row">
+              <input type="text" class="form-input" id="loginCode" placeholder="请输入验证码" maxlength="4" inputmode="numeric">
+              <button class="btn btn-outline" id="sendCodeBtn" style="white-space:nowrap;">获取验证码</button>
+            </div>
+          </div>
+          <div class="login-error" id="loginError"></div>
+          <button class="btn btn-primary login-btn" id="loginBtn">登录</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 已登录内容 ===== -->
+    <div id="profileSection" style="display:none;">
+      <!-- 用户信息卡片 -->
+      <div class="user-card" id="userCard">
+        <div class="avatar" id="userAvatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="user-info">
+          <div class="name" id="userName">用户</div>
+          <div class="phone" id="userPhone">--</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">退出登录</button>
+      </div>
+
+      <!-- 功能菜单 -->
+      <div class="menu-section">
+        <div class="menu-item" id="menuOrders">
+          <span class="menu-icon" style="background:var(--primary);"><i class="fas fa-clipboard-list"></i></span>
+          <span class="menu-text">我的订单</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="menu-item" id="menuAddress">
+          <span class="menu-icon" style="background:#52C41A;"><i class="fas fa-map-marker-alt"></i></span>
+          <span class="menu-text">地址管理</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="menu-item" id="menuAnnouncements">
+          <span class="menu-icon" style="background:#FAAD14;"><i class="fas fa-bullhorn"></i></span>
+          <span class="menu-text">历史公告</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="menu-item" id="menuProtocols">
+          <span class="menu-icon" style="background:#EB2F96;"><i class="fas fa-file-contract"></i></span>
+          <span class="menu-text">协议查看</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="menu-item" id="menuService">
+          <span class="menu-icon" style="background:#1677FF;"><i class="fas fa-headset"></i></span>
+          <span class="menu-text">联系客服</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="menu-item" id="menuAbout">
+          <span class="menu-icon" style="background:#666;"><i class="fas fa-info-circle"></i></span>
+          <span class="menu-text">关于我们</span>
+          <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 通用弹窗 ===== -->
+  <div class="modal-overlay" id="commonModal" style="display:none;">
+    <div class="modal-content" id="commonModalContent" style="max-width:500px;">
+      <div class="modal-title" id="commonModalTitle">标题</div>
+      <div id="commonModalBody" style="max-height:55vh;overflow-y:auto;"></div>
+      <div class="modal-actions" id="commonModalActions">
+        <button class="btn btn-primary" id="closeCommonModal">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // ===== DOM 引用 =====
+      const $ = id => document.getElementById(id);
+      const loginSection = $('loginSection');
+      const profileSection = $('profileSection');
+      const loginPhone = $('loginPhone');
+      const loginCode = $('loginCode');
+      const sendCodeBtn = $('sendCodeBtn');
+      const loginBtn = $('loginBtn');
+      const loginError = $('loginError');
+      const userName = $('userName');
+      const userPhone = $('userPhone');
+      const userAvatar = $('userAvatar');
+      const logoutBtn = $('logoutBtn');
+      const commonModal = $('commonModal');
+      const commonModalTitle = $('commonModalTitle');
+      const commonModalBody = $('commonModalBody');
+      const commonModalActions = $('commonModalActions');
+      const closeCommonModal = $('closeCommonModal');
+
+      // ===== TabBar =====
+      function renderTabbar() {
+        const tabbar = document.createElement('div');
+        tabbar.className = 'tabbar';
+        tabbar.innerHTML = `
+          <div class="tabbar-item" onclick="Utils.go('booking.html')">
+            <i class="fas fa-calendar-check icon"></i>
+            <span class="label">预约</span>
+          </div>
+          <div class="tabbar-item" onclick="Utils.go('orders.html')">
+            <i class="fas fa-clipboard-list icon"></i>
+            <span class="label">查单</span>
+          </div>
+          <div class="tabbar-item active" onclick="Utils.go('profile.html')">
+            <i class="fas fa-user icon"></i>
+            <span class="label">我的</span>
+          </div>
+        `;
+        document.body.appendChild(tabbar);
+      }
+      renderTabbar();
+
+      // ===== 状态 =====
+      let countdown = 0;
+      let countdownTimer = null;
+      let userInfo = null;
+      let announcements = [];
+      let announcementPage = 1;
+      let hasMoreAnnouncements = true;
+      let addresses = [
+        { id: 1, street: '磐石街道', detail: '香江路88号', contact: '张先生', phone: '138****1234', tag: '家', isDefault: true },
+        { id: 2, street: '曹城街道', detail: '中兴路56号', contact: '张先生', phone: '138****1234', tag: '公司', isDefault: false }
+      ];
+      let addressIdCounter = 3;
+
+      // ===== 登录状态检查 =====
+      function checkLogin() {
+        const token = Utils.get('token');
+        if (token) {
+          loginSection.style.display = 'none';
+          profileSection.style.display = 'block';
+          loadUserProfile();
+        } else {
+          loginSection.style.display = 'block';
+          profileSection.style.display = 'none';
+        }
+      }
+
+      // ===== 加载用户信息 =====
+      async function loadUserProfile() {
+        const cached = Utils.getJSON('userInfo');
+        if (cached) {
+          userInfo = cached;
+          renderUserInfo();
+        }
+        const res = await API.getUserProfile();
+        if (res.code === 200 && res.data) {
+          userInfo = res.data;
+          Utils.setJSON('userInfo', userInfo);
+          renderUserInfo();
+        }
+      }
+
+      function renderUserInfo() {
+        if (!userInfo) return;
+        userName.textContent = userInfo.nickname || userInfo.name || '用户';
+        userPhone.textContent = Utils.maskPhone(userInfo.phone || userInfo.mobile || '');
+        if (userInfo.avatar) {
+          userAvatar.innerHTML = `<img src="${userInfo.avatar}" alt="avatar">`;
+        }
+      }
+
+      // ===== 登录逻辑 =====
+      sendCodeBtn.addEventListener('click', async function() {
+        const phone = loginPhone.value.trim();
+        if (!Utils.isValidPhone(phone)) {
+          Utils.toast('请输入正确的手机号');
+          return;
+        }
+        this.disabled = true;
+        const res = await API.sendCode(phone);
+        if (res.code === 200 || res.code === 201) {
+          Utils.success('验证码已发送');
+          startCountdown();
+        } else {
+          this.disabled = false;
+          Utils.error(res.message || '发送失败');
+        }
+      });
+
+      function startCountdown() {
+        countdown = 60;
+        sendCodeBtn.disabled = true;
+        countdownTimer = setInterval(() => {
+          countdown--;
+          sendCodeBtn.textContent = countdown + 's';
+          if (countdown <= 0) {
+            clearInterval(countdownTimer);
+            sendCodeBtn.disabled = false;
+            sendCodeBtn.textContent = '获取验证码';
+          }
+        }, 1000);
+      }
+
+      loginBtn.addEventListener('click', async function() {
+        const phone = loginPhone.value.trim();
+        const code = loginCode.value.trim();
+        if (!Utils.isValidPhone(phone)) {
+          Utils.toast('请输入正确的手机号');
+          return;
+        }
+        if (!code || code.length !== 4) {
+          Utils.toast('请输入4位验证码');
+          return;
+        }
+        this.disabled = true;
+        this.textContent = '登录中...';
+        loginError.style.display = 'none';
+        const res = await API.login(phone, code);
+        this.disabled = false;
+        this.textContent = '登录';
+        if (res.code === 200 || res.code === 201) {
+          const token = res.data?.token || res.data?.access_token || '';
+          if (token) {
+            Utils.set('token', token);
+            API.token = token;
+            if (res.data.user || res.data.user_info) {
+              Utils.setJSON('userInfo', res.data.user || res.data.user_info);
+            }
+            Utils.success('登录成功');
+            checkLogin();
+          } else {
+            Utils.error('登录异常，请重试');
+          }
+        } else {
+          loginError.textContent = res.message || '登录失败';
+          loginError.style.display = 'block';
+        }
+      });
+
+      loginPhone.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+      });
+      loginCode.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+      });
+
+      // ===== 退出登录 =====
+      logoutBtn.addEventListener('click', function() {
+        Utils.confirm('退出登录', '确定要退出当前账号吗？', function() {
+          Utils.remove('token');
+          Utils.remove('userInfo');
+          API.token = '';
+          userInfo = null;
+          checkLogin();
+        });
+      });
+
+      // ===== 菜单功能 =====
+
+      // 1. 我的订单
+      $('menuOrders').addEventListener('click', function() {
+        Utils.go('orders.html');
+      });
+
+      // 2. 地址管理
+      $('menuAddress').addEventListener('click', function() {
+        showAddressManager();
+      });
+
+      function showAddressManager() {
+        commonModalTitle.textContent = '地址管理';
+        let html = '<div class="address-list">';
+        if (addresses.length === 0) {
+          html += '<div style="text-align:center;padding:30px;color:#999;">暂无地址</div>';
+        } else {
+          addresses.forEach(addr => {
+            html += `
+              <div class="address-card" data-id="${addr.id}">
+                <div class="addr-main">
+                  <div class="addr-detail">
+                    <div class="addr-text">${addr.street} ${addr.detail}</div>
+                    <div class="addr-label">${addr.contact} ${addr.phone}</div>
+                    <div class="addr-tags">
+                      <span class="addr-tag">${addr.tag}</span>
+                      ${addr.isDefault ? '<span class="addr-tag default">默认</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="addr-actions">
+                  ${!addr.isDefault ? `<span class="set-default" data-id="${addr.id}">设为默认</span>` : ''}
+                  <span class="edit-addr" data-id="${addr.id}" style="color:var(--primary);">编辑</span>
+                  <span class="delete-addr" data-id="${addr.id}" style="color:var(--danger);">删除</span>
+                </div>
+              </div>`;
+          });
+        }
+        html += '</div>';
+        html += '<button class="btn btn-primary btn-block" id="addAddressBtn" style="margin-top:12px;"><i class="fas fa-plus"></i> 新增地址</button>';
+        commonModalBody.innerHTML = html;
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">完成</button>';
+        commonModal.style.display = 'flex';
+
+        bindAddressEvents();
+        $('addAddressBtn')?.addEventListener('click', showAddAddressForm);
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      }
+
+      function bindAddressEvents() {
+        document.querySelectorAll('.set-default').forEach(el => {
+          el.addEventListener('click', function() {
+            const id = parseInt(this.dataset.id);
+            addresses.forEach(a => a.isDefault = (a.id === id));
+            showAddressManager();
+          });
+        });
+        document.querySelectorAll('.delete-addr').forEach(el => {
+          el.addEventListener('click', function() {
+            const id = parseInt(this.dataset.id);
+            Utils.confirm('删除地址', '确定要删除该地址吗？', () => {
+              addresses = addresses.filter(a => a.id !== id);
+              showAddressManager();
+            });
+          });
+        });
+        document.querySelectorAll('.edit-addr').forEach(el => {
+          el.addEventListener('click', function() {
+            const id = parseInt(this.dataset.id);
+            const addr = addresses.find(a => a.id === id);
+            if (addr) showEditAddressForm(addr);
+          });
+        });
+      }
+
+      function showAddAddressForm() {
+        showAddressForm(null, '新增地址');
+      }
+
+      function showEditAddressForm(addr) {
+        showAddressForm(addr, '编辑地址');
+      }
+
+      function showAddressForm(addr, title) {
+        commonModalTitle.textContent = title;
+        const isEdit = !!addr;
+        const tags = ['家', '公司', '父母家'];
+        commonModalBody.innerHTML = `
+          <div class="addr-form-row">
+            <div class="form-group">
+              <label class="form-label">街道/乡镇</label>
+              <input type="text" class="form-input" id="addrStreet" value="${addr ? addr.street : ''}" placeholder="如：磐石街道">
+            </div>
+            <div class="form-group">
+              <label class="form-label">门牌号/小区</label>
+              <input type="text" class="form-input" id="addrDetail" value="${addr ? addr.detail : ''}" placeholder="详细地址">
+            </div>
+          </div>
+          <div class="addr-form-row">
+            <div class="form-group">
+              <label class="form-label">联系人</label>
+              <input type="text" class="form-input" id="addrContact" value="${addr ? addr.contact : ''}" placeholder="姓名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">联系电话</label>
+              <input type="tel" class="form-input" id="addrPhone" value="${addr ? addr.phone : ''}" placeholder="手机号">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">标签</label>
+            <div class="addr-form-tags">
+              ${tags.map(t => `<span class="addr-form-tag${addr && addr.tag === t ? ' active' : ''}" data-tag="${t}">${t}</span>`).join('')}
+            </div>
+          </div>
+          <input type="hidden" id="addrId" value="${addr ? addr.id : ''}">
+          <input type="hidden" id="addrTag" value="${addr ? addr.tag : ''}">
+        `;
+        commonModalActions.innerHTML = `
+          <button class="btn btn-outline" id="cancelAddrForm">取消</button>
+          <button class="btn btn-primary" id="saveAddrBtn">保存</button>
+        `;
+        commonModal.style.display = 'flex';
+
+        // 标签选择
+        document.querySelectorAll('.addr-form-tag').forEach(el => {
+          el.addEventListener('click', function() {
+            document.querySelectorAll('.addr-form-tag').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('addrTag').value = this.dataset.tag;
+          });
+        });
+
+        $('cancelAddrForm')?.addEventListener('click', showAddressManager);
+        $('saveAddrBtn')?.addEventListener('click', function() {
+          const street = $('addrStreet').value.trim();
+          const detail = $('addrDetail').value.trim();
+          const contact = $('addrContact').value.trim();
+          const phone = $('addrPhone').value.trim();
+          const tag = $('addrTag').value || '家';
+          if (!street || !detail || !contact || !phone) {
+            Utils.toast('请填写完整信息');
+            return;
+          }
+          if (isEdit) {
+            const id = parseInt($('addrId').value);
+            const target = addresses.find(a => a.id === id);
+            if (target) {
+              target.street = street;
+              target.detail = detail;
+              target.contact = contact;
+              target.phone = phone;
+              target.tag = tag;
+            }
+          } else {
+            addresses.push({
+              id: addressIdCounter++,
+              street, detail, contact, phone, tag,
+              isDefault: addresses.length === 0
+            });
+          }
+          Utils.success(isEdit ? '地址已更新' : '地址已添加');
+          showAddressManager();
+        });
+      }
+
+      // 3. 历史公告
+      $('menuAnnouncements').addEventListener('click', function() {
+        loadAnnouncements();
+      });
+
+      async function loadAnnouncements(page = 1) {
+        commonModalTitle.textContent = '历史公告';
+        commonModalBody.innerHTML = '<div class="loading">加载中</div>';
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">关闭</button>';
+        commonModal.style.display = 'flex';
+
+        const res = await API.getAnnouncements(page);
+        if (res.code === 200 && res.data) {
+          const list = res.data.list || [];
+          announcements = page === 1 ? list : announcements.concat(list);
+          hasMoreAnnouncements = list.length > 0;
+          renderAnnouncements(page);
+        } else {
+          commonModalBody.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">暂无公告</div>';
+        }
+
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      }
+
+      function renderAnnouncements(page) {
+        if (announcements.length === 0) {
+          commonModalBody.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">暂无公告</div>';
+          return;
+        }
+        let html = '<div class="announce-list">';
+        announcements.forEach(a => {
+          html += `
+            <div class="announce-item" data-id="${a.id}">
+              <div class="title">${a.title}</div>
+              <div class="time">${Utils.formatTime(a.created_at || a.time)}</div>
+              ${a.summary ? `<div class="summary">${a.summary}</div>` : ''}
+            </div>`;
+        });
+        html += '</div>';
+        if (hasMoreAnnouncements) {
+          html += `<button class="btn btn-outline btn-block" id="loadMoreAnnounce" style="margin-top:12px;">加载更多</button>`;
+        }
+        commonModalBody.innerHTML = html;
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">关闭</button>';
+
+        document.getElementById('loadMoreAnnounce')?.addEventListener('click', function() {
+          announcementPage++;
+          loadAnnouncements(announcementPage);
+        });
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      }
+
+      // 4. 协议查看
+      $('menuProtocols').addEventListener('click', function() {
+        commonModalTitle.textContent = '协议查看';
+        commonModalBody.innerHTML = `
+          <div style="padding:8px 0;">
+            <div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;cursor:pointer;" id="viewProtocol1">
+              <div style="font-size:14px;font-weight:500;color:var(--text);">《预约协议》</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px;">点击查看完整内容</div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;" id="viewProtocol2">
+              <div style="font-size:14px;font-weight:500;color:var(--text);">《平台服务协议》</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px;">点击查看完整内容</div>
+            </div>
+          </div>
+        `;
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">关闭</button>';
+        commonModal.style.display = 'flex';
+
+        document.getElementById('viewProtocol1')?.addEventListener('click', function() { showProtocolDetail('预约协议'); });
+        document.getElementById('viewProtocol2')?.addEventListener('click', function() { showProtocolDetail('平台服务协议'); });
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      });
+
+      function showProtocolDetail(name) {
+        const content = name === '预约协议'
+          ? '预约协议（示例内容）\n\n1. 用户预约服务后，师傅将在接单后与您联系确认上门时间。\n2. 如因用户原因取消预约，请提前2小时取消。\n3. 师傅上门后，如需增加服务项目，费用另行协商。\n4. 服务质量问题请于服务完成后24小时内反馈。\n5. 平台仅提供信息撮合服务，具体服务内容由用户与师傅协商确定。'
+          : '平台服务协议（示例内容）\n\n1. 服务条款的确认\n本平台各项服务的所有权和运作权归佳乐家所有。\n\n2. 服务简介\n佳乐家平台通过互联网为用户提供维修服务信息撮合。\n\n3. 用户隐私保护\n平台承诺不向第三方出售用户个人信息。\n\n4. 服务变更、中断或终止\n平台有权在必要时修改服务条款。\n\n5. 违约责任\n用户违反本协议导致损失的，应承担相应责任。';
+        commonModalTitle.textContent = name;
+        commonModalBody.innerHTML = `<div style="font-size:13px;color:#666;line-height:1.8;padding:8px 0;">${content.replace(/\n/g, '<br>')}</div>`;
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">知道了</button>';
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      }
+
+      // 5. 联系客服
+      $('menuService').addEventListener('click', function() {
+        commonModalTitle.textContent = '联系客服';
+        commonModalBody.innerHTML = `
+          <div class="客服-section">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">客服热线</div>
+            <div class="客服-phone"><i class="fas fa-phone"></i> 400-888-8888</div>
+            <div style="font-size:13px;color:var(--text-light);margin-bottom:20px;">工作日 8:00-20:00</div>
+            <div style="border-top:1px solid var(--border);padding-top:16px;">
+              <div style="font-size:14px;font-weight:500;margin-bottom:12px;">在线反馈</div>
+              <textarea class="form-textarea" id="feedbackText" placeholder="请描述您的问题或建议..." style="min-height:100px;"></textarea>
+              <button class="btn btn-primary btn-block" id="submitFeedbackBtn">提交反馈</button>
+            </div>
+          </div>
+        `;
+        commonModalActions.innerHTML = '<button class="btn btn-outline" id="closeCommonModal2">关闭</button>';
+        commonModal.style.display = 'flex';
+
+        document.getElementById('submitFeedbackBtn')?.addEventListener('click', function() {
+          const text = document.getElementById('feedbackText').value.trim();
+          if (!text) {
+            Utils.toast('请输入反馈内容');
+            return;
+          }
+          Utils.success('感谢您的反馈，我们会尽快处理！');
+          document.getElementById('feedbackText').value = '';
+        });
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      });
+
+      // 6. 关于我们
+      $('menuAbout').addEventListener('click', function() {
+        commonModalTitle.textContent = '关于我们';
+        commonModalBody.innerHTML = `
+          <div class="about-section">
+            <div class="logo"><i class="fas fa-wrench"></i></div>
+            <div class="app-name">佳乐家</div>
+            <div class="version">版本 V5.0.0</div>
+            <div class="desc">
+              <p>佳乐家是一款专注于本地生活服务的平台，为用户提供家电维修、水电维修、管道疏通、开锁换锁、清洁保洁等一站式服务。</p>
+              <p style="margin-top:12px;">我们致力于连接用户与专业师傅，让优质服务触手可及。</p>
+              <p style="margin-top:12px;color:var(--text-light);font-size:12px;">Copyright &copy; 2026 佳乐家 All Rights Reserved.</p>
+            </div>
+          </div>
+        `;
+        commonModalActions.innerHTML = '<button class="btn btn-primary" id="closeCommonModal2">知道了</button>';
+        commonModal.style.display = 'flex';
+        $('closeCommonModal2')?.addEventListener('click', () => commonModal.style.display = 'none');
+      });
+
+      // ===== 通用弹窗关闭 =====
+      commonModal.addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+      });
+
+      // ===== 初始化 =====
+      checkLogin();
+    });
+  </script>
+</body>
+</html>

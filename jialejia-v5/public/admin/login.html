@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>佳乐家 - 管理员登录</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1677FF 0%, #0958d9 100%); }
+    .login-card { background: #fff; border-radius: 16px; padding: 40px; width: 420px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+    .login-card .logo { text-align: center; margin-bottom: 32px; }
+    .login-card .logo h1 { font-size: 24px; color: var(--primary); font-weight: 700; }
+    .login-card .logo p { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+    .login-card .form-group { margin-bottom: 20px; }
+    .login-card .form-group label { display: block; font-size: 14px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+    .login-card .form-group .input-wrap { position: relative; }
+    .login-card .form-group .input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 16px; }
+    .login-card .form-group .input-wrap input { width: 100%; padding: 12px 14px 12px 42px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #FAFAFA; transition: all 0.2s; }
+    .login-card .form-group .input-wrap input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(22,119,255,0.1); }
+    .login-card .captcha-row { display: flex; gap: 12px; align-items: center; }
+    .login-card .captcha-row input { flex: 1; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #FAFAFA; text-align: center; letter-spacing: 4px; }
+    .login-card .captcha-row .captcha-box { width: 110px; height: 46px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; letter-spacing: 6px; color: var(--primary); cursor: pointer; user-select: none; font-family: 'Courier New', monospace; font-style: italic; }
+    .login-card .captcha-row .captcha-box:hover { background: #e8e8e8; }
+    .login-card .login-btn { width: 100%; height: 48px; border-radius: 24px; font-size: 16px; font-weight: 600; margin-top: 8px; }
+    .login-card .error-msg { color: var(--danger); font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; }
+    .login-card .lock-msg { color: var(--danger); font-size: 13px; text-align: center; margin-top: 12px; background: #FFF2F0; padding: 10px; border-radius: 8px; display: none; }
+    .login-card .footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-light); }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="logo">
+        <h1><i class="fas fa-tools"></i> 佳乐家</h1>
+        <p>后台管理系统</p>
+      </div>
+      <div class="form-group">
+        <label>账号</label>
+        <div class="input-wrap">
+          <i class="fas fa-user"></i>
+          <input type="text" id="username" placeholder="请输入管理员账号" autocomplete="username">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>验证码</label>
+        <div class="captcha-row">
+          <input type="text" id="captcha" placeholder="验证码" maxlength="4" autocomplete="off">
+          <div class="captcha-box" id="captchaBox" title="点击刷新验证码"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary login-btn" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 登 录</button>
+      <div class="lock-msg" id="lockMsg"></div>
+      <div class="error-msg" id="errorMsg"></div>
+      <div class="footer">Copyright &copy; 佳乐家服务平台</div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 如果已登录，直接跳转
+      if (Utils.get('token')) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const captchaInput = document.getElementById('captcha');
+      const captchaBox = document.getElementById('captchaBox');
+      const loginBtn = document.getElementById('loginBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const lockMsg = document.getElementById('lockMsg');
+
+      // 验证码
+      let currentCaptcha = '';
+
+      function generateCaptcha() {
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+          code += Math.floor(Math.random() * 10);
+        }
+        currentCaptcha = code;
+        captchaBox.textContent = code;
+      }
+      generateCaptcha();
+      captchaBox.addEventListener('click', generateCaptcha);
+
+      // 登录失败计数
+      const LOCK_KEY = STORAGE_PREFIX + 'login_fail_count';
+      const LOCK_TIME_KEY = STORAGE_PREFIX + 'login_lock_time';
+
+      function getFailCount() {
+        return parseInt(localStorage.getItem(LOCK_KEY) || '0');
+      }
+
+      function getLockTime() {
+        return parseInt(localStorage.getItem(LOCK_TIME_KEY) || '0');
+      }
+
+      function checkLock() {
+        const lockTime = getLockTime();
+        if (lockTime > 0) {
+          const elapsed = Date.now() - lockTime;
+          if (elapsed < 5 * 60 * 1000) {
+            const remaining = Math.ceil((5 * 60 * 1000 - elapsed) / 1000);
+            lockMsg.style.display = 'block';
+            lockMsg.textContent = '账号已锁定，请 ' + remaining + ' 秒后重试';
+            loginBtn.disabled = true;
+            return true;
+          } else {
+            localStorage.removeItem(LOCK_KEY);
+            localStorage.removeItem(LOCK_TIME_KEY);
+            loginBtn.disabled = false;
+            lockMsg.style.display = 'none';
+          }
+        }
+        return false;
+      }
+
+      checkLock();
+
+      // 定时器更新锁定倒计时
+      let lockTimer = null;
+      if (getLockTime() > 0 && Date.now() - getLockTime() < 5 * 60 * 1000) {
+        lockTimer = setInterval(function() {
+          if (!checkLock()) {
+            clearInterval(lockTimer);
+            lockTimer = null;
+          }
+        }, 1000);
+      }
+
+      // 登录
+      loginBtn.addEventListener('click', async function() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        const captcha = captchaInput.value.trim();
+
+        errorMsg.textContent = '';
+
+        if (!username) { errorMsg.textContent = '请输入账号'; return; }
+        if (!password) { errorMsg.textContent = '请输入密码'; return; }
+        if (!captcha) { errorMsg.textContent = '请输入验证码'; return; }
+        if (captcha !== currentCaptcha) { errorMsg.textContent = '验证码错误'; generateCaptcha(); captchaInput.value = ''; return; }
+
+        if (checkLock()) return;
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+
+        try {
+          const res = await API.adminLogin(username, password);
+          if (res.code === 200) {
+            // 登录成功
+            localStorage.removeItem(LOCK_KEY);
+            localStorage.removeItem(LOCK_TIME_KEY);
+            Utils.set('token', res.data.token);
+            Utils.setJSON('userInfo', res.data.user || { username: username });
+            window.location.href = 'dashboard.html';
+          } else {
+            // 登录失败
+            let count = getFailCount() + 1;
+            localStorage.setItem(LOCK_KEY, count);
+            errorMsg.textContent = '登录失败：' + (res.message || '账号或密码错误') + '（' + count + '/3）';
+            if (count >= 3) {
+              localStorage.setItem(LOCK_TIME_KEY, Date.now());
+              checkLock();
+              lockTimer = setInterval(function() {
+                if (!checkLock()) {
+                  clearInterval(lockTimer);
+                  lockTimer = null;
+                }
+              }, 1000);
+            }
+            generateCaptcha();
+            captchaInput.value = '';
+          }
+        } catch (err) {
+          errorMsg.textContent = '网络异常，请稍后重试';
+          generateCaptcha();
+          captchaInput.value = '';
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登 录';
+        }
+      });
+
+      // 回车键登录
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loginBtn.click();
+      });
+    });
+  </script>
+</body>
+</html>

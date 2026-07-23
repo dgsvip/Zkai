@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统设置 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .settings-card { background: #fff; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .settings-card .card-header { font-size: 15px; font-weight: 600; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .settings-card .card-header i { color: var(--primary); }
+    .settings-card .form-group { margin-bottom: 14px; }
+    .settings-card .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+    .settings-card .form-group .form-input, .settings-card .form-group .form-select { background: #fff; }
+    .settings-card .form-group .form-input:focus, .settings-card .form-group .form-select:focus { background: #fff; }
+    .settings-card.full-width { grid-column: 1 / -1; }
+    .area-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .area-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: #f5f5f5; border-radius: 16px; font-size: 13px; }
+    .area-tag .del { cursor: pointer; color: var(--text-light); }
+    .area-tag .del:hover { color: var(--danger); }
+    .version-badge { display: inline-block; padding: 2px 10px; background: var(--primary-light); color: var(--primary); border-radius: 4px; font-size: 12px; }
+    @media (max-width: 900px) {
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">系统设置</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-primary" onclick="saveAllSettings()"><i class="fas fa-save"></i> 保存全部设置</button>
+          <button class="btn btn-sm btn-outline" onclick="logout()" style="margin-left:8px;"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="settings-grid">
+          <!-- ① 网站基础配置 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-globe"></i> 网站基础配置</div>
+            <div class="form-group"><label>网站名称</label><input class="form-input" id="siteName" value="佳乐家服务平台"></div>
+            <div class="form-group"><label>LOGO上传</label><div style="display:flex;align-items:center;gap:12px;"><input type="file" accept="image/*" id="logoUpload" onchange="previewLogo(this)" style="font-size:13px;"><img id="logoPreview" style="height:36px;display:none;"></div></div>
+            <div class="form-group"><label>联系电话</label><input class="form-input" id="contactPhone" value="0530-1234567"></div>
+            <div class="form-group"><label>客服热线</label><input class="form-input" id="serviceHotline" value="400-888-8888"></div>
+          </div>
+          <!-- ② SEO配置 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-search"></i> SEO配置</div>
+            <div class="form-group"><label>首页 Title</label><input class="form-input" id="seoTitle" value="佳乐家 - 专业上门服务平台"></div>
+            <div class="form-group"><label>首页 Keywords</label><input class="form-input" id="seoKeywords" value="佳乐家,上门服务,家电维修,管道疏通,开锁"></div>
+            <div class="form-group"><label>首页 Description</label><textarea class="form-textarea" id="seoDescription" rows="3">佳乐家服务平台，提供专业的上门维修、安装、疏通等服务。</textarea></div>
+          </div>
+          <!-- ③ 协议管理 -->
+          <div class="settings-card full-width">
+            <div class="card-header"><i class="fas fa-file-contract"></i> 协议管理</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div>
+                <div class="form-group"><label>《预约协议》<span class="version-badge" id="agreementVersion1">v1.0</span></label>
+                  <div class="rich-text-area" id="agreement1" contenteditable="true" style="min-height:120px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#FAFAFA;">欢迎使用佳乐家预约服务。请您仔细阅读以下协议条款...</div>
+                </div>
+              </div>
+              <div>
+                <div class="form-group"><label>《平台服务协议》<span class="version-badge" id="agreementVersion2">v2.1</span></label>
+                  <div class="rich-text-area" id="agreement2" contenteditable="true" style="min-height:120px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#FAFAFA;">本协议由佳乐家服务平台与您共同缔结...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- ④ 区域管理 -->
+          <div class="settings-card full-width">
+            <div class="card-header"><i class="fas fa-map-marker-alt"></i> 区域管理 <span style="font-size:12px;font-weight:400;color:var(--text-light);">曹县24个街道/乡镇</span></div>
+            <div class="area-tags" id="areaTags"></div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <input class="form-input" id="newArea" placeholder="输入新区域名称" style="width:200px;">
+              <button class="btn btn-sm btn-primary" onclick="addArea()"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+          <!-- ⑤ 超期阈值 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-clock"></i> 超期阈值</div>
+            <div class="form-group"><label>完工超期天数</label><input class="form-input" id="overdueDays" type="number" value="3"></div>
+            <div class="form-group"><label>区域单超时转抢单池（分钟）</label><input class="form-input" id="poolTimeout" type="number" value="30"></div>
+          </div>
+          <!-- ⑥ 全局默认比例 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-percent"></i> 全局默认比例</div>
+            <div class="form-group"><label>平台抽成 (%)</label><input class="form-input" id="globalPlatformRate" type="number" value="10"></div>
+            <div class="form-group"><label>师傅抽成 (%)</label><input class="form-input" id="globalTechRate" type="number" value="80"></div>
+            <div class="form-group"><label>商家介绍费 (%)</label><input class="form-input" id="globalMerchantRate" type="number" value="5"></div>
+          </div>
+          <!-- ⑦ 取消规则 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-ban"></i> 取消规则配置</div>
+            <div class="form-group"><label>接单前无责取消</label><select class="form-select" id="cancelPreAccept"><option value="1">允许</option><option value="0">不允许</option></select></div>
+            <div class="form-group"><label>接单后15分钟内爽约金 (元)</label><input class="form-input" id="cancelPenalty" type="number" value="10"></div>
+            <div class="form-group"><label>超过15分钟不可取消</label><select class="form-select" id="cancelNoAfter15"><option value="1">是</option><option value="0">否</option></select></div>
+          </div>
+          <!-- ⑧ 抢单优先级规则 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-sort-amount-down"></i> 抢单优先级规则</div>
+            <div class="form-group"><label>信用分权重</label><input class="form-input" id="priorityCredit" type="number" value="60"></div>
+            <div class="form-group"><label>好评率权重</label><input class="form-input" id="priorityRating" type="number" value="40"></div>
+            <div class="form-group" style="font-size:12px;color:var(--text-light);">系统按信用分高+好评率高优先推送订单</div>
+          </div>
+          <!-- ⑨ 日志保留期 -->
+          <div class="settings-card">
+            <div class="card-header"><i class="fas fa-history"></i> 日志保留期</div>
+            <div class="form-group">
+              <select class="form-select" id="logRetention">
+                <option value="30">30 天</option>
+                <option value="90" selected>90 天</option>
+                <option value="180">180 天</option>
+                <option value="365">365 天</option>
+              </select>
+            </div>
+          </div>
+          <!-- ⑩ 价格/抽成变更历史 -->
+          <div class="settings-card full-width">
+            <div class="card-header"><i class="fas fa-exchange-alt"></i> 价格/抽成变更历史</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>时间</th><th>类型</th><th>变更内容</th><th>操作人</th></tr></thead>
+                <tbody id="changeHistoryBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('settings');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadSettings();
+      initAreas();
+      loadChangeHistory();
+    });
+
+    var areas = [
+      '曹城街道', '磐石街道', '青菏街道', '郑庄街道', '倪集街道',
+      '庄寨镇', '普连集镇', '青固集镇', '桃源集镇', '韩集镇',
+      '砖庙镇', '古营集镇', '魏湾镇', '侯集回族镇', '苏集镇',
+      '孙老家镇', '阎店楼镇', '梁堤头镇', '安蔡楼镇', '邵庄镇',
+      '王集镇', '青岗集镇', '常乐集镇', '大集镇'
+    ];
+
+    function initAreas() {
+      renderAreas();
+    }
+
+    function renderAreas() {
+      var el = document.getElementById('areaTags');
+      el.innerHTML = areas.map(function(a) {
+        return '<span class="area-tag"><i class="fas fa-map-pin" style="color:var(--primary);"></i> ' + a + ' <span class="del" onclick="removeArea(\'' + a + '\')"><i class="fas fa-times"></i></span></span>';
+      }).join('');
+    }
+
+    function addArea() {
+      var name = document.getElementById('newArea').value.trim();
+      if (!name) { Utils.error('请输入区域名称'); return; }
+      if (areas.indexOf(name) >= 0) { Utils.error('该区域已存在'); return; }
+      areas.push(name);
+      renderAreas();
+      document.getElementById('newArea').value = '';
+      Utils.success('添加成功');
+    }
+
+    function removeArea(name) {
+      Utils.confirm('删除区域', '确定删除"' + name + '"吗？', function() {
+        areas = areas.filter(function(a) { return a !== name; });
+        renderAreas();
+        Utils.success('已删除');
+      });
+    }
+
+    function loadSettings() {
+      API.adminGetSettings().then(function(res) {
+        if (res.code === 200 && res.data) {
+          var s = res.data;
+          if (s.siteName) document.getElementById('siteName').value = s.siteName;
+          if (s.contactPhone) document.getElementById('contactPhone').value = s.contactPhone;
+          if (s.serviceHotline) document.getElementById('serviceHotline').value = s.serviceHotline;
+          if (s.seoTitle) document.getElementById('seoTitle').value = s.seoTitle;
+          if (s.seoKeywords) document.getElementById('seoKeywords').value = s.seoKeywords;
+          if (s.seoDescription) document.getElementById('seoDescription').value = s.seoDescription;
+          if (s.agreement1) document.getElementById('agreement1').innerHTML = s.agreement1;
+          if (s.agreement2) document.getElementById('agreement2').innerHTML = s.agreement2;
+          if (s.agreementVersion1) document.getElementById('agreementVersion1').textContent = s.agreementVersion1;
+          if (s.agreementVersion2) document.getElementById('agreementVersion2').textContent = s.agreementVersion2;
+          if (s.overdueDays !== undefined) document.getElementById('overdueDays').value = s.overdueDays;
+          if (s.poolTimeout !== undefined) document.getElementById('poolTimeout').value = s.poolTimeout;
+          if (s.globalPlatformRate !== undefined) document.getElementById('globalPlatformRate').value = s.globalPlatformRate;
+          if (s.globalTechRate !== undefined) document.getElementById('globalTechRate').value = s.globalTechRate;
+          if (s.globalMerchantRate !== undefined) document.getElementById('globalMerchantRate').value = s.globalMerchantRate;
+          if (s.areas && s.areas.length) areas = s.areas;
+          if (s.cancelPenalty !== undefined) document.getElementById('cancelPenalty').value = s.cancelPenalty;
+          if (s.priorityCredit !== undefined) document.getElementById('priorityCredit').value = s.priorityCredit;
+          if (s.priorityRating !== undefined) document.getElementById('priorityRating').value = s.priorityRating;
+          if (s.logRetention) document.getElementById('logRetention').value = s.logRetention;
+          renderAreas();
+        }
+      });
+    }
+
+    function saveAllSettings() {
+      var data = {
+        siteName: document.getElementById('siteName').value,
+        contactPhone: document.getElementById('contactPhone').value,
+        serviceHotline: document.getElementById('serviceHotline').value,
+        seoTitle: document.getElementById('seoTitle').value,
+        seoKeywords: document.getElementById('seoKeywords').value,
+        seoDescription: document.getElementById('seoDescription').value,
+        agreement1: document.getElementById('agreement1').innerHTML,
+        agreement2: document.getElementById('agreement2').innerHTML,
+        areas: areas,
+        overdueDays: parseInt(document.getElementById('overdueDays').value) || 3,
+        poolTimeout: parseInt(document.getElementById('poolTimeout').value) || 30,
+        globalPlatformRate: parseFloat(document.getElementById('globalPlatformRate').value) || 0,
+        globalTechRate: parseFloat(document.getElementById('globalTechRate').value) || 0,
+        globalMerchantRate: parseFloat(document.getElementById('globalMerchantRate').value) || 0,
+        cancelPenalty: parseFloat(document.getElementById('cancelPenalty').value) || 0,
+        priorityCredit: parseFloat(document.getElementById('priorityCredit').value) || 0,
+        priorityRating: parseFloat(document.getElementById('priorityRating').value) || 0,
+        logRetention: parseInt(document.getElementById('logRetention').value) || 90
+      };
+      API.adminUpdateSettings(data).then(function(res) {
+        if (res.code === 200) {
+          Utils.success('全部设置已保存');
+        }
+      });
+    }
+
+    function loadChangeHistory() {
+      API.adminGetLogs({ type: 'price_change', pageSize: 20 }).then(function(res) {
+        if (res.code === 200) {
+          renderChangeHistory(res.data.list || []);
+        } else {
+          // 模拟数据
+          var mockData = [
+            { time: Date.now() - 86400000 * 2, type: '价格调整', content: '空调维修价格调整为150-300元', operator: 'admin' },
+            { time: Date.now() - 86400000 * 5, type: '抽成调整', content: '平台抽成从8%调整为10%', operator: 'admin' },
+            { time: Date.now() - 86400000 * 10, type: '抽成调整', content: '师傅抽成从75%调整为80%', operator: 'admin' }
+          ];
+          renderChangeHistory(mockData);
+        }
+      });
+    }
+
+    function renderChangeHistory(list) {
+      var tbody = document.getElementById('changeHistoryBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-light);">暂无变更记录</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(item) {
+        return '<tr><td>' + Utils.formatTime(item.time) + '</td><td>' + (item.type || '-') + '</td><td>' + (item.content || '-') + '</td><td>' + (item.operator || '-') + '</td></tr>';
+      }).join('');
+    }
+
+    function previewLogo(input) {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.getElementById('logoPreview');
+        img.src = e.target.result;
+        img.style.display = 'inline-block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商家管理 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    .merchant-tabs { display: flex; gap: 0; margin-bottom: 16px; background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .merchant-tab { flex: 1; text-align: center; padding: 14px; cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.2s; border-bottom: 2px solid transparent; }
+    .merchant-tab:hover { color: var(--primary); background: var(--primary-light); }
+    .merchant-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">商家管理</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 统计卡片 -->
+        <div class="admin-stats" id="statsCards">
+          <div class="stat-card primary"><div class="label">总商家</div><div class="value" id="statTotal">-</div></div>
+          <div class="stat-card success"><div class="label">本月新增</div><div class="value" id="statNewMonth">-</div></div>
+          <div class="stat-card warning"><div class="label">总介绍费</div><div class="value" id="statTotalFee">-</div></div>
+        </div>
+        <!-- 标签页 -->
+        <div class="merchant-tabs">
+          <div class="merchant-tab active" data-tab="list" onclick="switchTab('list')"><i class="fas fa-store"></i> 商家列表</div>
+          <div class="merchant-tab" data-tab="withdraw" onclick="switchTab('withdraw')"><i class="fas fa-hand-holding-usd"></i> 结算管理</div>
+          <div class="merchant-tab" data-tab="analysis" onclick="switchTab('analysis')"><i class="fas fa-chart-bar"></i> 推广效果</div>
+        </div>
+        <!-- 商家列表 -->
+        <div id="tabList">
+          <div class="filter-bar">
+            <input type="text" id="searchKeyword" placeholder="搜索商家名称" style="width:200px;">
+            <button class="btn btn-sm btn-primary" onclick="loadMerchants()"><i class="fas fa-search"></i> 搜索</button>
+            <button class="btn btn-sm btn-success" onclick="showAddMerchant()"><i class="fas fa-plus"></i> 添加商家</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>商家名称</th><th>联系人</th><th>电话</th><th>介绍费比例</th><th>结算金额</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="merchantBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- 结算管理 -->
+        <div id="tabWithdraw" style="display:none;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>申请时间</th><th>提现金额</th><th>商家名称</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="withdrawBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- 推广效果 -->
+        <div id="tabAnalysis" style="display:none;">
+          <div class="chart-wrap" style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);">
+            <div class="chart-title">推广效果漏斗图</div>
+            <div id="funnelChart" style="height:300px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('merchants');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadMerchants();
+      loadWithdraws();
+      initFunnelChart();
+    });
+
+    function switchTab(tab) {
+      document.querySelectorAll('.merchant-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelector('.merchant-tab[data-tab="' + tab + '"]').classList.add('active');
+      document.getElementById('tabList').style.display = tab === 'list' ? 'block' : 'none';
+      document.getElementById('tabWithdraw').style.display = tab === 'withdraw' ? 'block' : 'none';
+      document.getElementById('tabAnalysis').style.display = tab === 'analysis' ? 'block' : 'none';
+      if (tab === 'analysis') setTimeout(function() { initFunnelChart(); }, 100);
+    }
+
+    function loadMerchants() {
+      API.adminGetMerchants().then(function(res) {
+        if (res.code === 200) {
+          renderMerchants(res.data.list || []);
+          renderStats(res.data.stats || {});
+        }
+      });
+    }
+
+    function renderMerchants(list) {
+      var tbody = document.getElementById('merchantBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-light);">暂无商家数据</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(m) {
+        var actions = '<button class="btn btn-sm btn-primary" onclick="editMerchant(\'' + m.id + '\')"><i class="fas fa-edit"></i> 编辑</button>';
+        actions += ' <button class="btn btn-sm btn-warning" onclick="setCommission(\'' + m.id + '\')"><i class="fas fa-percent"></i> 设置比例</button>';
+        actions += ' <button class="btn btn-sm btn-success" onclick="showSettlement(\'' + m.id + '\')"><i class="fas fa-file-invoice"></i> 结算记录</button>';
+        if (m.status === 'disabled') {
+          actions += ' <button class="btn btn-sm btn-success" onclick="toggleMerchantStatus(\'' + m.id + '\', false)"><i class="fas fa-check"></i> 启用</button>';
+        } else {
+          actions += ' <button class="btn btn-sm btn-danger" onclick="toggleMerchantStatus(\'' + m.id + '\', true)"><i class="fas fa-ban"></i> 禁用</button>';
+        }
+        return '<tr>' +
+          '<td>' + (m.name || '-') + '</td>' +
+          '<td>' + (m.contact || '-') + '</td>' +
+          '<td>' + Utils.maskPhone(m.phone) + '</td>' +
+          '<td>' + (m.commission_rate || 0) + '%</td>' +
+          '<td>' + Utils.formatMoney(m.settled_amount || 0) + '</td>' +
+          '<td><span class="tag ' + (m.status === 'disabled' ? 'tag-cancelled' : 'tag-completed') + '">' + (m.status === 'disabled' ? '已禁用' : '正常') + '</span></td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function renderStats(stats) {
+      document.getElementById('statTotal').textContent = stats.total || 0;
+      document.getElementById('statNewMonth').textContent = stats.newMonth || 0;
+      document.getElementById('statTotalFee').textContent = Utils.formatMoney(stats.totalFee || 0);
+    }
+
+    // 添加商家
+    function showAddMerchant() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content"><div class="modal-title">添加商家</div>' +
+        '<div class="form-group"><label class="form-label">商家名称</label><input class="form-input" id="mName" placeholder="请输入商家名称"></div>' +
+        '<div class="form-group"><label class="form-label">联系人</label><input class="form-input" id="mContact" placeholder="请输入联系人"></div>' +
+        '<div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="mPhone" placeholder="请输入联系电话"></div>' +
+        '<div class="form-group"><label class="form-label">介绍费比例 (%)</label><input class="form-input" id="mRate" type="number" placeholder="介绍费比例" value="5"></div>' +
+        '<div class="modal-actions"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+        '<button class="btn btn-primary" onclick="addMerchant()">确认添加</button></div></div>';
+      document.body.appendChild(overlay);
+    }
+
+    function addMerchant() {
+      var name = document.getElementById('mName').value.trim();
+      var contact = document.getElementById('mContact').value.trim();
+      var phone = document.getElementById('mPhone').value.trim();
+      var rate = parseFloat(document.getElementById('mRate').value) || 0;
+      if (!name || !phone) { Utils.error('请填写完整信息'); return; }
+      API.adminAddMerchant({ name: name, contact: contact, phone: phone, commission_rate: rate }).then(function(res) {
+        if (res.code === 200) { Utils.success('添加成功'); document.querySelector('.modal-overlay').remove(); loadMerchants(); }
+      });
+    }
+
+    // 编辑商家
+    function editMerchant(id) {
+      Utils.modal('编辑商家', '商家编辑功能：<br><input class="form-input" id="editName" placeholder="商家名称" style="margin-top:8px;"><br><input class="form-input" id="editContact" placeholder="联系人">', function() {
+        var name = document.getElementById('editName').value;
+        var contact = document.getElementById('editContact').value;
+        API.adminUpdateMerchant(id, { name: name, contact: contact }).then(function(res) {
+          if (res.code === 200) { Utils.success('更新成功'); loadMerchants(); }
+        });
+      }, null, '保存', '取消');
+    }
+
+    // 设置比例
+    function setCommission(id) {
+      Utils.modal('设置比例', '介绍费比例：<br><input type="number" class="form-input" id="rateInput" placeholder="百分比" style="margin-top:8px;">', function() {
+        var rate = parseFloat(document.getElementById('rateInput').value);
+        if (isNaN(rate)) { Utils.error('请输入有效比例'); return; }
+        API.adminUpdateMerchant(id, { commission_rate: rate }).then(function(res) {
+          if (res.code === 200) { Utils.success('设置成功'); loadMerchants(); }
+        });
+      }, null, '保存', '取消');
+    }
+
+    // 结算记录
+    function showSettlement(id) {
+      Utils.alert('结算记录', '该功能将展示商家 ' + id + ' 的结算历史记录。');
+    }
+
+    // 禁用/启用
+    function toggleMerchantStatus(id, disable) {
+      Utils.confirm(disable ? '禁用确认' : '启用确认', disable ? '确定禁用该商家吗？' : '确定启用该商家吗？', function() {
+        API.adminUpdateMerchant(id, { status: disable ? 'disabled' : 'active' }).then(function(res) {
+          if (res.code === 200) { Utils.success(disable ? '已禁用' : '已启用'); loadMerchants(); }
+        });
+      });
+    }
+
+    // 结算管理
+    function loadWithdraws() {
+      // 模拟数据或通过API获取
+      API.adminGetMerchants().then(function(res) {
+        if (res.code === 200) {
+          renderWithdraws(res.data.withdraws || []);
+        }
+      });
+    }
+
+    function renderWithdraws(list) {
+      var tbody = document.getElementById('withdrawBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-light);">暂无提现申请</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(w) {
+        var actions = '';
+        if (w.status === 'pending') {
+          actions = '<button class="btn btn-sm btn-success" onclick="approveWithdraw(\'' + w.id + '\')"><i class="fas fa-check"></i> 审核通过</button>';
+          actions += ' <button class="btn btn-sm btn-primary" onclick="markSettled(\'' + w.id + '\')"><i class="fas fa-hand-holding-usd"></i> 标记已结算</button>';
+        } else {
+          actions = '<span class="tag tag-completed">' + (w.status === 'approved' ? '已审核' : '已结算') + '</span>';
+        }
+        return '<tr><td>' + Utils.formatTime(w.created_at) + '</td><td>' + Utils.formatMoney(w.amount) + '</td><td>' + (w.merchant_name || '-') + '</td><td><span class="tag ' + (w.status === 'pending' ? 'tag-pending' : 'tag-completed') + '">' + (w.status === 'pending' ? '待审核' : '已处理') + '</span></td><td>' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function approveWithdraw(id) {
+      Utils.confirm('审核确认', '确定通过该提现申请吗？', function() {
+        API.adminApproveWithdraw(id, 'approved').then(function(res) {
+          if (res.code === 200) { Utils.success('已审核通过'); loadWithdraws(); }
+        });
+      });
+    }
+
+    function markSettled(id) {
+      Utils.confirm('结算确认', '确定标记为已线下打款结算吗？', function() {
+        API.adminApproveWithdraw(id, 'settled').then(function(res) {
+          if (res.code === 200) { Utils.success('已标记结算'); loadWithdraws(); }
+        });
+      });
+    }
+
+    // 推广效果漏斗图
+    function initFunnelChart() {
+      var chartDom = document.getElementById('funnelChart');
+      if (!chartDom) return;
+      var myChart = echarts.init(chartDom);
+      var option = {
+        tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c}个' },
+        series: [{
+          name: '推广效果', type: 'funnel', left: '10%', top: 20, bottom: 20, width: '80%', minSize: '30%', maxSize: '100%',
+          label: { show: true, position: 'inside', fontSize: 13, formatter: '{b}：{c}' },
+          data: [
+            { value: 1000, name: '曝光' }, { value: 600, name: '点击' }, { value: 300, name: '咨询' },
+            { value: 150, name: '下单' }, { value: 80, name: '成交' }
+          ]
+        }]
+      };
+      myChart.setOption(option);
+      window.addEventListener('resize', function() { myChart.resize(); });
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

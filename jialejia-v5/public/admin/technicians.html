@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>师傅管理 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .tech-detail-tabs { display: flex; gap: 0; margin-bottom: 16px; background: #f5f5f5; border-radius: 8px; overflow: hidden; }
+    .tech-detail-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.2s; }
+    .tech-detail-tab.active { background: var(--primary); color: #fff; font-weight: 600; }
+    .tech-detail-tab:hover:not(.active) { background: #e8e8e8; }
+    .import-wrap { display: inline-block; position: relative; overflow: hidden; }
+    .import-wrap input[type=file] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">师傅管理</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 统计卡片 -->
+        <div class="admin-stats" id="statsCards">
+          <div class="stat-card primary"><div class="label">总师傅</div><div class="value" id="statTotal">-</div></div>
+          <div class="stat-card success"><div class="label">在线师傅</div><div class="value" id="statOnline">-</div></div>
+          <div class="stat-card primary"><div class="label">今日完工</div><div class="value" id="statTodayDone">-</div></div>
+          <div class="stat-card danger"><div class="label">超期违规</div><div class="value" id="statViolation">-</div></div>
+        </div>
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <select id="filterArea"><option value="">全部区域</option></select>
+          <select id="filterStatus"><option value="">全部状态</option><option value="online">在线</option><option value="offline">离线</option><option value="busy">忙碌</option><option value="disabled">已禁用</option></select>
+          <input type="text" id="searchKeyword" placeholder="搜索姓名/电话" style="width:180px;">
+          <button class="btn btn-sm btn-primary" onclick="loadTechnicians()"><i class="fas fa-search"></i> 搜索</button>
+          <button class="btn btn-sm btn-success" onclick="showAddTech()"><i class="fas fa-plus"></i> 添加师傅</button>
+          <span class="import-wrap btn btn-sm btn-warning"><i class="fas fa-file-import"></i> Excel导入<input type="file" accept=".csv" onchange="importCSV(this)"></span>
+        </div>
+        <!-- 师傅列表 -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>姓名</th><th>电话</th><th>区域</th><th>余额</th><th>信用分</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="techBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('technicians');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadTechnicians();
+    });
+
+    var currentPage = 1;
+
+    function loadTechnicians() {
+      var params = { page: currentPage, pageSize: 15 };
+      var area = document.getElementById('filterArea').value;
+      var status = document.getElementById('filterStatus').value;
+      var keyword = document.getElementById('searchKeyword').value.trim();
+      if (area) params.area = area;
+      if (status) params.status = status;
+      if (keyword) params.keyword = keyword;
+
+      API.adminGetTechnicians(params).then(function(res) {
+        if (res.code === 200) {
+          renderTechs(res.data.list || []);
+          renderStats(res.data.stats || {});
+          renderPagination(res.data.total || 0);
+        }
+      });
+    }
+
+    function renderTechs(list) {
+      var tbody = document.getElementById('techBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-light);">暂无师傅数据</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(t) {
+        var statusMap = { online: '在线', offline: '离线', busy: '忙碌', disabled: '已禁用' };
+        var statusClass = { online: 'tag-completed', offline: 'tag-cancelled', busy: 'tag-pending', disabled: 'tag-cancelled' };
+        var actions = '<button class="btn btn-sm btn-primary" onclick="showTechDetail(\'' + t.id + '\')"><i class="fas fa-eye"></i> 详情</button>';
+        actions += ' <button class="btn btn-sm btn-success" onclick="adjustBalance(\'' + t.id + '\')"><i class="fas fa-coins"></i> 调整余额</button>';
+        actions += ' <button class="btn btn-sm btn-warning" onclick="resetPassword(\'' + t.id + '\')"><i class="fas fa-key"></i> 重置密码</button>';
+        if (t.status === 'disabled') {
+          actions += ' <button class="btn btn-sm btn-success" onclick="toggleDisabled(\'' + t.id + '\', false)"><i class="fas fa-check"></i> 启用</button>';
+        } else {
+          actions += ' <button class="btn btn-sm btn-danger" onclick="toggleDisabled(\'' + t.id + '\', true)"><i class="fas fa-ban"></i> 禁用</button>';
+        }
+        return '<tr>' +
+          '<td>' + (t.name || '-') + '</td>' +
+          '<td>' + Utils.maskPhone(t.phone) + '</td>' +
+          '<td>' + (t.area || '-') + '</td>' +
+          '<td>' + Utils.formatMoney(t.balance) + '</td>' +
+          '<td><span style="color:' + ((t.credit_score || 0) >= 80 ? 'var(--success)' : (t.credit_score || 0) >= 60 ? 'var(--warning)' : 'var(--danger)') + ';font-weight:600;">' + (t.credit_score || 0) + '</span></td>' +
+          '<td><span class="tag ' + (statusClass[t.status] || '') + '">' + (statusMap[t.status] || t.status || '-') + '</span></td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function renderStats(stats) {
+      document.getElementById('statTotal').textContent = stats.total || 0;
+      document.getElementById('statOnline').textContent = stats.online || 0;
+      document.getElementById('statTodayDone').textContent = stats.todayDone || 0;
+      document.getElementById('statViolation').textContent = stats.violation || 0;
+    }
+
+    function renderPagination(total) {
+      var el = document.getElementById('pagination');
+      var pages = Math.ceil(total / 15);
+      if (pages <= 1) { el.innerHTML = ''; return; }
+      var html = '<button class="page-btn" onclick="goPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>上一页</button>';
+      for (var i = 1; i <= pages; i++) {
+        html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+      }
+      html += '<button class="page-btn" onclick="goPage(' + (currentPage + 1) + ')" ' + (currentPage >= pages ? 'disabled' : '') + '>下一页</button>';
+      el.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadTechnicians(); }
+
+    // 添加师傅
+    function showAddTech() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content"><div class="modal-title">添加师傅</div>' +
+        '<div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="techName" placeholder="请输入姓名"></div>' +
+        '<div class="form-group"><label class="form-label">电话</label><input class="form-input" id="techPhone" placeholder="请输入电话"></div>' +
+        '<div class="form-group"><label class="form-label">区域</label><input class="form-input" id="techArea" placeholder="请输入区域"></div>' +
+        '<div class="form-group"><label class="form-label">密码</label><input class="form-input" id="techPwd" type="password" placeholder="登录密码" value="123456"></div>' +
+        '<div class="modal-actions"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+        '<button class="btn btn-primary" onclick="addTech()">确认添加</button></div></div>';
+      document.body.appendChild(overlay);
+    }
+
+    function addTech() {
+      var name = document.getElementById('techName').value.trim();
+      var phone = document.getElementById('techPhone').value.trim();
+      var area = document.getElementById('techArea').value.trim();
+      var pwd = document.getElementById('techPwd').value.trim();
+      if (!name || !phone) { Utils.error('请填写完整信息'); return; }
+      API.adminAddTechnician({ name: name, phone: phone, area: area, password: pwd }).then(function(res) {
+        if (res.code === 200) { Utils.success('添加成功'); document.querySelector('.modal-overlay').remove(); loadTechnicians(); }
+      });
+    }
+
+    // 师傅详情弹窗
+    function showTechDetail(id) {
+      API.adminGetTechnicianDetail(id).then(function(res) {
+        if (res.code === 200) {
+          var t = res.data;
+          var overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          overlay.innerHTML = '<div class="modal-content" style="max-width:750px;">' +
+            '<div class="modal-title">师傅详情 - ' + (t.name || '') + '</div>' +
+            '<div style="max-height:70vh;overflow-y:auto;">' +
+            '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">基本信息</div>' +
+            '<div class="detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">' +
+            '<div><span style="color:var(--text-light);">姓名：</span>' + (t.name || '-') + '</div>' +
+            '<div><span style="color:var(--text-light);">电话：</span>' + (t.phone || '-') + '</div>' +
+            '<div><span style="color:var(--text-light);">区域：</span>' + (t.area || '-') + '</div>' +
+            '<div><span style="color:var(--text-light);">余额：</span>' + Utils.formatMoney(t.balance) + '</div>' +
+            '<div><span style="color:var(--text-light);">信用分：</span><span style="font-weight:600;color:' + ((t.credit_score || 0) >= 80 ? 'var(--success)' : (t.credit_score || 0) >= 60 ? 'var(--warning)' : 'var(--danger)') + '">' + (t.credit_score || 0) + '</span></div>' +
+            '</div></div>' +
+            // 信用分变动
+            (t.credit_logs && t.credit_logs.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">信用分变动记录</div>' +
+            t.credit_logs.map(function(l) { return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-light)">' + Utils.formatTime(l.time) + '</span> ' + (l.change > 0 ? '+' : '') + l.change + '分 ' + (l.reason || '') + '</div>'; }).join('') + '</div>' : '') +
+            // 差评/投诉
+            (t.complaints && t.complaints.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">差评/投诉记录</div>' +
+            t.complaints.map(function(c) { return '<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span>' + (c.content || '') + ' <span style="color:var(--text-light)">(' + Utils.formatTime(c.time) + ')</span></span>' +
+            (c.status === 'pending' ? '<button class="btn btn-sm btn-primary" onclick="reviewComplaint(\'' + c.id + '\')">审核</button>' : '<span class="tag tag-completed">已处理</span>') + '</div>'; }).join('') + '</div>' : '') +
+            // 争议申诉
+            (t.disputes && t.disputes.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">争议申诉管理</div>' +
+            t.disputes.map(function(d) { return '<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);"><div>' + (d.content || '') + ' <span style="color:var(--text-light)">(' + Utils.formatTime(d.time) + ')</span></div>' +
+            (d.status === 'pending' ? '<div style="margin-top:4px;"><button class="btn btn-sm btn-success" onclick="reviewDispute(\'' + d.id + '\',\'approve\')">支持师傅</button> <button class="btn btn-sm btn-danger" onclick="reviewDispute(\'' + d.id + '\',\'reject\')">驳回</button> <button class="btn btn-sm btn-warning" onclick="reviewDispute(\'' + d.id + '\',\'compensate\')">赔付</button></div>' : '<span class="tag tag-completed">' + (d.result || '已处理') + '</span>') + '</div>'; }).join('') + '</div>' : '') +
+            // 工时统计
+            (t.work_stats ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">工时统计</div><div style="font-size:13px;">本月订单数：' + (t.work_stats.monthly_orders || 0) + ' 单</div></div>' : '') +
+            // 历史订单
+            (t.order_history && t.order_history.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">历史订单</div>' +
+            t.order_history.map(function(o) { return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);">' + (o.order_no || '') + ' - ' + (o.service_name || '') + ' - ' + Utils.formatMoney(o.amount) + ' <span class="tag ' + Utils.getStatusClass(o.status) + '">' + Utils.getStatusText(o.status) + '</span></div>'; }).join('') + '</div>' : '') +
+            // 收入明细
+            (t.income && t.income.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">收入明细</div>' +
+            t.income.map(function(i) { return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-light)">' + Utils.formatTime(i.time) + '</span> ' + Utils.formatMoney(i.amount) + ' ' + (i.note || '') + '</div>'; }).join('') + '</div>' : '') +
+            // 操作日志
+            (t.logs && t.logs.length ? '<div class="detail-section" style="margin-bottom:16px;"><div class="section-label" style="font-size:14px;font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">操作日志</div>' +
+            t.logs.map(function(l) { return '<div style="font-size:13px;padding:4px 0;color:var(--text-secondary);"><span style="color:var(--text-light)">' + Utils.formatTime(l.time) + '</span> ' + (l.action || l.content) + '</div>'; }).join('') + '</div>' : '') +
+            '</div>' +
+            '<div class="modal-actions"><button class="btn btn-primary" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button></div></div>';
+          document.body.appendChild(overlay);
+        } else {
+          Utils.error('获取师傅详情失败');
+        }
+      });
+    }
+
+    function reviewComplaint(id) {
+      Utils.modal('审核投诉', '请选择处理结果：<br><select id="complaintResult" class="form-select" style="margin-top:8px;"><option value="dismiss">驳回投诉</option><option value="warn">警告师傅</option><option value="punish">处罚师傅</option></select>', function() {
+        var result = document.getElementById('complaintResult').value;
+        Utils.toast('已处理: ' + result);
+        document.querySelectorAll('.modal-overlay')[0].remove();
+      }, null, '确认', '取消');
+    }
+
+    function reviewDispute(id, action) {
+      var actionMap = { approve: '支持师傅', reject: '驳回', compensate: '赔付' };
+      Utils.confirm('争议审核', '确定' + actionMap[action] + '该申诉吗？', function() {
+        API.adminReviewDispute(id, { action: action }).then(function(res) {
+          if (res.code === 200) { Utils.success('审核完成'); document.querySelectorAll('.modal-overlay')[0].remove(); }
+        });
+      });
+    }
+
+    // 调整余额
+    function adjustBalance(id) {
+      Utils.modal('调整余额', '请输入调整金额（正数增加，负数减少）：<br><input type="number" id="balanceAmount" class="form-input" style="margin-top:8px;" placeholder="金额"><br><input class="form-input" id="balanceNote" placeholder="调整原因">', function() {
+        var amount = parseFloat(document.getElementById('balanceAmount').value);
+        var note = document.getElementById('balanceNote').value;
+        if (isNaN(amount) || amount === 0) { Utils.error('请输入有效金额'); return; }
+        API.adminUpdateTechnician(id, { balance_change: amount, note: note }).then(function(res) {
+          if (res.code === 200) { Utils.success('调整成功'); loadTechnicians(); }
+        });
+      }, null, '确认调整', '取消');
+    }
+
+    // 重置密码
+    function resetPassword(id) {
+      Utils.confirm('重置密码', '确定要重置该师傅的登录密码为123456吗？', function() {
+        API.adminUpdateTechnician(id, { password: '123456' }).then(function(res) {
+          if (res.code === 200) Utils.success('密码已重置为123456');
+        });
+      });
+    }
+
+    // 禁用/启用
+    function toggleDisabled(id, disable) {
+      var msg = disable ? '确定要禁用该师傅吗？禁用后无法接单。' : '确定要启用该师傅吗？';
+      Utils.confirm(disable ? '禁用确认' : '启用确认', msg, function() {
+        API.adminUpdateTechnician(id, { status: disable ? 'disabled' : 'online' }).then(function(res) {
+          if (res.code === 200) { Utils.success(disable ? '已禁用' : '已启用'); loadTechnicians(); }
+        });
+      });
+    }
+
+    // CSV导入
+    function importCSV(input) {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var text = e.target.result;
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+        if (lines.length < 2) { Utils.error('CSV文件格式不正确'); return; }
+        var imported = 0;
+        for (var i = 1; i < lines.length; i++) {
+          var cols = lines[i].split(',');
+          if (cols.length >= 2) {
+            var name = cols[0].trim();
+            var phone = cols[1].trim();
+            if (name && phone) {
+              API.adminAddTechnician({ name: name, phone: phone, area: cols[2] ? cols[2].trim() : '', password: '123456' });
+              imported++;
+            }
+          }
+        }
+        Utils.success('成功导入 ' + imported + ' 条数据');
+        input.value = '';
+        loadTechnicians();
+      };
+      reader.readAsText(file);
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

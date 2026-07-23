@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务管理 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .category-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .category-item { padding: 8px 16px; border-radius: 20px; background: #f5f5f5; cursor: pointer; font-size: 13px; transition: all 0.2s; border: 1px solid transparent; }
+    .category-item:hover { background: var(--primary-light); color: var(--primary); }
+    .category-item.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .category-item .del { margin-left: 6px; color: var(--text-light); cursor: pointer; font-size: 12px; }
+    .category-item .del:hover { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">服务管理</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 分类管理 -->
+        <div class="card" style="margin:0 0 16px 0;">
+          <div class="section-title">
+            <span>分类管理</span>
+            <button class="btn btn-sm btn-primary" onclick="showAddCategory()"><i class="fas fa-plus"></i> 添加分类</button>
+          </div>
+          <div class="category-list" id="categoryList"></div>
+        </div>
+        <!-- 项目管理 -->
+        <div class="card" style="margin:0 0 16px 0;">
+          <div class="section-title">
+            <span>项目管理</span>
+            <button class="btn btn-sm btn-success" onclick="showAddService()"><i class="fas fa-plus"></i> 添加项目</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>名称</th><th>分类</th><th>价格区间</th><th>预估时长</th><th>平台抽成%</th><th>师傅抽成%</th><th>商家介绍费%</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody id="serviceBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('services');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadData();
+    });
+
+    var categories = [];
+    var currentCategoryId = '';
+
+    function loadData() {
+      Promise.all([API.getCategories(), API.adminGetServices()]).then(function(results) {
+        if (results[0].code === 200) {
+          categories = results[0].data || [];
+          renderCategories();
+        }
+        if (results[1].code === 200) {
+          renderServices(results[1].data || []);
+        }
+      });
+    }
+
+    function renderCategories() {
+      var el = document.getElementById('categoryList');
+      var html = '';
+      categories.forEach(function(c) {
+        html += '<span class="category-item' + (c.id === currentCategoryId ? ' active' : '') + '" onclick="filterByCategory(\'' + c.id + '\')">' + (c.name || '') + ' <span class="del" onclick="event.stopPropagation();deleteCategory(\'' + c.id + '\')"><i class="fas fa-times"></i></span></span>';
+      });
+      html += '<span class="category-item' + (!currentCategoryId ? ' active' : '') + '" onclick="filterByCategory(\'\')">全部</span>';
+      el.innerHTML = html;
+    }
+
+    function filterByCategory(id) {
+      currentCategoryId = id;
+      renderCategories();
+      // 过滤显示
+      API.adminGetServices().then(function(res) {
+        if (res.code === 200) {
+          var list = res.data || [];
+          if (id) list = list.filter(function(s) { return s.category_id === id; });
+          renderServices(list);
+        }
+      });
+    }
+
+    function renderServices(list) {
+      var tbody = document.getElementById('serviceBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light);">暂无服务项目</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(function(s) {
+        var catName = '';
+        categories.forEach(function(c) { if (c.id === s.category_id) catName = c.name; });
+        var actions = '<button class="btn btn-sm btn-primary" onclick="editService(\'' + s.id + '\')"><i class="fas fa-edit"></i> 编辑</button>';
+        actions += ' <button class="btn btn-sm btn-danger" onclick="deleteService(\'' + s.id + '\')"><i class="fas fa-trash"></i> 删除</button>';
+        return '<tr>' +
+          '<td>' + (s.name || '-') + '</td>' +
+          '<td>' + catName + '</td>' +
+          '<td>' + Utils.formatMoney(s.min_price) + ' ~ ' + Utils.formatMoney(s.max_price) + '</td>' +
+          '<td>' + (s.estimated_duration || '-') + '分钟</td>' +
+          '<td>' + (s.platform_commission || 0) + '%</td>' +
+          '<td>' + (s.tech_commission || 0) + '%</td>' +
+          '<td>' + (s.merchant_commission || 0) + '%</td>' +
+          '<td><span class="tag ' + (s.status === 'active' ? 'tag-completed' : 'tag-cancelled') + '">' + (s.status === 'active' ? '上架' : '下架') + '</span></td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    // 添加分类
+    function showAddCategory() {
+      Utils.modal('添加分类', '分类名称：<br><input class="form-input" id="catName" placeholder="请输入分类名称" style="margin-top:8px;">', function() {
+        var name = document.getElementById('catName').value.trim();
+        if (!name) { Utils.error('请输入分类名称'); return; }
+        // 本地模拟添加
+        var newCat = { id: 'cat_' + Date.now(), name: name };
+        categories.push(newCat);
+        renderCategories();
+        Utils.success('添加成功');
+      }, null, '确认', '取消');
+    }
+
+    function deleteCategory(id) {
+      Utils.confirm('删除分类', '确定删除该分类吗？', function() {
+        categories = categories.filter(function(c) { return c.id !== id; });
+        if (currentCategoryId === id) currentCategoryId = '';
+        renderCategories();
+        Utils.success('已删除');
+      });
+    }
+
+    // 添加项目
+    function showAddService() {
+      var catOptions = categories.map(function(c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content" style="max-width:500px;"><div class="modal-title">添加服务项目</div>' +
+        '<div class="form-group"><label class="form-label">项目名称</label><input class="form-input" id="sName" placeholder="请输入项目名称"></div>' +
+        '<div class="form-group"><label class="form-label">分类</label><select class="form-select" id="sCategory">' + catOptions + '</select></div>' +
+        '<div class="form-row"><div class="form-group"><label class="form-label">最低价格</label><input class="form-input" id="sMinPrice" type="number" placeholder="0"></div>' +
+        '<div class="form-group"><label class="form-label">最高价格</label><input class="form-input" id="sMaxPrice" type="number" placeholder="0"></div></div>' +
+        '<div class="form-group"><label class="form-label">预估时长（分钟）</label><input class="form-input" id="sDuration" type="number" placeholder="60"></div>' +
+        '<div class="form-row"><div class="form-group"><label class="form-label">平台抽成%</label><input class="form-input" id="sPlatform" type="number" value="10"></div>' +
+        '<div class="form-group"><label class="form-label">师傅抽成%</label><input class="form-input" id="sTech" type="number" value="80"></div>' +
+        '<div class="form-group"><label class="form-label">商家介绍费%</label><input class="form-input" id="sMerchant" type="number" value="5"></div></div>' +
+        '<div class="modal-actions"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+        '<button class="btn btn-primary" onclick="addService()">确认添加</button></div></div>';
+      document.body.appendChild(overlay);
+    }
+
+    function addService() {
+      var data = {
+        name: document.getElementById('sName').value.trim(),
+        category_id: document.getElementById('sCategory').value,
+        min_price: parseFloat(document.getElementById('sMinPrice').value) || 0,
+        max_price: parseFloat(document.getElementById('sMaxPrice').value) || 0,
+        estimated_duration: parseInt(document.getElementById('sDuration').value) || 60,
+        platform_commission: parseFloat(document.getElementById('sPlatform').value) || 0,
+        tech_commission: parseFloat(document.getElementById('sTech').value) || 0,
+        merchant_commission: parseFloat(document.getElementById('sMerchant').value) || 0,
+        status: 'active'
+      };
+      if (!data.name) { Utils.error('请输入项目名称'); return; }
+      API.adminAddService(data).then(function(res) {
+        if (res.code === 200) { Utils.success('添加成功'); document.querySelector('.modal-overlay').remove(); loadData(); }
+      });
+    }
+
+    // 编辑项目
+    function editService(id) {
+      Utils.modal('编辑项目', '编辑功能开发中，请通过API调用完成。', function() {
+        Utils.toast('编辑功能暂未开放');
+      }, null, '知道了', '取消');
+    }
+
+    function deleteService(id) {
+      Utils.confirm('删除确认', '确定删除该服务项目吗？', function() {
+        API.adminUpdateService(id, { status: 'inactive' }).then(function(res) {
+          if (res.code === 200) { Utils.success('已删除'); loadData(); }
+        });
+      });
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

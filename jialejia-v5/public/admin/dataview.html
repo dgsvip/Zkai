@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据大屏 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    body { background: #000a1a; }
+    .admin-sidebar { background: #001a33; }
+    .admin-header { background: rgba(0,26,51,0.9); color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .admin-main { background: #000a1a; }
+    .admin-content { padding: 16px 24px; }
+    .dataview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .dataview-header h1 { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(22,119,255,0.5); }
+    .dataview-header .controls { display: flex; align-items: center; gap: 12px; }
+    .dataview-header .controls .btn { height: 32px; font-size: 12px; }
+    .realtime-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+    .realtime-card { background: rgba(22,119,255,0.1); border: 1px solid rgba(22,119,255,0.3); border-radius: 8px; padding: 16px; text-align: center; }
+    .realtime-card .label { font-size: 12px; color: rgba(255,255,255,0.6); }
+    .realtime-card .value { font-size: 28px; font-weight: 700; color: #fff; margin-top: 4px; font-family: 'Courier New', monospace; }
+    .realtime-card .value.gold { color: #FFD700; }
+    .realtime-card .value.blue { color: #1677FF; }
+    .realtime-card .value.green { color: #52C41A; }
+    .realtime-card .value.red { color: #FF4D4F; }
+    .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .dv-chart { background: rgba(22,119,255,0.05); border: 1px solid rgba(22,119,255,0.2); border-radius: 8px; padding: 16px; }
+    .dv-chart .chart-title { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 8px; padding-left: 8px; border-left: 3px solid #1677FF; }
+    .dv-chart .chart-box { height: 220px; }
+    .dv-chart .chart-box.tall { height: 300px; }
+    .alert-bar { display: flex; gap: 16px; margin-bottom: 12px; }
+    .alert-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
+    .alert-item.danger { background: rgba(255,77,79,0.15); border: 1px solid rgba(255,77,79,0.3); color: #FF4D4F; }
+    .alert-item.warning { background: rgba(250,173,20,0.15); border: 1px solid rgba(250,173,20,0.3); color: #FAAD14; }
+    .alert-item .num { font-size: 20px; font-weight: 700; }
+    .alert-item.blink { animation: dvBlink 1s infinite; }
+    @keyframes dvBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .scroll-announce { background: rgba(22,119,255,0.08); border: 1px solid rgba(22,119,255,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; overflow: hidden; }
+    .scroll-announce .icon { color: #1677FF; font-size: 16px; flex-shrink: 0; }
+    .scroll-announce .text { color: rgba(255,255,255,0.8); font-size: 13px; white-space: nowrap; overflow: hidden; animation: scrollText 20s linear infinite; }
+    @keyframes scrollText { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    .fullscreen-hint { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.5); padding: 8px 16px; border-radius: 20px; font-size: 12px; z-index: 100; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <div class="dataview-header" style="width:100%;margin:0;">
+          <h1><i class="fas fa-chart-pie"></i> 数据大屏</h1>
+          <div class="controls">
+            <span style="font-size:13px;color:rgba(255,255,255,0.6);"><i class="fas fa-circle" style="color:#52C41A;font-size:8px;"></i> 实时</span>
+            <select id="refreshRate" style="padding:6px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;">
+              <option value="30000">每30秒</option><option value="10000">每10秒</option><option value="0">手动</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="loadRealtime()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            <button class="btn btn-sm btn-outline" onclick="toggleFullscreen()" style="color:#fff;border-color:rgba(255,255,255,0.3);"><i class="fas fa-expand"></i> 全屏</button>
+          </div>
+          <div class="user-info">
+            <span id="userName" style="color:rgba(255,255,255,0.7);">管理员</span>
+            <span style="color:rgba(255,255,255,0.3);">|</span>
+            <button class="btn btn-sm btn-outline" onclick="logout()" style="color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.3);"><i class="fas fa-sign-out-alt"></i> 退出</button>
+          </div>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 实时数据 -->
+        <div class="realtime-grid" id="realtimeGrid">
+          <div class="realtime-card"><div class="label">今日实时订单</div><div class="value blue" id="rtOrders">0</div></div>
+          <div class="realtime-card"><div class="label">今日实时成交额</div><div class="value gold" id="rtAmount">¥0</div></div>
+          <div class="realtime-card"><div class="label">当前在线师傅</div><div class="value green" id="rtOnlineTechs">0</div></div>
+          <div class="realtime-card"><div class="label">进行中订单</div><div class="value blue" id="rtProcessing">0</div></div>
+          <div class="realtime-card"><div class="label">今日平台抽成</div><div class="value gold" id="rtCommission">¥0</div></div>
+        </div>
+        <!-- 异常预警 -->
+        <div class="alert-bar" id="alertBar">
+          <div class="alert-item danger blink" id="alertOverdue"><i class="fas fa-exclamation-triangle"></i> 超期未完结：<span class="num" id="alertOverdueCount">0</span> 单</div>
+          <div class="alert-item warning" id="alertDispute"><i class="fas fa-gavel"></i> 投诉争议待处理：<span class="num" id="alertDisputeCount">0</span> 件</div>
+        </div>
+        <!-- 滚动公告 -->
+        <div class="scroll-announce" id="scrollAnnounce">
+          <div class="icon"><i class="fas fa-bullhorn"></i></div>
+          <div class="text" id="announceText">加载中...</div>
+        </div>
+        <!-- 图表区域 -->
+        <div class="chart-grid">
+          <div class="dv-chart"><div class="chart-title">订单趋势</div><div class="chart-box tall" id="trendChart"></div></div>
+          <div class="dv-chart"><div class="chart-title">服务类型占比</div><div class="chart-box" id="pieChart"></div></div>
+        </div>
+        <div class="chart-grid-3">
+          <div class="dv-chart"><div class="chart-title">区域订单分布</div><div class="chart-box" id="barChart"></div></div>
+          <div class="dv-chart" style="grid-column:span 2;"><div class="chart-title">师傅接单排行榜 Top 10</div><div class="chart-box" id="rankChart"></div></div>
+        </div>
+        <div class="fullscreen-hint"><i class="fas fa-expand"></i> 按 F11 进入全屏投屏模式</div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('dataview');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadRealtime();
+      // 轮询
+      var timer = setInterval(loadRealtime, 30000);
+      document.getElementById('refreshRate').addEventListener('change', function() {
+        clearInterval(timer);
+        var val = parseInt(this.value);
+        if (val > 0) timer = setInterval(loadRealtime, val);
+      });
+    });
+
+    function loadRealtime() {
+      API.adminGetRealtime().then(function(res) {
+        if (res.code === 200 && res.data) {
+          renderRealtime(res.data);
+          renderCharts(res.data);
+          renderAlerts(res.data);
+          renderAnnouncements(res.data);
+        }
+      });
+    }
+
+    function renderRealtime(d) {
+      document.getElementById('rtOrders').textContent = d.todayOrders || 0;
+      document.getElementById('rtAmount').textContent = Utils.formatMoney(d.todayAmount || 0);
+      document.getElementById('rtOnlineTechs').textContent = d.onlineTechs || 0;
+      document.getElementById('rtProcessing').textContent = d.processingOrders || 0;
+      document.getElementById('rtCommission').textContent = Utils.formatMoney(d.todayCommission || 0);
+    }
+
+    function renderAlerts(d) {
+      document.getElementById('alertOverdueCount').textContent = d.overdueOrders || 0;
+      document.getElementById('alertDisputeCount').textContent = d.disputeCount || 0;
+      if (d.overdueOrders > 0) {
+        document.getElementById('alertOverdue').style.display = 'flex';
+      } else {
+        document.getElementById('alertOverdue').style.display = 'none';
+      }
+    }
+
+    function renderAnnouncements(d) {
+      var list = d.announcements || [];
+      if (list.length) {
+        document.getElementById('announceText').textContent = list.map(function(a) { return a.title; }).join('  ·  ');
+      } else {
+        document.getElementById('announceText').textContent = '暂无公告';
+      }
+    }
+
+    function renderCharts(d) {
+      // 折线图
+      var trendChart = echarts.init(document.getElementById('trendChart'));
+      var trendData = d.trend || [];
+      trendChart.setOption({
+        tooltip: { trigger: 'axis', textStyle: { color: '#fff' }, backgroundColor: 'rgba(0,0,0,0.7)', borderColor: 'rgba(22,119,255,0.3)' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: trendData.map(function(t) { return t.date; }), axisLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11 } },
+        yAxis: { type: 'value', minInterval: 1, axisLabel: { color: 'rgba(255,255,255,0.5)' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'line', smooth: true, data: trendData.map(function(t) { return t.count; }),
+          lineStyle: { color: '#1677FF', width: 2 },
+          areaStyle: { color: 'rgba(22,119,255,0.2)' },
+          itemStyle: { color: '#1677FF' },
+          symbol: 'circle', symbolSize: 4
+        }]
+      });
+      trendChart.resize();
+
+      // 饼图
+      var pieChart = echarts.init(document.getElementById('pieChart'));
+      var pieData = d.serviceDistribution || [];
+      pieChart.setOption({
+        tooltip: { trigger: 'item', textStyle: { color: '#fff' }, backgroundColor: 'rgba(0,0,0,0.7)', borderColor: 'rgba(22,119,255,0.3)' },
+        series: [{
+          type: 'pie', radius: ['40%', '70%'], center: ['50%', '50%'],
+          label: { color: 'rgba(255,255,255,0.7)', fontSize: 11 },
+          itemStyle: { borderRadius: 4 },
+          data: pieData.length ? pieData : [
+            { value: 40, name: '家电维修', itemStyle: { color: '#1677FF' } },
+            { value: 25, name: '管道疏通', itemStyle: { color: '#52C41A' } },
+            { value: 20, name: '开锁换锁', itemStyle: { color: '#FAAD14' } },
+            { value: 15, name: '其他服务', itemStyle: { color: '#FF4D4F' } }
+          ]
+        }]
+      });
+      pieChart.resize();
+
+      // 柱状图
+      var barChart = echarts.init(document.getElementById('barChart'));
+      var areaData = d.areaDistribution || [];
+      barChart.setOption({
+        tooltip: { trigger: 'axis', textStyle: { color: '#fff' }, backgroundColor: 'rgba(0,0,0,0.7)', borderColor: 'rgba(22,119,255,0.3)' },
+        grid: { left: '8%', right: '4%', bottom: '12%', containLabel: true },
+        xAxis: { type: 'category', data: areaData.map(function(a) { return a.name; }), axisLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, rotate: 30 } },
+        yAxis: { type: 'value', minInterval: 1, axisLabel: { color: 'rgba(255,255,255,0.5)' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'bar', data: areaData.map(function(a) { return a.count; }),
+          itemStyle: { color: '#1677FF', borderRadius: [4, 4, 0, 0] },
+          barWidth: '60%'
+        }]
+      });
+      barChart.resize();
+
+      // 排行榜
+      var rankChart = echarts.init(document.getElementById('rankChart'));
+      var rankData = d.techRanking || [];
+      rankChart.setOption({
+        tooltip: { trigger: 'axis', textStyle: { color: '#fff' }, backgroundColor: 'rgba(0,0,0,0.7)', borderColor: 'rgba(22,119,255,0.3)' },
+        grid: { left: '20%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', axisLabel: { color: 'rgba(255,255,255,0.5)' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        yAxis: { type: 'category', data: rankData.map(function(r) { return r.name; }), axisLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11 }, inverse: true },
+        series: [{
+          type: 'bar', data: rankData.map(function(r) { return r.count; }),
+          itemStyle: {
+            color: function(params) {
+              var colors = ['#FFD700', '#1677FF', '#52C41A', '#FAAD14', '#FF4D4F', '#1677FF', '#1677FF', '#1677FF', '#1677FF', '#1677FF'];
+              return colors[params.dataIndex] || '#1677FF';
+            },
+            borderRadius: [0, 4, 4, 0]
+          },
+          barWidth: '60%',
+          label: { show: true, position: 'right', color: 'rgba(255,255,255,0.7)', fontSize: 11 }
+        }]
+      });
+      rankChart.resize();
+
+      // 响应式
+      window.addEventListener('resize', function() {
+        trendChart.resize();
+        pieChart.resize();
+        barChart.resize();
+        rankChart.resize();
+      });
+    }
+
+    function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        document.documentElement.requestFullscreen();
+      }
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

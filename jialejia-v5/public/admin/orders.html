@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单管理 - 佳乐家后台管理</title>
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .order-tabs { display: flex; gap: 0; margin-bottom: 16px; background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .order-tab { flex: 1; text-align: center; padding: 14px; cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.2s; border-bottom: 2px solid transparent; }
+    .order-tab:hover { color: var(--primary); background: var(--primary-light); }
+    .order-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .order-tab .count { display: inline-block; margin-left: 4px; font-size: 12px; background: #f0f0f0; padding: 0 8px; border-radius: 10px; }
+    .order-tab.active .count { background: var(--primary-light); }
+    .order-tab.danger .count { background: #FFF2F0; color: var(--danger); }
+    .trash-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #FFFBE6; border: 1px solid #FFE58F; border-radius: 8px; margin-bottom: 16px; }
+    .trash-bar .btn { height: 32px; font-size: 12px; }
+    .detail-timeline { padding: 16px 0; }
+    .timeline-item { position: relative; padding: 0 0 20px 24px; border-left: 2px solid var(--border); margin-left: 8px; }
+    .timeline-item:last-child { border-left-color: transparent; }
+    .timeline-item .dot { position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; }
+    .timeline-item .time { font-size: 12px; color: var(--text-light); }
+    .timeline-item .content { font-size: 14px; color: var(--text); margin-top: 2px; }
+    .timeline-item .remark { font-size: 12px; color: var(--text-secondary); margin-top: 4px; background: #FAFAFA; padding: 6px 10px; border-radius: 4px; }
+    .detail-section { margin-bottom: 16px; }
+    .detail-section .section-label { font-size: 14px; font-weight: 600; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+    .detail-grid .item { display: flex; }
+    .detail-grid .item .label { color: var(--text-light); width: 80px; flex-shrink: 0; }
+    .detail-grid .item .value { color: var(--text); }
+    .modal-large .modal-content { max-width: 700px; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="sidebar"></aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h2 style="font-size:18px;font-weight:600;">订单管理</h2>
+        <div class="user-info">
+          <span id="userName">管理员</span>
+          <span style="color:var(--text-light);font-size:12px;">|</span>
+          <button class="btn btn-sm btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+      </header>
+      <div class="admin-content">
+        <!-- 统计卡片 -->
+        <div class="admin-stats" id="statsCards">
+          <div class="stat-card primary"><div class="label">全部</div><div class="value" id="statAll">-</div></div>
+          <div class="stat-card warning"><div class="label">待接单</div><div class="value" id="statPending">-</div></div>
+          <div class="stat-card primary"><div class="label">进行中</div><div class="value" id="statProcessing">-</div></div>
+          <div class="stat-card success"><div class="label">已完成</div><div class="value" id="statCompleted">-</div></div>
+          <div class="stat-card danger"><div class="label">超期</div><div class="value" id="statTimeout">-</div></div>
+        </div>
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <select id="filterStatus"><option value="">全部状态</option><option value="pending">待接单</option><option value="assigned">已接单</option><option value="processing">进行中</option><option value="completed">已完成</option><option value="cancelled">已取消</option><option value="timeout">超期完结</option><option value="dispute">争议中</option></select>
+          <select id="filterArea"><option value="">全部区域</option></select>
+          <select id="filterSource"><option value="">全部来源</option><option value="user">用户端</option><option value="merchant">商家端</option><option value="tech">师傅端</option></select>
+          <input type="date" id="filterDateStart" placeholder="开始日期">
+          <input type="date" id="filterDateEnd" placeholder="结束日期">
+          <button class="btn btn-sm btn-primary" onclick="loadOrders()"><i class="fas fa-search"></i> 筛选</button>
+          <button class="btn btn-sm btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> 导出Excel</button>
+          <button class="btn btn-sm btn-danger" onclick="batchDelete()"><i class="fas fa-trash"></i> 批量删除</button>
+          <button class="btn btn-sm btn-warning" onclick="toggleTrash()"><i class="fas fa-recycle"></i> 回收站</button>
+        </div>
+        <!-- 回收站 -->
+        <div class="trash-bar" id="trashBar" style="display:none;">
+          <i class="fas fa-recycle" style="color:var(--warning);"></i>
+          <span>回收站模式 - 查看已软删除的订单</span>
+          <button class="btn btn-sm btn-primary" onclick="restoreSelected()">恢复选中</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteForeverSelected()">彻底删除</button>
+          <button class="btn btn-sm btn-outline" onclick="toggleTrash()">退出回收站</button>
+        </div>
+        <!-- 订单列表 -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll"></th>
+                <th>订单号</th>
+                <th>服务</th>
+                <th>用户</th>
+                <th>电话</th>
+                <th>区域</th>
+                <th>来源</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+  <script src="../common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!Utils.get('token')) { window.location.href = 'login.html'; return; }
+      renderSidebar('orders');
+      var userInfo = Utils.getJSON('userInfo');
+      if (userInfo) document.getElementById('userName').textContent = userInfo.username || '管理员';
+      loadOrders();
+      // 全选
+      document.getElementById('checkAll').addEventListener('change', function() {
+        var checks = document.querySelectorAll('.order-check');
+        checks.forEach(function(c) { c.checked = this.checked; }, this);
+      });
+    });
+
+    var currentPage = 1;
+    var isTrashMode = false;
+    var trashOrders = [];
+
+    function loadOrders() {
+      var params = { page: currentPage, pageSize: 15 };
+      var status = document.getElementById('filterStatus').value;
+      var area = document.getElementById('filterArea').value;
+      var source = document.getElementById('filterSource').value;
+      var start = document.getElementById('filterDateStart').value;
+      var end = document.getElementById('filterDateEnd').value;
+      if (status) params.status = status;
+      if (area) params.area = area;
+      if (source) params.source = source;
+      if (start) params.start_date = start;
+      if (end) params.end_date = end;
+
+      API.adminGetOrders(params).then(function(res) {
+        if (res.code === 200) {
+          renderOrders(res.data.list || []);
+          renderStats(res.data.stats || {});
+          renderPagination(res.data.total || 0);
+        }
+      });
+    }
+
+    function renderOrders(orders) {
+      var tbody = document.getElementById('ordersBody');
+      if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light);">暂无订单数据</td></tr>';
+        return;
+      }
+      tbody.innerHTML = orders.map(function(o) {
+        var sourceMap = { user: '用户端', merchant: '商家端', tech: '师傅端' };
+        var actions = '<button class="btn btn-sm btn-primary" onclick="showDetail(\'' + (o.order_no || o.id) + '\')"><i class="fas fa-eye"></i> 详情</button>';
+        if (!isTrashMode) {
+          actions += ' <button class="btn btn-sm btn-warning" onclick="forceTransfer(\'' + (o.order_no || o.id) + '\')"><i class="fas fa-exchange-alt"></i> 转派</button>';
+          actions += ' <button class="btn btn-sm btn-danger" onclick="softDelete(\'' + (o.order_no || o.id) + '\')"><i class="fas fa-trash"></i> 删除</button>';
+        }
+        return '<tr>' +
+          '<td><input type="checkbox" class="order-check" data-id="' + (o.order_no || o.id) + '"></td>' +
+          '<td style="font-size:12px;font-family:monospace;">' + (o.order_no || o.id) + '</td>' +
+          '<td>' + (o.service_name || '-') + '</td>' +
+          '<td>' + (o.user_name || '-') + '</td>' +
+          '<td>' + Utils.maskPhone(o.user_phone) + '</td>' +
+          '<td>' + (o.area || '-') + '</td>' +
+          '<td>' + (sourceMap[o.source] || o.source || '-') + '</td>' +
+          '<td>' + Utils.formatMoney(o.amount) + '</td>' +
+          '<td><span class="tag ' + Utils.getStatusClass(o.status) + '">' + Utils.getStatusText(o.status) + '</span></td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+      }).join('');
+    }
+
+    function renderStats(stats) {
+      document.getElementById('statAll').textContent = stats.all || 0;
+      document.getElementById('statPending').textContent = stats.pending || 0;
+      document.getElementById('statProcessing').textContent = (stats.assigned || 0) + (stats.processing || 0);
+      document.getElementById('statCompleted').textContent = stats.completed || 0;
+      document.getElementById('statTimeout').textContent = (stats.timeout || 0) + (stats.dispute || 0);
+    }
+
+    function renderPagination(total) {
+      var el = document.getElementById('pagination');
+      var pages = Math.ceil(total / 15);
+      if (pages <= 1) { el.innerHTML = ''; return; }
+      var html = '<button class="page-btn" onclick="goPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>上一页</button>';
+      for (var i = 1; i <= pages; i++) {
+        html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+      }
+      html += '<button class="page-btn" onclick="goPage(' + (currentPage + 1) + ')" ' + (currentPage >= pages ? 'disabled' : '') + '>下一页</button>';
+      el.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadOrders(); }
+
+    // 订单详情
+    function showDetail(orderNo) {
+      API.getOrderDetail(orderNo).then(function(res) {
+        if (res.code === 200) {
+          var o = res.data;
+          var overlay = document.createElement('div');
+          overlay.className = 'modal-overlay modal-large';
+          var timelineHtml = '';
+          if (o.timeline && o.timeline.length) {
+            timelineHtml = o.timeline.map(function(t) {
+              return '<div class="timeline-item"><div class="dot"></div><div class="time">' + Utils.formatTime(t.time) + '</div><div class="content">' + (t.action || t.content) + '</div>' + (t.remark ? '<div class="remark">' + t.remark + '</div>' : '') + '</div>';
+            }).join('');
+          } else {
+            timelineHtml = '<div style="color:var(--text-light);text-align:center;padding:20px;">暂无时间线记录</div>';
+          }
+          overlay.innerHTML = '<div class="modal-content" style="max-width:700px;">' +
+            '<div class="modal-title">订单详情 - ' + (o.order_no || orderNo) + '</div>' +
+            '<div style="max-height:70vh;overflow-y:auto;">' +
+            '<div class="detail-section"><div class="section-label">基本信息</div><div class="detail-grid">' +
+              '<div class="item"><span class="label">服务项目</span><span class="value">' + (o.service_name || '-') + '</span></div>' +
+              '<div class="item"><span class="label">用户姓名</span><span class="value">' + (o.user_name || '-') + '</span></div>' +
+              '<div class="item"><span class="label">联系电话</span><span class="value">' + (o.user_phone || '-') + '</span></div>' +
+              '<div class="item"><span class="label">服务区域</span><span class="value">' + (o.area || '-') + '</span></div>' +
+              '<div class="item"><span class="label">订单金额</span><span class="value">' + Utils.formatMoney(o.amount) + '</span></div>' +
+              '<div class="item"><span class="label">订单状态</span><span class="value"><span class="tag ' + Utils.getStatusClass(o.status) + '">' + Utils.getStatusText(o.status) + '</span></span></div>' +
+              '<div class="item"><span class="label">下单时间</span><span class="value">' + Utils.formatTime(o.created_at) + '</span></div>' +
+              '<div class="item"><span class="label">来源</span><span class="value">' + (o.source || '-') + '</span></div>' +
+            '</div></div>' +
+            '<div class="detail-section"><div class="section-label">时间线</div>' + timelineHtml + '</div>' +
+            (o.remarks && o.remarks.length ? '<div class="detail-section"><div class="section-label">备注汇总</div>' + o.remarks.map(function(r) { return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-light)">' + Utils.formatTime(r.time) + ' ' + (r.author || '') + '：</span>' + r.content + '</div>'; }).join('') + '</div>' : '') +
+            (o.evaluation ? '<div class="detail-section"><div class="section-label">评价记录</div><div style="font-size:13px;"><span>评分：' + (o.evaluation.rating || '-') + '分</span> <span style="margin-left:16px;">评价：' + (o.evaluation.content || '无') + '</span></div></div>' : '') +
+            (o.logs && o.logs.length ? '<div class="detail-section"><div class="section-label">操作日志</div>' + o.logs.map(function(l) { return '<div style="font-size:13px;padding:4px 0;color:var(--text-secondary);"><span style="color:var(--text-light)">' + Utils.formatTime(l.time) + '</span> ' + (l.action || l.content) + '</div>'; }).join('') + '</div>' : '') +
+            '</div>' +
+            '<div class="modal-actions"><button class="btn btn-primary" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button></div></div>';
+          document.body.appendChild(overlay);
+        } else {
+          Utils.error('获取订单详情失败');
+        }
+      });
+    }
+
+    // 强制转派
+    function forceTransfer(orderNo) {
+      Utils.modal('强制转派', '请输入转派原因：<br><textarea id="transferReason" class="form-textarea" style="margin-top:8px;" placeholder="请输入转派原因"></textarea>', function() {
+        var reason = document.getElementById('transferReason').value;
+        if (!reason) { Utils.error('请输入转派原因'); return; }
+        API.adminForceTransfer(orderNo, { reason: reason }).then(function(res) {
+          if (res.code === 200) { Utils.success('转派成功'); loadOrders(); }
+        });
+      }, null, '确认转派', '取消');
+    }
+
+    // 软删除
+    function softDelete(orderNo) {
+      Utils.confirm('删除确认', '确定将该订单移入回收站吗？', function() {
+        API.adminDeleteOrder({ order_no: orderNo }).then(function(res) {
+          if (res.code === 200) { Utils.success('已移入回收站'); loadOrders(); }
+        });
+      });
+    }
+
+    // 回收站
+    function toggleTrash() {
+      isTrashMode = !isTrashMode;
+      document.getElementById('trashBar').style.display = isTrashMode ? 'flex' : 'none';
+      if (isTrashMode) {
+        loadTrashOrders();
+      } else {
+        loadOrders();
+      }
+    }
+
+    function loadTrashOrders() {
+      API.adminGetTrash().then(function(res) {
+        if (res.code === 200) {
+          trashOrders = res.data || [];
+          renderOrders(trashOrders);
+        }
+      });
+    }
+
+    function restoreSelected() {
+      var ids = getSelectedIds();
+      if (!ids.length) { Utils.error('请选择要恢复的订单'); return; }
+      Utils.confirm('恢复确认', '确定恢复选中的 ' + ids.length + ' 个订单吗？', function() {
+        API.adminRestoreOrder({ ids: ids }).then(function(res) {
+          if (res.code === 200) { Utils.success('恢复成功'); loadTrashOrders(); }
+        });
+      });
+    }
+
+    function deleteForeverSelected() {
+      var ids = getSelectedIds();
+      if (!ids.length) { Utils.error('请选择要彻底删除的订单'); return; }
+      Utils.confirm('彻底删除', '确定彻底删除选中的 ' + ids.length + ' 个订单吗？此操作不可恢复！', function() {
+        API.adminDeleteOrder({ ids: ids, forever: true }).then(function(res) {
+          if (res.code === 200) { Utils.success('已彻底删除'); loadTrashOrders(); }
+        });
+      });
+    }
+
+    function getSelectedIds() {
+      var ids = [];
+      document.querySelectorAll('.order-check:checked').forEach(function(c) {
+        ids.push(c.getAttribute('data-id'));
+      });
+      return ids;
+    }
+
+    function batchDelete() {
+      var ids = getSelectedIds();
+      if (!ids.length) { Utils.error('请先选择订单'); return; }
+      Utils.confirm('批量删除', '确定将选中的 ' + ids.length + ' 个订单移入回收站吗？', function() {
+        API.adminDeleteOrder({ ids: ids }).then(function(res) {
+          if (res.code === 200) { Utils.success('批量删除成功'); loadOrders(); }
+        });
+      });
+    }
+
+    function exportExcel() {
+      Utils.toast('正在导出Excel...');
+      setTimeout(function() { Utils.success('导出成功'); }, 1500);
+    }
+
+    function renderSidebar(current) {
+      var items = [
+        { id: 'dashboard', label: '仪表盘', icon: 'fa-chart-line', url: 'dashboard.html' },
+        { id: 'orders', label: '订单管理', icon: 'fa-clipboard-list', url: 'orders.html' },
+        { id: 'technicians', label: '师傅管理', icon: 'fa-user-cog', url: 'technicians.html' },
+        { id: 'merchants', label: '商家管理', icon: 'fa-store', url: 'merchants.html' },
+        { id: 'services', label: '服务管理', icon: 'fa-concierge-bell', url: 'services.html' },
+        { id: 'announcements', label: '公告管理', icon: 'fa-bullhorn', url: 'announcements.html' },
+        { id: 'dataview', label: '数据大屏', icon: 'fa-chart-pie', url: 'dataview.html' },
+        { id: 'settings', label: '系统设置', icon: 'fa-cog', url: 'settings.html' }
+      ];
+      var html = '<div class="logo"><i class="fas fa-tools"></i> 佳乐家</div><nav>';
+      items.forEach(function(item) {
+        html += '<div class="nav-item' + (item.id === current ? ' active' : '') + '" onclick="Utils.go(\'' + item.url + '\')"><i class="fas ' + item.icon + '"></i><span>' + item.label + '</span></div>';
+      });
+      html += '</nav><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:auto;"><div class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.7);"><i class="fas fa-sign-out-alt"></i><span>退出登录</span></div></div>';
+      document.getElementById('sidebar').innerHTML = html;
+    }
+
+    function logout() {
+      Utils.confirm('退出确认', '确定要退出登录吗？', function() {
+        Utils.remove('token');
+        Utils.remove('userInfo');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+</body>
+</html>

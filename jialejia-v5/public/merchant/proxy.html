@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>佳乐家 - 代报单</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    .page { padding-bottom: 70px; }
+    /* 消息中心 */
+    .msg-bar { display: flex; align-items: center; padding: 12px 16px; background: #fff; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+    .msg-bar .msg-icon { font-size: 20px; position: relative; margin-right: 10px; }
+    .msg-bar .msg-icon .badge { position: absolute; top: -4px; right: -8px; min-width: 16px; height: 16px; background: #FF4D4F; border-radius: 8px; font-size: 10px; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+    .msg-bar .msg-text { flex: 1; font-size: 14px; color: #333; }
+    .msg-bar .msg-arrow { font-size: 16px; color: #ccc; }
+    /* 表单 */
+    .form-section { padding: 16px; }
+    .form-section-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .form-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .form-toolbar .btn { height: 32px; font-size: 12px; border-radius: 16px; padding: 0 14px; }
+    .form-toolbar .btn-outline { border-color: #1677FF; color: #1677FF; }
+    .customer-select { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .customer-select .cs-item { padding: 6px 14px; border-radius: 16px; font-size: 12px; background: #f5f5f5; color: #666; cursor: pointer; transition: all 0.2s; }
+    .customer-select .cs-item:active { background: #E6F4FF; color: #1677FF; }
+    .draft-hint { background: #FFF7E6; border: 1px solid #FFE7BA; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #8C6E1A; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .draft-hint .btn { height: 28px; font-size: 12px; border-radius: 14px; padding: 0 12px; }
+    .submit-area { padding: 16px; position: sticky; bottom: 60px; background: #f5f5f5; }
+    .submit-area .btn { height: 48px; font-size: 16px; border-radius: 24px; }
+    /* 历史记录 */
+    .history-section { padding: 0 16px 16px; }
+    .order-item { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
+    .order-item .oi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .order-item .oi-service { font-size: 15px; font-weight: 500; color: #333; }
+    .order-item .oi-status { font-size: 12px; }
+    .order-item .oi-info { font-size: 13px; color: #666; }
+    .order-item .oi-info span { margin-right: 12px; }
+    .order-item .oi-time { font-size: 12px; color: #999; margin-top: 6px; }
+    /* 消息弹窗 */
+    .msg-list-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+    .msg-list-item:last-child { border-bottom: none; }
+    .msg-list-item .msg-title { font-size: 14px; color: #333; font-weight: 500; }
+    .msg-list-item .msg-desc { font-size: 12px; color: #999; margin-top: 4px; }
+    .msg-list-item .msg-time { font-size: 11px; color: #ccc; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <!-- 消息中心 -->
+    <div class="msg-bar" onclick="showMessages()">
+      <div class="msg-icon">🔔<span class="badge" id="msgBadge">3</span></div>
+      <div class="msg-text">消息中心</div>
+      <div class="msg-arrow">›</div>
+    </div>
+
+    <!-- 代报单表单 -->
+    <div class="card" style="margin-top:0;">
+      <div class="form-section-title">📋 代报单</div>
+
+      <!-- 草稿箱提示 -->
+      <div class="draft-hint" id="draftHint" style="display:none;">
+        <span>📝 检测到上次未提交的草稿</span>
+        <button class="btn btn-primary btn-sm" onclick="restoreDraft()">恢复草稿</button>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="form-toolbar">
+        <button class="btn btn-outline btn-sm" onclick="copyLastOrder()">📋 复制上一单</button>
+        <button class="btn btn-outline btn-sm" onclick="showFrequentCustomers()">👥 常用客户</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">服务类型 <span style="color:#FF4D4F;">*</span></label>
+        <select class="form-select" id="serviceType">
+          <option value="">请选择服务类型</option>
+          <option value="1">家电维修</option>
+          <option value="2">水电安装</option>
+          <option value="3">家居清洁</option>
+          <option value="4">管道疏通</option>
+          <option value="5">墙面翻新</option>
+          <option value="6">家具组装</option>
+          <option value="7">门窗维修</option>
+          <option value="8">其他</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">客户姓名 <span style="color:#FF4D4F;">*</span></label>
+        <input class="form-input" id="customerName" placeholder="请输入客户姓名">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">客户电话 <span style="color:#FF4D4F;">*</span></label>
+        <input class="form-input" id="customerPhone" type="tel" maxlength="11" placeholder="请输入客户手机号">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">服务地址 <span style="color:#FF4D4F;">*</span></label>
+        <input class="form-input" id="serviceAddress" placeholder="请输入详细服务地址">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">预约日期</label>
+          <input class="form-input" id="appointmentDate" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">预约时间</label>
+          <select class="form-select" id="appointmentTime">
+            <option value="">请选择时间</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">备注（选填）</label>
+        <textarea class="form-textarea" id="remarks" placeholder="客户备注信息" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">商家备注（仅师傅和后台可见）</label>
+        <textarea class="form-textarea" id="merchantRemark" placeholder="内部备注" rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- 提交按钮 -->
+    <div class="submit-area">
+      <button class="btn btn-primary btn-block btn-lg" id="submitBtn" onclick="submitOrder()">提交代报单</button>
+    </div>
+
+    <!-- 代报历史 -->
+    <div class="history-section">
+      <div class="form-section-title">📄 代报历史</div>
+      <div id="orderHistory">
+        <div class="empty-state"><span class="icon">📋</span><span class="text">暂无代报记录</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tabbar">
+    <div class="tabbar-item" onclick="Utils.go('/merchant/promote.html')">
+      <span class="icon">📢</span>
+      <span class="label">推广</span>
+    </div>
+    <div class="tabbar-item active" onclick="Utils.go('/merchant/proxy.html')">
+      <span class="icon">📝</span>
+      <span class="label">代报</span>
+    </div>
+    <div class="tabbar-item" onclick="Utils.go('/merchant/profile.html')">
+      <span class="icon">👤</span>
+      <span class="label">我的</span>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!API.token) {
+        showLoginModal();
+        return;
+      }
+      initTimeSlots();
+      checkDraft();
+      loadOrderHistory();
+      loadMessageCount();
+      // 自动保存草稿
+      setInterval(autoSaveDraft, 10000);
+    });
+
+    /* ===== 登录弹窗 ===== */
+    function showLoginModal() {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = '<div class="modal-content"><div class="modal-title">商家登录</div><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="loginPhone" type="tel" maxlength="11" placeholder="请输入手机号"></div><div class="form-group"><label class="form-label">密码</label><input class="form-input" id="loginPassword" type="password" placeholder="请输入密码"></div><div class="modal-actions"><button class="btn btn-primary btn-block" id="loginBtn">登录</button></div></div>';
+      document.body.appendChild(overlay);
+      document.getElementById('loginBtn').addEventListener('click', async function() {
+        var phone = document.getElementById('loginPhone').value.trim();
+        var pwd = document.getElementById('loginPassword').value.trim();
+        if (!phone || !pwd) { Utils.error('请填写完整信息'); return; }
+        this.disabled = true; this.textContent = '登录中...';
+        var res = await API.merchLogin(phone, pwd);
+        if (res.code === 200) {
+          Utils.setJSON('userInfo', res.data.user || {});
+          Utils.set('token', res.data.token);
+          API.token = res.data.token;
+          Utils.success('登录成功');
+          overlay.remove();
+          loadOrderHistory();
+          loadMessageCount();
+        } else {
+          this.disabled = false; this.textContent = '登录';
+        }
+      });
+    }
+
+    /* ===== 初始化时间选择 ===== */
+    function initTimeSlots() {
+      var sel = document.getElementById('appointmentTime');
+      var slots = Utils.getTimeSlots();
+      slots.forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        sel.appendChild(opt);
+      });
+      // 默认日期
+      var today = new Date();
+      document.getElementById('appointmentDate').value = today.toISOString().slice(0, 10);
+    }
+
+    /* ===== 草稿箱 ===== */
+    function checkDraft() {
+      var draft = Utils.getJSON('proxy_draft');
+      if (draft && draft.serviceType) {
+        document.getElementById('draftHint').style.display = 'flex';
+      }
+    }
+
+    function restoreDraft() {
+      var draft = Utils.getJSON('proxy_draft');
+      if (!draft) return;
+      document.getElementById('serviceType').value = draft.serviceType || '';
+      document.getElementById('customerName').value = draft.customerName || '';
+      document.getElementById('customerPhone').value = draft.customerPhone || '';
+      document.getElementById('serviceAddress').value = draft.serviceAddress || '';
+      document.getElementById('appointmentDate').value = draft.appointmentDate || '';
+      document.getElementById('appointmentTime').value = draft.appointmentTime || '';
+      document.getElementById('remarks').value = draft.remarks || '';
+      document.getElementById('merchantRemark').value = draft.merchantRemark || '';
+      document.getElementById('draftHint').style.display = 'none';
+      Utils.remove('proxy_draft');
+      Utils.success('草稿已恢复');
+    }
+
+    function autoSaveDraft() {
+      var data = {
+        serviceType: document.getElementById('serviceType').value,
+        customerName: document.getElementById('customerName').value,
+        customerPhone: document.getElementById('customerPhone').value,
+        serviceAddress: document.getElementById('serviceAddress').value,
+        appointmentDate: document.getElementById('appointmentDate').value,
+        appointmentTime: document.getElementById('appointmentTime').value,
+        remarks: document.getElementById('remarks').value,
+        merchantRemark: document.getElementById('merchantRemark').value
+      };
+      if (data.serviceType || data.customerName || data.customerPhone) {
+        Utils.setJSON('proxy_draft', data);
+      }
+    }
+
+    /* ===== 复制上一单 ===== */
+    async function copyLastOrder() {
+      var res = await API.merchGetOrders();
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        var last = res.data[0];
+        document.getElementById('serviceType').value = last.service_id || last.service_type || '';
+        document.getElementById('customerName').value = last.customer_name || '';
+        document.getElementById('customerPhone').value = last.customer_phone || '';
+        document.getElementById('serviceAddress').value = last.address || '';
+        Utils.success('已复制上一单信息');
+      } else {
+        Utils.error('暂无历史订单');
+      }
+    }
+
+    /* ===== 常用客户 ===== */
+    function showFrequentCustomers() {
+      var customers = Utils.getJSON('frequent_customers') || [];
+      if (!customers.length) {
+        Utils.alert('提示', '暂无常用客户，提交代报单后系统将自动保存客户信息');
+        return;
+      }
+      var html = '<div style="max-height:300px;overflow-y:auto;">';
+      customers.forEach(function(c, i) {
+        html += '<div style="padding:10px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;" onclick="selectCustomer(' + i + ')"><div style="font-size:14px;color:#333;">' + c.name + '</div><div style="font-size:12px;color:#999;">' + Utils.maskPhone(c.phone) + '</div></div>';
+      });
+      html += '</div>';
+      Utils.alert('选择常用客户', html);
+      // 将回调挂到window上供点击调用
+      window.selectCustomer = function(idx) {
+        var c = customers[idx];
+        if (c) {
+          document.getElementById('customerName').value = c.name;
+          document.getElementById('customerPhone').value = c.phone;
+          Utils.success('已选择：' + c.name);
+          document.querySelector('.modal-overlay')?.remove();
+        }
+      };
+    }
+
+    /* ===== 提交代报单 ===== */
+    async function submitOrder() {
+      var serviceType = document.getElementById('serviceType').value;
+      var customerName = document.getElementById('customerName').value.trim();
+      var customerPhone = document.getElementById('customerPhone').value.trim();
+      var serviceAddress = document.getElementById('serviceAddress').value.trim();
+      var appointmentDate = document.getElementById('appointmentDate').value;
+      var appointmentTime = document.getElementById('appointmentTime').value;
+      var remarks = document.getElementById('remarks').value.trim();
+      var merchantRemark = document.getElementById('merchantRemark').value.trim();
+
+      if (!serviceType) { Utils.error('请选择服务类型'); return; }
+      if (!customerName) { Utils.error('请输入客户姓名'); return; }
+      if (!Utils.isValidPhone(customerPhone)) { Utils.error('请输入正确的手机号'); return; }
+      if (!serviceAddress) { Utils.error('请输入服务地址'); return; }
+
+      var btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = '提交中...';
+
+      var data = {
+        service_type: parseInt(serviceType),
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        address: serviceAddress,
+        appointment_date: appointmentDate,
+        appointment_time: appointmentTime,
+        remark: remarks,
+        merchant_remark: merchantRemark
+      };
+
+      var res = await API.merchCreateOrder(data);
+      if (res.code === 200 || res.code === 201) {
+        Utils.success('代报单提交成功');
+        // 保存常用客户
+        saveFrequentCustomer(customerName, customerPhone);
+        // 清除草稿
+        Utils.remove('proxy_draft');
+        // 重置表单
+        resetForm();
+        // 刷新历史
+        loadOrderHistory();
+      }
+      btn.disabled = false; btn.textContent = '提交代报单';
+    }
+
+    function resetForm() {
+      document.getElementById('serviceType').value = '';
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerPhone').value = '';
+      document.getElementById('serviceAddress').value = '';
+      document.getElementById('remarks').value = '';
+      document.getElementById('merchantRemark').value = '';
+      document.getElementById('draftHint').style.display = 'none';
+    }
+
+    function saveFrequentCustomer(name, phone) {
+      if (!name || !phone) return;
+      var list = Utils.getJSON('frequent_customers') || [];
+      // 去重
+      list = list.filter(function(c) { return c.phone !== phone; });
+      list.unshift({ name: name, phone: phone });
+      if (list.length > 20) list = list.slice(0, 20);
+      Utils.setJSON('frequent_customers', list);
+    }
+
+    /* ===== 代报历史 ===== */
+    async function loadOrderHistory() {
+      var container = document.getElementById('orderHistory');
+      var res = await API.merchGetOrders();
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        var html = '';
+        res.data.forEach(function(order) {
+          var statusText = Utils.getStatusText(order.status);
+          var statusClass = Utils.getStatusClass(order.status);
+          html += '<div class="order-item">';
+          html += '<div class="oi-header"><span class="oi-service">' + (order.service_name || '服务') + '</span><span class="oi-status"><span class="tag ' + statusClass + '">' + statusText + '</span></span></div>';
+          html += '<div class="oi-info"><span>' + (order.customer_name || '') + '</span><span>' + Utils.maskPhone(order.customer_phone || '') + '</span></div>';
+          html += '<div class="oi-time">' + Utils.formatTime(order.created_at || order.create_time) + ' ｜ 订单号：' + (order.order_no || '--') + '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<div class="empty-state"><span class="icon">📋</span><span class="text">暂无代报记录</span></div>';
+      }
+    }
+
+    /* ===== 消息中心 ===== */
+    function loadMessageCount() {
+      var msgs = Utils.getJSON('proxy_messages');
+      if (msgs && msgs.length) {
+        var unread = msgs.filter(function(m) { return !m.read; }).length;
+        document.getElementById('msgBadge').textContent = unread;
+        if (unread === 0) document.getElementById('msgBadge').style.display = 'none';
+      }
+    }
+
+    function showMessages() {
+      var msgs = Utils.getJSON('proxy_messages') || [
+        { title: '订单已完成', desc: '订单 #20240723001 已完成，介绍费已到账', time: '2024-07-23 14:30', read: false },
+        { title: '收益到账通知', desc: '您有一笔介绍费 ¥28.50 已到账', time: '2024-07-22 10:15', read: false },
+        { title: '平台公告', desc: '佳乐家暑期活动上线，推广奖励翻倍！', time: '2024-07-20 09:00', read: false }
+      ];
+      var html = '<div style="max-height:400px;overflow-y:auto;">';
+      msgs.forEach(function(m) {
+        html += '<div class="msg-list-item" style="' + (m.read ? '' : 'background:#F0F8FF;margin:0 -8px;padding:12px 8px;') + '">';
+        html += '<div class="msg-title">' + m.title + '</div>';
+        html += '<div class="msg-desc">' + m.desc + '</div>';
+        html += '<div class="msg-time">' + m.time + '</div></div>';
+      });
+      html += '</div>';
+      Utils.alert('消息中心', html);
+      // 标记已读
+      msgs.forEach(function(m) { m.read = true; });
+      Utils.setJSON('proxy_messages', msgs);
+      document.getElementById('msgBadge').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
